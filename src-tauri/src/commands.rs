@@ -54,6 +54,26 @@ fn capture_and_publish(app: &AppHandle, mode: CaptureMode) -> Result<(), Capture
 const OVERLAY_BASE_WIDTH: f64 = 300.0;
 const OVERLAY_BASE_HEIGHT: f64 = 264.0;
 
+/// Cursor position in the global logical-point space that `monitor_from_point`
+/// (CGDisplayBounds) uses. On macOS this must come from CoreGraphics —
+/// tao's `cursor_position()` returns physical pixels scaled by the primary
+/// monitor and mixes units in its Y-flip, so on any scaled/Retina display the
+/// point lands outside every monitor's bounds and monitor lookup fails.
+#[cfg(target_os = "macos")]
+fn cursor_point(_app: &AppHandle) -> Option<(f64, f64)> {
+    use core_graphics::event::CGEvent;
+    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+    let source = CGEventSource::new(CGEventSourceStateID::CombinedSessionState).ok()?;
+    let point = CGEvent::new(source).ok()?.location();
+    Some((point.x, point.y))
+}
+
+#[cfg(not(target_os = "macos"))]
+fn cursor_point(app: &AppHandle) -> Option<(f64, f64)> {
+    let cursor = app.cursor_position().ok()?;
+    Some((cursor.x, cursor.y))
+}
+
 /// Show the quick-access overlay at the configured corner of the active
 /// monitor (the one under the cursor) or the primary one.
 fn show_overlay(app: &AppHandle) {
@@ -66,9 +86,7 @@ fn show_overlay(app: &AppHandle) {
     let _ = overlay.set_size(tauri::LogicalSize::new(width, height));
 
     let active_monitor = if settings.move_to_active_screen {
-        app.cursor_position()
-            .ok()
-            .and_then(|cursor| app.monitor_from_point(cursor.x, cursor.y).ok().flatten())
+        cursor_point(app).and_then(|(x, y)| app.monitor_from_point(x, y).ok().flatten())
     } else {
         None
     };

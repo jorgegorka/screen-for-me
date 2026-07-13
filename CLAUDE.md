@@ -44,6 +44,7 @@ Capture flow: shortcut/tray → `commands::trigger_capture` (spawn_blocking) →
 - Windows that hide-instead-of-close (`main`, `editor`, `history`) are handled in the `on_window_event` match in lib.rs; `src-tauri/src/windows.rs` owns their open/show helpers plus the About and Check-for-Updates dialogs.
 - The asset protocol scope is `$APPDATA/captures/*`; captures displayed in webviews go through `convertFileSrc`.
 - macOS reserves Cmd+Shift+3/4/5, hence 7/8/9.
+- **Cursor→monitor on macOS**: don't use `AppHandle::cursor_position()` for active-screen detection — tao (0.35.x) returns it in physical pixels scaled by the *primary* monitor and mixes units in the Y-flip, so on scaled/Retina displays the point misses every monitor and `monitor_from_point` returns `None` (silently falling back to primary). `commands.rs::cursor_point` reads the cursor from CoreGraphics (`CGEvent::location`), which is in the same logical-point space as `CGDisplayBounds`/`monitor_from_point`. Non-macOS falls back to `cursor_position()`.
 - Accessory activation policy means no app menu bar; don't rely on menu-role shortcuts (Cmd+C in webviews) — handle keys in JS.
 
 ## Updates
