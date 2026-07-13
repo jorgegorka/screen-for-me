@@ -33,6 +33,12 @@ Capture flow: shortcut/tray → `commands::trigger_capture` (spawn_blocking) →
 - `src/overlay/` — quick-access panel (transparent, always-on-top window declared in `tauri.conf.json`); listens for `capture:new`; drag-out starts a native drag via `@crabnebula/tauri-plugin-drag` after a 5px move threshold.
 - `src/editor/` — Konva editor. **Load the background from raw bytes via `read_capture_bytes` → `blob:` URL, never `asset://`/`convertFileSrc`** — an asset-protocol image taints the canvas and makes `toDataURL()` throw/return empty, silently breaking export. `renderPng` retries at lower resolution and validates output; `export_png` rejects any non-PNG bytes so a bad export can never overwrite (zero out) a capture. Last-used tool/color/stroke persist to `editor_prefs.json` (`get/set_editor_prefs`, separate from overlay Settings so the Settings window can't clobber them) and are restored by `applyPrefs` on open. Stage is kept in **image coordinates** with `stage.scale(fitScale)`; export uses `pixelRatio: 1/scale` for native resolution. Undo/redo is a snapshot stack (`history.ts`) over a whitelisted-attrs serialization (`shapes.ts` — new shape types must be added to `ATTRS` or they won't survive undo). Pixelate bakes a data-URL into the node attr so undo can rehydrate it. `geometry.ts`/`history.ts` are deliberately Konva-free for vitest.
 - Editor window is created once by `open_editor`, then **hidden** (not destroyed) on Done / close and re-shown on later opens (`on_window_event` in lib.rs handles `main` + `editor`). The target capture is set in `AppState.editor_target`; the editor **pulls** it via the `editor_target` command on every (re)load, and also listens for `editor:load` for reuse while already open. This pull model avoids the earlier bug where reopening showed a blank canvas (an `editor:load` event racing a torn-down/not-yet-ready webview).
+- `timer` and `scrollcap` are transient windows: created on demand
+  (`windows.rs::open_timer` / `open_scrollcap`), **destroyed** on close — they are
+  deliberately NOT in the hide-instead-of-close list in lib.rs. Scrolling capture
+  (macOS only): `capture/scrolling.rs` loops `screencapture -x -R` grabs with
+  CGEvent line-scroll steps and stitches via the pure `capture/stitch.rs`
+  (correlation-based offset detection; unit-tested with synthetic noise images).
 
 ## Gotchas
 
@@ -46,6 +52,10 @@ Capture flow: shortcut/tray → `commands::trigger_capture` (spawn_blocking) →
 - macOS reserves Cmd+Shift+3/4/5, hence 7/8/9.
 - **Cursor→monitor on macOS**: don't use `AppHandle::cursor_position()` for active-screen detection — tao (0.35.x) returns it in physical pixels scaled by the *primary* monitor and mixes units in the Y-flip, so on scaled/Retina displays the point misses every monitor and `monitor_from_point` returns `None` (silently falling back to primary). `commands.rs::cursor_point` reads the cursor from CoreGraphics (`CGEvent::location`), which is in the same logical-point space as `CGDisplayBounds`/`monitor_from_point`. Non-macOS falls back to `cursor_position()`.
 - Accessory activation policy means no app menu bar; don't rely on menu-role shortcuts (Cmd+C in webviews) — handle keys in JS.
+- **macOS Accessibility permission (Scrolling Capture)**: posting synthetic scroll
+  events needs Accessibility (separate from Screen Recording). The first run
+  prompts and registers the app; in dev the grant attaches to the *terminal*.
+  Without it the capture aborts with an explanatory dialog.
 
 ## Updates
 
