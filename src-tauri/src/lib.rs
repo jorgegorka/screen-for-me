@@ -32,6 +32,8 @@ pub fn run() {
                 settings: SettingsStore::load(data_dir.join("settings.json")),
                 editor_prefs: EditorPrefsStore::load(data_dir.join("editor_prefs.json")),
                 editor_target: std::sync::Mutex::new(None),
+                timer_seconds: std::sync::Mutex::new(5),
+                scroll_stop: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
             });
 
             tray::setup(app.handle())?;
@@ -56,6 +58,8 @@ pub fn run() {
             commands::set_editor_prefs,
             commands::save_capture_to_desktop,
             windows::open_history,
+            commands::timer_duration,
+            commands::timed_capture_fire,
         ])
         // The main window doubles as the Settings window: closing it hides it
         // so the tray can re-show it without recreating.

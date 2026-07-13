@@ -13,6 +13,10 @@ pub struct AppState {
     /// load, so opening never depends on an event landing before the page's
     /// listener is ready.
     pub editor_target: std::sync::Mutex<Option<String>>,
+    /// Seconds for the pending self-timer; the timer window pulls this on load.
+    pub timer_seconds: std::sync::Mutex<u32>,
+    /// Set by `stop_scrolling_capture` to end the scroll loop early.
+    pub scroll_stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
 /// Entry point shared by tray items, global shortcuts, and the IPC command.
@@ -73,6 +77,13 @@ fn cursor_point(_app: &AppHandle) -> Option<(f64, f64)> {
 fn cursor_point(app: &AppHandle) -> Option<(f64, f64)> {
     let cursor = app.cursor_position().ok()?;
     Some((cursor.x, cursor.y))
+}
+
+/// The monitor under the cursor, falling back to the primary one.
+pub(crate) fn active_monitor(app: &AppHandle) -> Option<tauri::Monitor> {
+    cursor_point(app)
+        .and_then(|(x, y)| app.monitor_from_point(x, y).ok().flatten())
+        .or_else(|| app.primary_monitor().ok().flatten())
 }
 
 /// Show the quick-access overlay at the configured corner of the active
@@ -298,6 +309,40 @@ pub fn save_capture_to(state: State<AppState>, id: String, dest: String) -> Resu
 pub fn reveal_capture(state: State<AppState>, id: String) -> Result<(), String> {
     let entry = resolve(&state.history, &id)?;
     tauri_plugin_opener::reveal_item_in_dir(entry.path).map_err(|e| e.to_string())
+}
+
+/// Tray entry point: stage the duration and show the countdown window.
+/// Starting a new timer replaces a running one.
+pub fn start_timed_capture(app: &AppHandle, seconds: u32) {
+    if let Some(existing) = app.get_webview_window("timer") {
+        let _ = existing.destroy();
+    }
+    *app.state::<AppState>().timer_seconds.lock().unwrap() = seconds;
+    if let Err(err) = crate::windows::open_timer(app) {
+        eprintln!("failed to open timer window: {err}");
+    }
+}
+
+/// Duration for the countdown window (pull model, like `editor_target`).
+#[tauri::command]
+pub fn timer_duration(state: State<AppState>) -> u32 {
+    *state.timer_seconds.lock().unwrap()
+}
+
+/// Countdown reached zero: tear the window down, wait a beat so it cannot
+/// appear in the shot, then run the normal fullscreen path.
+#[tauri::command]
+pub fn timed_capture_fire(app: AppHandle) {
+    if let Some(window) = app.get_webview_window("timer") {
+        let _ = window.destroy();
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        if let Err(err) = capture_and_publish(&app, CaptureMode::Fullscreen) {
+            eprintln!("timed capture failed: {err}");
+            let _ = app.emit("capture:error", err.to_string());
+        }
+    });
 }
 
 fn resolve(history: &History, id: &str) -> Result<CaptureEntry, String> {

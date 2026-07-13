@@ -6,7 +6,8 @@
     "main",
     "overlay",
     "editor",
-    "history"
+    "history",
+    "timer"
   ],
   "permissions": [
     "core:default",

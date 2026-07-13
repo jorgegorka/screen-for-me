@@ -43,6 +43,37 @@ pub fn open_settings(app: &AppHandle) {
     }
 }
 
+/// Transient countdown window, centered on the active monitor. Destroyed (not
+/// hidden) when the timer fires or is cancelled.
+pub fn open_timer(app: &AppHandle) -> tauri::Result<()> {
+    const SIZE: f64 = 180.0;
+    let mut builder = tauri::WebviewWindowBuilder::new(
+        app,
+        "timer",
+        tauri::WebviewUrl::App("timer.html".into()),
+    )
+    .title("Self-Timer")
+    .inner_size(SIZE, SIZE)
+    .decorations(false)
+    .transparent(true)
+    .shadow(false)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .resizable(false)
+    .accept_first_mouse(true);
+    if let Some(monitor) = crate::commands::active_monitor(app) {
+        let scale = monitor.scale_factor();
+        let pos = monitor.position().to_logical::<f64>(scale);
+        let size = monitor.size().to_logical::<f64>(scale);
+        builder = builder.position(
+            pos.x + (size.width - SIZE) / 2.0,
+            pos.y + (size.height - SIZE) / 2.0,
+        );
+    }
+    builder.build()?;
+    Ok(())
+}
+
 pub fn show_about(app: &AppHandle) {
     let package = app.package_info();
     let message = format!(

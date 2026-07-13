@@ -1,4 +1,4 @@
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIconBuilder;
 use tauri::AppHandle;
 
@@ -23,29 +23,27 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
         true,
         Some(shortcuts::ACCEL_FULLSCREEN),
     )?;
+    let timer_3 = MenuItem::with_id(app, "timer_3", "3 seconds", true, None::<&str>)?;
+    let timer_5 = MenuItem::with_id(app, "timer_5", "5 seconds", true, None::<&str>)?;
+    let timer_10 = MenuItem::with_id(app, "timer_10", "10 seconds", true, None::<&str>)?;
+    let self_timer = Submenu::with_items(app, "Self-Timer", true, &[&timer_3, &timer_5, &timer_10])?;
     let history = MenuItem::with_id(app, "history", "Capture History…", true, None::<&str>)?;
     let about = MenuItem::with_id(app, "about", "About Screen for me…", true, None::<&str>)?;
     let updates = MenuItem::with_id(app, "updates", "Check for Updates…", true, None::<&str>)?;
     let settings = MenuItem::with_id(app, "settings", "Settings…", true, Some("CmdOrCtrl+,"))?;
     let quit = MenuItem::with_id(app, "quit", "Quit Screen for me", true, Some("CmdOrCtrl+Q"))?;
 
-    let sep = || PredefinedMenuItem::separator(app);
-    let menu = Menu::with_items(
-        app,
-        &[
-            &area,
-            &window,
-            &fullscreen,
-            &sep()?,
-            &history,
-            &sep()?,
-            &about,
-            &updates,
-            &sep()?,
-            &settings,
-            &quit,
-        ],
-    )?;
+    let sep1 = PredefinedMenuItem::separator(app)?;
+    let sep2 = PredefinedMenuItem::separator(app)?;
+    let sep3 = PredefinedMenuItem::separator(app)?;
+    let sep4 = PredefinedMenuItem::separator(app)?;
+    let mut items: Vec<&dyn tauri::menu::IsMenuItem<tauri::Wry>> =
+        vec![&area, &window, &fullscreen, &sep1];
+    items.push(&self_timer);
+    items.extend_from_slice(&[
+        &sep2, &history, &sep3, &about, &updates, &sep4, &settings, &quit,
+    ]);
+    let menu = Menu::with_items(app, &items)?;
 
     TrayIconBuilder::with_id("main")
         .icon(app.default_window_icon().expect("bundle has an icon").clone())
@@ -56,6 +54,9 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
             "capture_area" => trigger_capture(app, CaptureMode::Area),
             "capture_window" => trigger_capture(app, CaptureMode::Window),
             "capture_fullscreen" => trigger_capture(app, CaptureMode::Fullscreen),
+            "timer_3" => crate::commands::start_timed_capture(app, 3),
+            "timer_5" => crate::commands::start_timed_capture(app, 5),
+            "timer_10" => crate::commands::start_timed_capture(app, 10),
             "history" => {
                 if let Err(err) = windows::open_history(app.clone()) {
                     eprintln!("failed to open history: {err}");
