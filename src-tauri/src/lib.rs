@@ -33,6 +33,7 @@ pub fn run() {
                 editor_prefs: EditorPrefsStore::load(data_dir.join("editor_prefs.json")),
                 editor_target: std::sync::Mutex::new(None),
                 timer_seconds: std::sync::Mutex::new(5),
+                last_capture_mode: std::sync::Mutex::new(crate::capture::CaptureMode::Fullscreen),
                 scroll_stop: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
                 scroll_running: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
             });

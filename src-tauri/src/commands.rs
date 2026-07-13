@@ -15,6 +15,9 @@ pub struct AppState {
     pub editor_target: std::sync::Mutex<Option<String>>,
     /// Seconds for the pending self-timer; the timer window pulls this on load.
     pub timer_seconds: std::sync::Mutex<u32>,
+    /// Mode of the most recent user-triggered capture; the self-timer fires
+    /// this mode. Defaults to Fullscreen until a capture is taken.
+    pub last_capture_mode: std::sync::Mutex<CaptureMode>,
     /// Set by `stop_scrolling_capture` to end the scroll loop early.
     pub scroll_stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
     /// True while a scrolling capture run is in flight; guards against a
@@ -25,6 +28,7 @@ pub struct AppState {
 /// Entry point shared by tray items, global shortcuts, and the IPC command.
 /// Runs the (blocking, possibly interactive) capture off the main thread.
 pub fn trigger_capture(app: &AppHandle, mode: CaptureMode) {
+    *app.state::<AppState>().last_capture_mode.lock().unwrap() = mode;
     let app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         if let Err(err) = capture_and_publish(&app, mode) {
@@ -345,9 +349,10 @@ pub fn timed_capture_fire(app: AppHandle) {
     if let Some(window) = app.get_webview_window("timer") {
         let _ = window.destroy();
     }
+    let mode = *app.state::<AppState>().last_capture_mode.lock().unwrap();
     tauri::async_runtime::spawn_blocking(move || {
         std::thread::sleep(std::time::Duration::from_millis(150));
-        if let Err(err) = capture_and_publish(&app, CaptureMode::Fullscreen) {
+        if let Err(err) = capture_and_publish(&app, mode) {
             eprintln!("timed capture failed: {err}");
             let _ = app.emit("capture:error", err.to_string());
         }
