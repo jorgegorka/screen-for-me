@@ -13,6 +13,7 @@ export default defineConfig(async () => ({
         editor: "editor.html",
         history: "history.html",
         timer: "timer.html",
+        scrollcap: "scrollcap.html",
       },
     },
   },

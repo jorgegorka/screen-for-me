@@ -1,0 +1,84 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair;
+  background: rgba(0, 0, 0, 0.12);
+  font: 13px -apple-system, system-ui, sans-serif;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.hint {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(24, 24, 26, 0.85);
+  color: rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+}
+
+.selection {
+  position: fixed;
+  border: 1px solid #4a9eff;
+  /* Punches a "hole": everything outside the rect gets the extra dim. */
+  box-shadow: 0 0 0 100000px rgba(0, 0, 0, 0.25);
+}
+
+.hud,
+.pill {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(24, 24, 26, 0.92);
+  color: #fff;
+  cursor: default;
+}
+
+.directions {
+  display: flex;
+  gap: 4px;
+}
+
+.hud button,
+.pill button {
+  font: inherit;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.directions button.active {
+  background: #4a9eff;
+}
+
+button.primary {
+  background: #4a9eff;
+}
+
+/* Pill mode: Rust has shrunk the window to just the pill. */
+body.running {
+  background: transparent;
+  cursor: default;
+}
+
+body.running .pill {
+  display: flex !important;
+  inset: 0;
+  border-radius: 12px;
+  justify-content: space-between;
+}
