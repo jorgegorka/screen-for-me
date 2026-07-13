@@ -32,7 +32,7 @@ Capture flow: shortcut/tray → `commands::trigger_capture` (spawn_blocking) →
 - `src-tauri/src/commands.rs` — all IPC commands + overlay positioning + `ExportAction` (copy/save_to/overwrite) for editor exports (base64 PNG over IPC).
 - `src/overlay/` — quick-access panel (transparent, always-on-top window declared in `tauri.conf.json`); listens for `capture:new`; drag-out starts a native drag via `@crabnebula/tauri-plugin-drag` after a 5px move threshold.
 - `src/editor/` — Konva editor. Stage is kept in **image coordinates** with `stage.scale(fitScale)`; export uses `pixelRatio: 1/scale` for native resolution. Undo/redo is a snapshot stack (`history.ts`) over a whitelisted-attrs serialization (`shapes.ts` — new shape types must be added to `ATTRS` or they won't survive undo). Pixelate bakes a data-URL into the node attr so undo can rehydrate it. `geometry.ts`/`history.ts` are deliberately Konva-free for vitest.
-- Editor window is created on demand (`open_editor`) with `editor.html?id=<capture>`; reuse emits `editor:load`.
+- Editor window is created once by `open_editor`, then **hidden** (not destroyed) on Done / close and re-shown on later opens (`on_window_event` in lib.rs handles `main` + `editor`). The target capture is set in `AppState.editor_target`; the editor **pulls** it via the `editor_target` command on every (re)load, and also listens for `editor:load` for reuse while already open. This pull model avoids the earlier bug where reopening showed a blank canvas (an `editor:load` event racing a torn-down/not-yet-ready webview).
 
 ## Gotchas
 

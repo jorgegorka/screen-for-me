@@ -28,6 +28,7 @@ pub fn run() {
             app.manage(AppState {
                 history: History::new(data_dir.join("captures"))?,
                 settings: SettingsStore::load(data_dir.join("settings.json")),
+                editor_target: std::sync::Mutex::new(None),
             });
 
             tray::setup(app.handle())?;
@@ -43,6 +44,7 @@ pub fn run() {
             commands::reveal_capture,
             commands::open_editor,
             commands::get_capture,
+            commands::editor_target,
             commands::export_png,
             commands::get_settings,
             commands::set_settings,
@@ -50,8 +52,11 @@ pub fn run() {
         ])
         // The main window doubles as the Settings window: closing it hides it
         // so the tray can re-show it without recreating.
+        // The main (Settings) and editor windows hide instead of being
+        // destroyed, so the tray/overlay can re-show them and the editor's
+        // webview stays warm between annotations.
         .on_window_event(|window, event| {
-            if window.label() == "main" {
+            if matches!(window.label(), "main" | "editor") {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
                     let _ = window.hide();

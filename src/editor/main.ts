@@ -549,7 +549,7 @@ function buildToolbar() {
   };
   el<HTMLButtonElement>("done").onclick = async () => {
     await exportPng({ kind: "overwrite", id: captureId });
-    await getCurrentWindow().close();
+    await getCurrentWindow().hide();
   };
 }
 
@@ -595,11 +595,14 @@ window.addEventListener("DOMContentLoaded", async () => {
   bindKeyboard();
   setTool("select");
 
+  // Reload requests while the window is already open (reuse path).
   await listen<CaptureEntry>("editor:load", (event) => void loadCapture(event.payload));
 
-  const id = new URLSearchParams(location.search).get("id");
-  if (id) {
-    const entry = await invoke<CaptureEntry>("get_capture", { id });
-    await loadCapture(entry);
+  // On (re)load, always pull the current target from the backend rather than
+  // relying on an event that may have fired before this listener existed.
+  try {
+    await loadCapture(await invoke<CaptureEntry>("editor_target"));
+  } catch (err) {
+    console.error("failed to load capture for editor", err);
   }
 });

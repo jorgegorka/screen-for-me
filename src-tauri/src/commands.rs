@@ -8,6 +8,10 @@ use crate::settings::{OverlayPosition, Settings, SettingsStore};
 pub struct AppState {
     pub history: History,
     pub settings: SettingsStore,
+    /// Capture the editor window should be showing. The editor pulls this on
+    /// load, so opening never depends on an event landing before the page's
+    /// listener is ready.
+    pub editor_target: std::sync::Mutex<Option<String>>,
 }
 
 /// Entry point shared by tray items, global shortcuts, and the IPC command.
@@ -122,15 +126,20 @@ pub fn save_capture_to_desktop(
 #[tauri::command]
 pub fn open_editor(app: AppHandle, state: State<AppState>, id: String) -> Result<(), String> {
     let entry = resolve(&state.history, &id)?;
+    *state.editor_target.lock().unwrap() = Some(entry.id.clone());
     if let Some(editor) = app.get_webview_window("editor") {
+        // Window kept warm across sessions: its listener is live, so tell it
+        // to reload, then reveal it.
         editor.emit("editor:load", &entry).map_err(|e| e.to_string())?;
         editor.show().map_err(|e| e.to_string())?;
         editor.set_focus().map_err(|e| e.to_string())?;
     } else {
+        // First open (or after a hard close): the page pulls the target via
+        // `editor_target` once it has loaded.
         tauri::WebviewWindowBuilder::new(
             &app,
             "editor",
-            tauri::WebviewUrl::App(format!("editor.html?id={}", entry.id).into()),
+            tauri::WebviewUrl::App("editor.html".into()),
         )
         .title("Screen for me — Annotate")
         .inner_size(1200.0, 800.0)
@@ -139,6 +148,18 @@ pub fn open_editor(app: AppHandle, state: State<AppState>, id: String) -> Result
         .map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+/// The capture the editor should currently display (set by `open_editor`).
+#[tauri::command]
+pub fn editor_target(state: State<AppState>) -> Result<CaptureEntry, String> {
+    let id = state
+        .editor_target
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("no capture selected for the editor")?;
+    resolve(&state.history, &id)
 }
 
 #[tauri::command]

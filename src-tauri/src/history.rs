@@ -81,6 +81,12 @@ fn entry_from_path(path: PathBuf) -> Option<CaptureEntry> {
         .strip_suffix(".png")?
         .parse()
         .ok()?;
+    // Skip empty files: a crashed or cancelled capture can leave a 0-byte
+    // stub, which must never surface as a capture (broken thumbnail / blank
+    // editor).
+    if std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0) == 0 {
+        return None;
+    }
     Some(CaptureEntry {
         path,
         id: name,
@@ -114,6 +120,17 @@ mod tests {
             ids,
             ["capture-3000.png", "capture-2000.png", "capture-1000.png"]
         );
+        fs::remove_dir_all(h.dir()).unwrap();
+    }
+
+    #[test]
+    fn empty_files_are_skipped() {
+        let h = temp_history();
+        fs::write(h.dir().join("capture-1000.png"), b"a").unwrap();
+        fs::write(h.dir().join("capture-2000.png"), b"").unwrap();
+        let ids: Vec<_> = h.list().into_iter().map(|e| e.id).collect();
+        assert_eq!(ids, ["capture-1000.png"]);
+        assert!(h.resolve("capture-2000.png").is_none());
         fs::remove_dir_all(h.dir()).unwrap();
     }
 
