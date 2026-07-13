@@ -21,8 +21,8 @@ Glide, scroll further per step, and settle for less:
   that `post_scroll_smooth` calls per line.
 - Adaptive step size, new pure function in `scrolling.rs`:
   `step_lines(region_height_pt: f64) -> i32` =
-  `clamp(floor(region_height_pt * 0.6 / 10.0), 1, 8)` — up to 8 lines
-  (≈80 pt) per frame, never more than ~60% of the region height so
+  `clamp(floor(region_height_pt * 0.4 / 10.0), 1, 8)` — up to 8 lines
+  (≈80 pt) per frame, never more than ~40% of the region height so
   consecutive frames keep enough overlap for offset matching
   (`NOMINAL_POINTS_PER_LINE = 10.0` is the existing constant).
   `SCROLL_LINES` (5) is replaced by the computed value; the nominal
@@ -51,10 +51,15 @@ raise.
 
 ## Testing
 
-- Unit: `step_lines` — small region (100 pt → 6), tiny region (20 pt → 1),
-  large region (1000 pt → 8, the cap), plus exact 60% boundary
-  (133.4 pt → 8 → clamped 8; 50 pt → 3).
+- Unit: `step_lines` — small region (100 pt → 4), tiny region (20 pt → 1),
+  large region (1000 pt → 8, the cap), plus exact 40% boundary
+  (125 pt → 5; 50 pt → 2).
 - Existing stitch/scrolling tests unchanged.
 - Gates: `cargo test`, `npm run build`, `npm test`.
 - Manual: capture the same form page — motion glides, capture completes
   noticeably faster, seams stay clean.
+
+*Amended 2026-07-13:* The fraction was lowered from 0.6 to 0.4 because the
+textured-strip matcher (`stitch::most_textured_strip`) may pick a strip at
+h/2, leaving a worst-case search window of h/2 − 32 px; the step must stay
+inside it to remain detectable.

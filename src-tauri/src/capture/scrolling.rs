@@ -25,11 +25,13 @@ const MAX_COMPOSITE_PX: u32 = 20_000;
 /// One wheel line scrolls ≈ 10 points; used for step sizing and the nominal
 /// fallback offset when correlation fails.
 const NOMINAL_POINTS_PER_LINE: f64 = 10.0;
-/// Per-step cap (≈80 points) and the fraction of the region's scroll-axis
-/// extent one step may cover — consecutive frames must keep enough overlap
-/// for offset matching.
+/// Per-step scroll cap: 8 lines ≈ 80 points.
 const MAX_STEP_LINES: i32 = 8;
-const STEP_EXTENT_FRACTION: f64 = 0.6;
+/// Fraction of the region's scroll-axis extent one step may cover. Must stay
+/// below 0.5: `stitch::most_textured_strip` may pick a strip starting at h/2,
+/// leaving only `h/2 - STRIP_ROWS` of search range for the offset — a step
+/// larger than that window becomes undetectable and falls back to nominal.
+const STEP_EXTENT_FRACTION: f64 = 0.4;
 const SETTLE: Duration = Duration::from_millis(200);
 
 /// Lines to scroll per frame for a region extending `axis_points` along the
@@ -155,10 +157,10 @@ mod tests {
 
     #[test]
     fn step_lines_scales_and_clamps() {
-        assert_eq!(step_lines(100.0), 6); // 60% of 100 pt / 10 pt-per-line
-        assert_eq!(step_lines(50.0), 3);
-        assert_eq!(step_lines(20.0), 1); // floor(1.2)
-        assert_eq!(step_lines(5.0), 1); // floor(0.3) clamped up to 1
+        assert_eq!(step_lines(100.0), 4); // 40% of 100 pt / 10 pt-per-line
+        assert_eq!(step_lines(50.0), 2);
+        assert_eq!(step_lines(20.0), 1); // floor(0.8) clamped up
+        assert_eq!(step_lines(5.0), 1); // floor(0.2) clamped up to 1
         assert_eq!(step_lines(1000.0), 8); // cap
     }
 }
