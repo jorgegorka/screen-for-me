@@ -22,10 +22,21 @@ pub struct ScrollRegion {
 
 const MAX_FRAMES: u32 = 40;
 const MAX_COMPOSITE_PX: u32 = 20_000;
-const SCROLL_LINES: i32 = 5;
-/// One wheel line scrolls ≈ 10 points; only used when correlation fails.
+/// One wheel line scrolls ≈ 10 points; used for step sizing and the nominal
+/// fallback offset when correlation fails.
 const NOMINAL_POINTS_PER_LINE: f64 = 10.0;
-const SETTLE: Duration = Duration::from_millis(350);
+/// Per-step cap (≈80 points) and the fraction of the region's scroll-axis
+/// extent one step may cover — consecutive frames must keep enough overlap
+/// for offset matching.
+const MAX_STEP_LINES: i32 = 8;
+const STEP_EXTENT_FRACTION: f64 = 0.6;
+const SETTLE: Duration = Duration::from_millis(200);
+
+/// Lines to scroll per frame for a region extending `axis_points` along the
+/// scroll axis.
+pub(crate) fn step_lines(axis_points: f64) -> i32 {
+    ((axis_points * STEP_EXTENT_FRACTION / NOMINAL_POINTS_PER_LINE) as i32).clamp(1, MAX_STEP_LINES)
+}
 
 /// Run the loop and return the stitched image (already de-normalized).
 /// A grab/scroll failure after ≥2 stitched frames returns the partial result —
@@ -58,7 +69,8 @@ pub fn run(
         ScrollDirection::Up | ScrollDirection::Down => (region.height, first.height()),
         ScrollDirection::Left | ScrollDirection::Right => (region.width, first.width()),
     };
-    let nominal_px = ((SCROLL_LINES as f64 * NOMINAL_POINTS_PER_LINE) * axis_px as f64
+    let lines = step_lines(axis_points);
+    let nominal_px = ((lines as f64 * NOMINAL_POINTS_PER_LINE) * axis_px as f64
         / axis_points.max(1.0))
     .round() as u32;
 
@@ -71,7 +83,7 @@ pub fn run(
         && composite.height() < MAX_COMPOSITE_PX
         && !stop.load(Ordering::Relaxed)
     {
-        let step = scroll_input::post_scroll(direction, SCROLL_LINES)
+        let step = scroll_input::post_scroll_smooth(direction, lines)
             .map_err(CaptureError::Tool)
             .and_then(|()| {
                 std::thread::sleep(SETTLE);
@@ -135,4 +147,18 @@ fn grab(region: &ScrollRegion, dest: &Path) -> Result<RgbaImage, CaptureError> {
     image::open(dest)
         .map(|img| img.to_rgba8())
         .map_err(|err| CaptureError::Tool(format!("could not decode frame: {err}")))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::step_lines;
+
+    #[test]
+    fn step_lines_scales_and_clamps() {
+        assert_eq!(step_lines(100.0), 6); // 60% of 100 pt / 10 pt-per-line
+        assert_eq!(step_lines(50.0), 3);
+        assert_eq!(step_lines(20.0), 1); // floor(1.2)
+        assert_eq!(step_lines(5.0), 1); // floor(0.3) clamped up to 1
+        assert_eq!(step_lines(1000.0), 8); // cap
+    }
 }

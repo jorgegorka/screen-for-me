@@ -57,3 +57,19 @@ pub fn post_scroll(direction: ScrollDirection, lines: i32) -> Result<(), String>
     event.post(CGEventTapLocation::HID);
     Ok(())
 }
+
+/// Gap between the 1-line events of a smooth scroll step.
+const GLIDE_STEP_GAP: std::time::Duration = std::time::Duration::from_millis(25);
+
+/// One capture step as a glide: `lines` individual 1-line events spaced
+/// `GLIDE_STEP_GAP` apart, so the page rolls between grabs instead of
+/// teleporting. LINE units, like `post_scroll` — no trackpad inertia.
+pub fn post_scroll_smooth(direction: ScrollDirection, lines: i32) -> Result<(), String> {
+    for i in 0..lines.max(1) {
+        if i > 0 {
+            std::thread::sleep(GLIDE_STEP_GAP);
+        }
+        post_scroll(direction, 1)?;
+    }
+    Ok(())
+}
