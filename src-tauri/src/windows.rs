@@ -74,6 +74,38 @@ pub fn open_timer(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
+/// Transient full-screen selection window for scrolling capture, covering the
+/// active monitor. Destroyed when the run finishes or is cancelled.
+pub fn open_scrollcap(app: &AppHandle) -> tauri::Result<()> {
+    if let Some(existing) = app.get_webview_window("scrollcap") {
+        let _ = existing.destroy();
+    }
+    let mut builder = tauri::WebviewWindowBuilder::new(
+        app,
+        "scrollcap",
+        tauri::WebviewUrl::App("scrollcap.html".into()),
+    )
+    .title("Scrolling Capture")
+    .decorations(false)
+    .transparent(true)
+    .shadow(false)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .resizable(false)
+    .accept_first_mouse(true)
+    .focused(true);
+    if let Some(monitor) = crate::commands::active_monitor(app) {
+        let scale = monitor.scale_factor();
+        let pos = monitor.position().to_logical::<f64>(scale);
+        let size = monitor.size().to_logical::<f64>(scale);
+        builder = builder
+            .position(pos.x, pos.y)
+            .inner_size(size.width, size.height);
+    }
+    builder.build()?;
+    Ok(())
+}
+
 pub fn show_about(app: &AppHandle) {
     let package = app.package_info();
     let message = format!(

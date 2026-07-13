@@ -60,6 +60,8 @@ pub fn run() {
             windows::open_history,
             commands::timer_duration,
             commands::timed_capture_fire,
+            commands::run_scrolling_capture,
+            commands::stop_scrolling_capture,
         ])
         // The main window doubles as the Settings window: closing it hides it
         // so the tray can re-show it without recreating.

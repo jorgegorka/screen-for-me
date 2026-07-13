@@ -8,6 +8,8 @@ mod macos;
 pub mod stitch;
 #[cfg(target_os = "macos")]
 pub mod scroll_input;
+#[cfg(target_os = "macos")]
+pub mod scrolling;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]

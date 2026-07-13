@@ -41,18 +41,24 @@ fn capture_and_publish(app: &AppHandle, mode: CaptureMode) -> Result<(), Capture
     match capture::capture(mode, &dest)? {
         CaptureOutcome::Cancelled => Ok(()),
         CaptureOutcome::Captured(path) => {
-            state.history.prune();
-            let id = path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or_default()
-                .to_string();
-            if let Some(entry) = state.history.resolve(&id) {
-                let _ = app.emit("capture:new", &entry);
-                show_overlay(app);
-            }
+            publish_capture(app, &path);
             Ok(())
         }
+    }
+}
+
+/// Prune history and announce a freshly written capture file.
+fn publish_capture(app: &AppHandle, path: &std::path::Path) {
+    let state = app.state::<AppState>();
+    state.history.prune();
+    let id = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or_default()
+        .to_string();
+    if let Some(entry) = state.history.resolve(&id) {
+        let _ = app.emit("capture:new", &entry);
+        show_overlay(app);
     }
 }
 
@@ -343,6 +349,152 @@ pub fn timed_capture_fire(app: AppHandle) {
             let _ = app.emit("capture:error", err.to_string());
         }
     });
+}
+
+/// Selection rect in scrollcap-window-local logical pixels (CSS px).
+#[derive(serde::Deserialize, Clone, Copy)]
+pub struct SelectionRect {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+#[tauri::command]
+pub fn run_scrolling_capture(
+    app: AppHandle,
+    rect: SelectionRect,
+    direction: String,
+) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    return run_scrolling_capture_macos(app, rect, direction);
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (app, rect, direction);
+        Err("scrolling capture is only available on macOS".into())
+    }
+}
+
+#[tauri::command]
+pub fn stop_scrolling_capture(state: State<AppState>) {
+    state
+        .scroll_stop
+        .store(true, std::sync::atomic::Ordering::Relaxed);
+}
+
+#[cfg(target_os = "macos")]
+fn run_scrolling_capture_macos(
+    app: AppHandle,
+    rect: SelectionRect,
+    direction: String,
+) -> Result<(), String> {
+    use crate::capture::scrolling::{self, ScrollRegion};
+    use crate::capture::stitch::ScrollDirection;
+    use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+
+    let direction = match direction.as_str() {
+        "up" => ScrollDirection::Up,
+        "down" => ScrollDirection::Down,
+        "left" => ScrollDirection::Left,
+        "right" => ScrollDirection::Right,
+        other => return Err(format!("unknown scroll direction: {other}")),
+    };
+    let window = app
+        .get_webview_window("scrollcap")
+        .ok_or("scrollcap window is not open")?;
+
+    // Window-local logical rect → global points. The window covers the whole
+    // monitor, so window origin + local point = global point, in the same
+    // logical space screencapture -R and CGDisplayBounds use.
+    let scale = window.scale_factor().map_err(|e| e.to_string())?;
+    let origin = window
+        .outer_position()
+        .map_err(|e| e.to_string())?
+        .to_logical::<f64>(scale);
+    let region = ScrollRegion {
+        x: origin.x + rect.x,
+        y: origin.y + rect.y,
+        width: rect.width,
+        height: rect.height,
+    };
+
+    if !crate::capture::scroll_input::ensure_accessibility() {
+        let _ = window.destroy();
+        app.dialog()
+            .message(
+                "Scrolling Capture needs Accessibility access to scroll the page for you.\n\n\
+                 Enable \"Screen for me\" in System Settings → Privacy & Security → \
+                 Accessibility, then try again.",
+            )
+            .title("Accessibility Permission Needed")
+            .kind(MessageDialogKind::Warning)
+            .show(|_| {});
+        return Ok(());
+    }
+
+    // The overlay must not appear in frames either.
+    if let Some(overlay) = app.get_webview_window("overlay") {
+        let _ = overlay.hide();
+    }
+
+    // Shrink the selection window to a Stop pill parked outside the rect so it
+    // never appears in a frame. (If the rect spans the whole monitor there is
+    // no outside; the pill may then overlap — accepted v1 limitation.)
+    const PILL_W: f64 = 220.0;
+    const PILL_H: f64 = 56.0;
+    const GAP: f64 = 12.0;
+    let monitor_bottom = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .map(|m| {
+            let s = m.scale_factor();
+            m.position().to_logical::<f64>(s).y + m.size().to_logical::<f64>(s).height
+        })
+        .unwrap_or(f64::MAX);
+    let below = region.y + region.height + GAP;
+    let pill_y = if below + PILL_H <= monitor_bottom {
+        below
+    } else {
+        (region.y - PILL_H - GAP).max(0.0)
+    };
+    let _ = window.set_size(tauri::LogicalSize::new(PILL_W, PILL_H));
+    let _ = window.set_position(tauri::LogicalPosition::new(region.x, pill_y));
+    let _ = app.emit_to("scrollcap", "scroll:running", ());
+
+    let state = app.state::<AppState>();
+    state
+        .scroll_stop
+        .store(false, std::sync::atomic::Ordering::Relaxed);
+    let stop = state.scroll_stop.clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = (|| -> Result<(), CaptureError> {
+            let work_dir = app
+                .path()
+                .app_data_dir()
+                .map_err(|e| CaptureError::Tool(e.to_string()))?
+                .join("scroll-tmp");
+            let image = scrolling::run(&region, direction, &stop, &work_dir, |frames| {
+                let _ = app.emit_to("scrollcap", "scroll:progress", frames);
+            })?;
+            let state = app.state::<AppState>();
+            let dest = state.history.new_capture_path();
+            image
+                .save(&dest)
+                .map_err(|e| CaptureError::Tool(format!("could not save composite: {e}")))?;
+            publish_capture(&app, &dest);
+            Ok(())
+        })();
+        if let Some(window) = app.get_webview_window("scrollcap") {
+            let _ = window.destroy();
+        }
+        if let Err(err) = result {
+            eprintln!("scrolling capture failed: {err}");
+            let _ = app.emit("capture:error", err.to_string());
+        }
+    });
+    Ok(())
 }
 
 fn resolve(history: &History, id: &str) -> Result<CaptureEntry, String> {

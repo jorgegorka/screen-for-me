@@ -23,6 +23,8 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
         true,
         Some(shortcuts::ACCEL_FULLSCREEN),
     )?;
+    #[cfg(target_os = "macos")]
+    let scrolling = MenuItem::with_id(app, "capture_scrolling", "Scrolling Capture", true, None::<&str>)?;
     let timer_3 = MenuItem::with_id(app, "timer_3", "3 seconds", true, None::<&str>)?;
     let timer_5 = MenuItem::with_id(app, "timer_5", "5 seconds", true, None::<&str>)?;
     let timer_10 = MenuItem::with_id(app, "timer_10", "10 seconds", true, None::<&str>)?;
@@ -39,6 +41,8 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
     let sep4 = PredefinedMenuItem::separator(app)?;
     let mut items: Vec<&dyn tauri::menu::IsMenuItem<tauri::Wry>> =
         vec![&area, &window, &fullscreen, &sep1];
+    #[cfg(target_os = "macos")]
+    items.push(&scrolling);
     items.push(&self_timer);
     items.extend_from_slice(&[
         &sep2, &history, &sep3, &about, &updates, &sep4, &settings, &quit,
@@ -54,6 +58,11 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
             "capture_area" => trigger_capture(app, CaptureMode::Area),
             "capture_window" => trigger_capture(app, CaptureMode::Window),
             "capture_fullscreen" => trigger_capture(app, CaptureMode::Fullscreen),
+            "capture_scrolling" => {
+                if let Err(err) = windows::open_scrollcap(app) {
+                    eprintln!("failed to open scrolling capture: {err}");
+                }
+            }
             "timer_3" => crate::commands::start_timed_capture(app, 3),
             "timer_5" => crate::commands::start_timed_capture(app, 5),
             "timer_10" => crate::commands::start_timed_capture(app, 10),
