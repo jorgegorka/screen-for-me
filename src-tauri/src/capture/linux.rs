@@ -1,11 +1,36 @@
 use std::path::Path;
 
-use super::{CaptureError, CaptureMode, CaptureOutcome};
+use ashpd::desktop::screenshot::Screenshot;
+use ashpd::WindowIdentifier;
 
-/// Linux capture lands in Phase 4 via the xdg-desktop-portal Screenshot API
-/// (`ashpd`), which works on both X11 and Wayland.
-pub fn capture(_mode: CaptureMode, _dest: &Path) -> Result<CaptureOutcome, CaptureError> {
-    Err(CaptureError::Tool(
-        "Linux capture is not implemented yet (coming via xdg-desktop-portal)".into(),
-    ))
+use super::{validate_output, CaptureError, CaptureMode, CaptureOutcome};
+
+/// Capture via the xdg-desktop-portal Screenshot API (X11 and Wayland).
+/// The portal owns the selection UI, so area and window modes both go through
+/// its interactive flow; fullscreen skips it.
+pub fn capture(mode: CaptureMode, dest: &Path) -> Result<CaptureOutcome, CaptureError> {
+    let interactive = !matches!(mode, CaptureMode::Fullscreen);
+    let response = tauri::async_runtime::block_on(async move {
+        Screenshot::request()
+            .identifier(WindowIdentifier::default())
+            .interactive(interactive)
+            .modal(true)
+            .send()
+            .await?
+            .response()
+    });
+    let screenshot = match response {
+        Ok(screenshot) => screenshot,
+        Err(ashpd::Error::Response(ashpd::desktop::ResponseError::Cancelled)) => {
+            return Ok(CaptureOutcome::Cancelled);
+        }
+        Err(err) => return Err(CaptureError::Tool(err.to_string())),
+    };
+    let source = screenshot
+        .uri()
+        .to_file_path()
+        .map_err(|_| CaptureError::Tool(format!("portal returned non-file URI: {}", screenshot.uri())))?;
+    std::fs::copy(&source, dest)?;
+    let _ = std::fs::remove_file(&source);
+    validate_output(dest)
 }

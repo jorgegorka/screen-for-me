@@ -2,6 +2,7 @@ import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { save } from "@tauri-apps/plugin-dialog";
+import { startDrag } from "@crabnebula/tauri-plugin-drag";
 
 interface CaptureEntry {
   path: string;
@@ -76,6 +77,26 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   el<HTMLButtonElement>("dismiss").onclick = () => void appWindow.hide();
+
+  // Drag the capture out to other apps: native drag starts once the pointer
+  // moves a few pixels with the button held on the thumbnail.
+  const thumb = el<HTMLImageElement>("thumb");
+  thumb.addEventListener("mousedown", (down) => {
+    if (!current) return;
+    const entry = current;
+    const cancel = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", cancel);
+    };
+    const onMove = (move: MouseEvent) => {
+      if (Math.hypot(move.clientX - down.clientX, move.clientY - down.clientY) < 5) return;
+      cancel();
+      void startDrag({ item: [entry.path], icon: entry.path });
+      armAutoHide();
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", cancel);
+  });
 
   el<HTMLButtonElement>("copy").onclick = () =>
     run(() => invoke("copy_capture", { id: current!.id }), "Copied");
