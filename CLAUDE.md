@@ -36,6 +36,8 @@ Capture flow: shortcut/tray → `commands::trigger_capture` (spawn_blocking) →
 
 ## Gotchas
 
+- **Stale installed app vs dev build**: `npm run tauri build` installs nothing, but if a `.app` was copied to `/Applications`, launching it runs that *frozen* binary — its tray menu reflects whenever it was packaged, not the current source. Two instances (installed + `npm run tauri dev`) also both register the global shortcuts and both show a tray icon. When the menu looks out of date, check `pgrep -fl screenforme` for an `/Applications/Screen for me.app` process and rebuild/reinstall the bundle.
+
 - **macOS Screen Recording permission**: without it, `screencapture` can exit 0 and write a wallpaper-only image. In dev, the TCC grant attaches to the *terminal* running the app; the packaged .app prompts once itself.
 - Transparent overlay window requires `macOSPrivateApi: true` (tauri.conf.json) + the `macos-private-api` cargo feature.
 - Capability file `src-tauri/capabilities/default.json` must list every window label (`main`, `overlay`, `editor`, `history`) — a new window with JS API calls needs its label added there.
