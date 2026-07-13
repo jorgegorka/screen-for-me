@@ -17,6 +17,9 @@ pub struct AppState {
     pub timer_seconds: std::sync::Mutex<u32>,
     /// Set by `stop_scrolling_capture` to end the scroll loop early.
     pub scroll_stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    /// True while a scrolling capture run is in flight; guards against a
+    /// second run racing the pill window, stop flag, and tmp frame file.
+    pub scroll_running: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
 /// Entry point shared by tray items, global shortcuts, and the IPC command.
@@ -418,7 +421,23 @@ fn run_scrolling_capture_macos(
         height: rect.height,
     };
 
+    // Single-flight guard: a second run would destroy the live pill window,
+    // race the shared stop flag, and interleave writes to the tmp frame file.
+    let running = app.state::<AppState>().scroll_running.clone();
+    if running
+        .compare_exchange(
+            false,
+            true,
+            std::sync::atomic::Ordering::SeqCst,
+            std::sync::atomic::Ordering::SeqCst,
+        )
+        .is_err()
+    {
+        return Err("a scrolling capture is already running".into());
+    }
+
     if !crate::capture::scroll_input::ensure_accessibility() {
+        running.store(false, std::sync::atomic::Ordering::SeqCst);
         let _ = window.destroy();
         app.dialog()
             .message(
@@ -443,23 +462,27 @@ fn run_scrolling_capture_macos(
     const PILL_W: f64 = 220.0;
     const PILL_H: f64 = 56.0;
     const GAP: f64 = 12.0;
-    let monitor_bottom = window
+    let (mon_left, mon_right, monitor_bottom) = window
         .current_monitor()
         .ok()
         .flatten()
         .map(|m| {
             let s = m.scale_factor();
-            m.position().to_logical::<f64>(s).y + m.size().to_logical::<f64>(s).height
+            let pos = m.position().to_logical::<f64>(s);
+            let size = m.size().to_logical::<f64>(s);
+            (pos.x, pos.x + size.width, pos.y + size.height)
         })
-        .unwrap_or(f64::MAX);
+        .unwrap_or((f64::MIN, f64::MAX, f64::MAX));
     let below = region.y + region.height + GAP;
     let pill_y = if below + PILL_H <= monitor_bottom {
         below
     } else {
         (region.y - PILL_H - GAP).max(0.0)
     };
+    // Keep the pill on-screen even when the selection hugs the right edge.
+    let pill_x = region.x.min(mon_right - PILL_W).max(mon_left);
     let _ = window.set_size(tauri::LogicalSize::new(PILL_W, PILL_H));
-    let _ = window.set_position(tauri::LogicalPosition::new(region.x, pill_y));
+    let _ = window.set_position(tauri::LogicalPosition::new(pill_x, pill_y));
     let _ = app.emit_to("scrollcap", "scroll:running", ());
 
     let state = app.state::<AppState>();
@@ -493,6 +516,7 @@ fn run_scrolling_capture_macos(
             eprintln!("scrolling capture failed: {err}");
             let _ = app.emit("capture:error", err.to_string());
         }
+        running.store(false, std::sync::atomic::Ordering::SeqCst);
     });
     Ok(())
 }

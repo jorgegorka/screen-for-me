@@ -47,7 +47,10 @@ pub fn run(
     // Let the warp land and the shrunken HUD window settle before frame one.
     std::thread::sleep(Duration::from_millis(200));
 
-    let first = grab(region, &frame_path)?;
+    let first = grab(region, &frame_path).map_err(|err| {
+        let _ = std::fs::remove_file(&frame_path);
+        err
+    })?;
     // Fallback offset when correlation can't find one: the nominal scroll
     // distance converted from points to frame pixels along the scroll axis.
     let (axis_points, axis_px) = match direction {
@@ -80,7 +83,10 @@ pub fn run(
                 eprintln!("scrolling capture step failed, keeping partial result: {err}");
                 break;
             }
-            Err(err) => return Err(err),
+            Err(err) => {
+                let _ = std::fs::remove_file(&frame_path);
+                return Err(err);
+            }
         };
         let frame_n = stitch::normalize(&frame, direction);
         let offset = match stitch::find_scroll_offset(&prev_n, &frame_n) {
@@ -104,9 +110,13 @@ pub fn run(
 /// Silent region grab. Unlike interactive modes, -R always writes a file on
 /// success, so a missing/broken file is an error, not a cancel.
 fn grab(region: &ScrollRegion, dest: &Path) -> Result<RgbaImage, CaptureError> {
+    // screencapture -R wants integer values; pass the rect rounded.
     let rect = format!(
         "{},{},{},{}",
-        region.x, region.y, region.width, region.height
+        region.x.round() as i64,
+        region.y.round() as i64,
+        region.width.round() as i64,
+        region.height.round() as i64
     );
     let output = Command::new("/usr/sbin/screencapture")
         .args(["-x", "-t", "png", "-R", &rect])

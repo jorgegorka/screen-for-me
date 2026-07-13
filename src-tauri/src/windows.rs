@@ -77,6 +77,15 @@ pub fn open_timer(app: &AppHandle) -> tauri::Result<()> {
 /// Transient full-screen selection window for scrolling capture, covering the
 /// active monitor. Destroyed when the run finishes or is cancelled.
 pub fn open_scrollcap(app: &AppHandle) -> tauri::Result<()> {
+    // A run in flight owns the scrollcap window (as the Stop pill); ignore the
+    // tray click rather than destroying it out from under the run.
+    let state = app.state::<crate::commands::AppState>();
+    if state
+        .scroll_running
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        return Ok(());
+    }
     if let Some(existing) = app.get_webview_window("scrollcap") {
         let _ = existing.destroy();
     }

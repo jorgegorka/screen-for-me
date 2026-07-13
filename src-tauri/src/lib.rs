@@ -34,6 +34,7 @@ pub fn run() {
                 editor_target: std::sync::Mutex::new(None),
                 timer_seconds: std::sync::Mutex::new(5),
                 scroll_stop: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+                scroll_running: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
             });
 
             tray::setup(app.handle())?;
