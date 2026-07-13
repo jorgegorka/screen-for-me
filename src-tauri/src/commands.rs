@@ -462,8 +462,9 @@ fn run_scrolling_capture_macos(
     }
 
     // Shrink the selection window to a Stop pill parked outside the rect so it
-    // never appears in a frame. (If the rect spans the whole monitor there is
-    // no outside; the pill may then overlap — accepted v1 limitation.)
+    // doesn't visually cover the content being scrolled. The window is
+    // content-protected (windows.rs), so even when a tall selection forces an
+    // overlap the pill never appears in the grabbed frames.
     const PILL_W: f64 = 220.0;
     const PILL_H: f64 = 56.0;
     const GAP: f64 = 12.0;
