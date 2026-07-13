@@ -1,7 +1,7 @@
 //! Synthetic scroll-wheel input and the Accessibility permission it needs.
 //! Untestable side effects live here so the stitch module can stay pure.
 
-use core_foundation::base::TCFType;
+use core_foundation::base::{Boolean, TCFType};
 use core_foundation::boolean::CFBoolean;
 use core_foundation::dictionary::{CFDictionary, CFDictionaryRef};
 use core_foundation::string::CFString;
@@ -14,7 +14,10 @@ use super::stitch::ScrollDirection;
 
 #[link(name = "ApplicationServices", kind = "framework")]
 extern "C" {
-    fn AXIsProcessTrustedWithOptions(options: CFDictionaryRef) -> bool;
+    // Apple declares this as returning `Boolean` (unsigned char, nonzero =
+    // true); reading it through Rust `bool` would be UB for values other
+    // than 0/1, so take the raw byte and compare.
+    fn AXIsProcessTrustedWithOptions(options: CFDictionaryRef) -> Boolean;
 }
 
 /// True when the app may post synthetic events. Passing the prompt option
@@ -23,7 +26,7 @@ pub fn ensure_accessibility() -> bool {
     let key = CFString::from_static_string("AXTrustedCheckOptionPrompt");
     let options =
         CFDictionary::from_CFType_pairs(&[(key.as_CFType(), CFBoolean::true_value().as_CFType())]);
-    unsafe { AXIsProcessTrustedWithOptions(options.as_concrete_TypeRef()) }
+    unsafe { AXIsProcessTrustedWithOptions(options.as_concrete_TypeRef()) != 0 }
 }
 
 /// Move the pointer so scroll events route to the window under the rect
