@@ -1,5 +1,5 @@
 import Konva from "konva";
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { save } from "@tauri-apps/plugin-dialog";
@@ -103,9 +103,14 @@ async function loadCapture(entry: CaptureEntry) {
   captureId = entry.id;
   crop = null;
   cancelCrop();
+  // Load from raw bytes as a same-origin blob URL — an asset:// image taints
+  // the canvas and breaks toDataURL() export.
+  const buffer = await invoke<ArrayBuffer>("read_capture_bytes", { id: entry.id });
+  const url = URL.createObjectURL(new Blob([buffer], { type: "image/png" }));
   sourceImage = new window.Image();
-  sourceImage.src = `${convertFileSrc(entry.path)}?t=${Date.now()}`;
+  sourceImage.src = url;
   await sourceImage.decode();
+  URL.revokeObjectURL(url);
   imageSize = { width: sourceImage.naturalWidth, height: sourceImage.naturalHeight };
   scale = fitScale(imageSize, viewportSize());
 
@@ -472,20 +477,44 @@ function deleteSelection() {
 // ---------------------------------------------------------------------------
 // Export
 
+const PNG_PREFIX = "data:image/png;base64,";
+
+/**
+ * Render the annotated image to base64 PNG at native resolution. WebKit returns
+ * an empty string (or throws) when the export canvas is too large — a full-res
+ * multi-display/Retina screenshot can exceed its limits — so retry at
+ * progressively lower resolution rather than emit empty data (which would
+ * otherwise overwrite the capture with nothing).
+ */
 function renderPng(): string {
   transformer.nodes([]);
   marquee?.hide();
   uiLayer.batchDraw();
-  const dataUrl = stage.toDataURL({
-    x: 0,
-    y: 0,
-    width: stage.width(),
-    height: stage.height(),
-    pixelRatio: 1 / scale,
-    mimeType: "image/png",
-  });
-  marquee?.show();
-  return dataUrl.replace(/^data:image\/png;base64,/, "");
+  try {
+    let pixelRatio = 1 / scale;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      let dataUrl = "";
+      try {
+        dataUrl = stage.toDataURL({
+          x: 0,
+          y: 0,
+          width: stage.width(),
+          height: stage.height(),
+          pixelRatio,
+          mimeType: "image/png",
+        });
+      } catch {
+        // oversized/tainted canvas — fall through and try a smaller one
+      }
+      if (dataUrl.startsWith(PNG_PREFIX) && dataUrl.length > PNG_PREFIX.length + 32) {
+        return dataUrl.slice(PNG_PREFIX.length);
+      }
+      pixelRatio /= 2;
+    }
+    throw new Error("Could not export the image.");
+  } finally {
+    marquee?.show();
+  }
 }
 
 async function exportPng(action: Record<string, unknown>) {
@@ -495,9 +524,41 @@ async function exportPng(action: Record<string, unknown>) {
 // ---------------------------------------------------------------------------
 // Wiring
 
+/** Persist the current tool/color/stroke so the next editor session restores them. */
+function savePrefs() {
+  void invoke("set_editor_prefs", {
+    prefs: { tool, color, stroke_width: strokeWidth },
+  }).catch(() => {});
+}
+
+/** Set the active color; optionally apply it to the current selection. */
+function selectColor(value: string, applyToSelection: boolean) {
+  color = value;
+  const colors = el<HTMLDivElement>("colors");
+  for (const other of colors.children) {
+    other.classList.toggle("active", (other as HTMLElement).title === value);
+  }
+  if (applyToSelection) {
+    for (const node of transformer.nodes()) {
+      if (node.name() === "text") node.setAttr("fill", value);
+      else {
+        node.setAttr("stroke", value);
+        if (node.name() === "arrow") node.setAttr("fill", value);
+      }
+    }
+    if (transformer.nodes().length > 0) {
+      annLayer.batchDraw();
+      commit();
+    }
+  }
+}
+
 function buildToolbar() {
   for (const button of document.querySelectorAll<HTMLButtonElement>("#tools button")) {
-    button.onclick = () => setTool(button.dataset.tool as Tool);
+    button.onclick = () => {
+      setTool(button.dataset.tool as Tool);
+      savePrefs();
+    };
   }
 
   const colors = el<HTMLDivElement>("colors");
@@ -507,27 +568,15 @@ function buildToolbar() {
     swatch.style.background = value;
     swatch.title = value;
     swatch.onclick = () => {
-      color = value;
-      for (const other of colors.children) other.classList.remove("active");
-      swatch.classList.add("active");
-      for (const node of transformer.nodes()) {
-        if (node.name() === "text") node.setAttr("fill", value);
-        else {
-          node.setAttr("stroke", value);
-          if (node.name() === "arrow") node.setAttr("fill", value);
-        }
-      }
-      if (transformer.nodes().length > 0) {
-        annLayer.batchDraw();
-        commit();
-      }
+      selectColor(value, true);
+      savePrefs();
     };
     colors.appendChild(swatch);
   }
-  (colors.children[3] as HTMLElement).click(); // default blue
 
   el<HTMLInputElement>("stroke-width").oninput = (event) => {
     strokeWidth = Number((event.target as HTMLInputElement).value);
+    savePrefs();
   };
 
   el<HTMLButtonElement>("undo").onclick = undo;
@@ -539,18 +588,37 @@ function buildToolbar() {
     applyView();
   };
 
-  el<HTMLButtonElement>("copy").onclick = () => void exportPng({ kind: "copy" });
-  el<HTMLButtonElement>("save").onclick = async () => {
-    const dest = await save({
-      defaultPath: `annotated-${captureId}`,
-      filters: [{ name: "PNG image", extensions: ["png"] }],
+  el<HTMLButtonElement>("copy").onclick = () =>
+    void guard(() => exportPng({ kind: "copy" }));
+  el<HTMLButtonElement>("save").onclick = () =>
+    void guard(async () => {
+      const dest = await save({
+        defaultPath: `annotated-${captureId}`,
+        filters: [{ name: "PNG image", extensions: ["png"] }],
+      });
+      if (dest) await exportPng({ kind: "save_to", dest });
     });
-    if (dest) await exportPng({ kind: "save_to", dest });
-  };
-  el<HTMLButtonElement>("done").onclick = async () => {
-    await exportPng({ kind: "overwrite", id: captureId });
-    await getCurrentWindow().hide();
-  };
+  el<HTMLButtonElement>("done").onclick = () =>
+    void guard(async () => {
+      await exportPng({ kind: "overwrite", id: captureId });
+      await getCurrentWindow().hide();
+    });
+}
+
+/** Run an editor action, surfacing any failure instead of silently dropping it. */
+async function guard(action: () => Promise<void>) {
+  try {
+    await action();
+  } catch (err) {
+    showError(String(err));
+  }
+}
+
+function showError(message: string) {
+  const bar = el<HTMLDivElement>("error-bar");
+  bar.textContent = message;
+  bar.classList.remove("hidden");
+  window.setTimeout(() => bar.classList.add("hidden"), 4000);
 }
 
 function bindKeyboard() {
@@ -585,15 +653,37 @@ function bindKeyboard() {
       c: "crop",
     };
     const next = shortcuts[event.key.toLowerCase()];
-    if (next && !primary) setTool(next);
+    if (next && !primary) {
+      setTool(next);
+      savePrefs();
+    }
   });
+}
+
+/** Restore the last-used tool/color/stroke from persisted preferences. */
+async function applyPrefs() {
+  const valid: Tool[] = [
+    "select", "arrow", "rect", "ellipse", "line",
+    "pen", "highlight", "text", "pixelate", "crop",
+  ];
+  try {
+    const prefs = await invoke<{ tool: string; color: string; stroke_width: number }>(
+      "get_editor_prefs",
+    );
+    selectColor(prefs.color, false);
+    strokeWidth = prefs.stroke_width;
+    el<HTMLInputElement>("stroke-width").value = String(prefs.stroke_width);
+    setTool((valid.includes(prefs.tool as Tool) ? prefs.tool : "select") as Tool);
+  } catch {
+    setTool("select");
+  }
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
   buildStage();
   buildToolbar();
   bindKeyboard();
-  setTool("select");
+  await applyPrefs();
 
   // Reload requests while the window is already open (reuse path).
   await listen<CaptureEntry>("editor:load", (event) => void loadCapture(event.payload));

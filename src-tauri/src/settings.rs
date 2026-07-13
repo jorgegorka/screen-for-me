@@ -52,6 +52,53 @@ impl Settings {
     }
 }
 
+/// Last-used annotation tool/color/stroke, restored when the editor opens.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct EditorPrefs {
+    pub tool: String,
+    pub color: String,
+    pub stroke_width: u32,
+}
+
+impl Default for EditorPrefs {
+    fn default() -> Self {
+        Self {
+            tool: "arrow".into(),
+            color: "#ff3b30".into(),
+            stroke_width: 4,
+        }
+    }
+}
+
+pub struct EditorPrefsStore {
+    path: PathBuf,
+    current: Mutex<EditorPrefs>,
+}
+
+impl EditorPrefsStore {
+    pub fn load(path: PathBuf) -> Self {
+        let current = std::fs::read(&path)
+            .ok()
+            .and_then(|bytes| serde_json::from_slice::<EditorPrefs>(&bytes).ok())
+            .unwrap_or_default();
+        Self {
+            path,
+            current: Mutex::new(current),
+        }
+    }
+
+    pub fn get(&self) -> EditorPrefs {
+        self.current.lock().unwrap().clone()
+    }
+
+    pub fn set(&self, prefs: EditorPrefs) -> std::io::Result<EditorPrefs> {
+        *self.current.lock().unwrap() = prefs.clone();
+        std::fs::write(&self.path, serde_json::to_vec_pretty(&prefs)?)?;
+        Ok(prefs)
+    }
+}
+
 pub struct SettingsStore {
     path: PathBuf,
     current: Mutex<Settings>,
@@ -124,6 +171,24 @@ mod tests {
         .sanitized();
         assert_eq!(s.overlay_size, 2.0);
         assert_eq!(s.auto_close_seconds, 3);
+    }
+
+    #[test]
+    fn editor_prefs_roundtrip_and_defaults() {
+        let path = temp_path("editor-prefs");
+        let _ = std::fs::remove_file(&path);
+        // Missing file → defaults (arrow / red / 4).
+        let store = EditorPrefsStore::load(path.clone());
+        assert_eq!(store.get(), EditorPrefs::default());
+        // Persisted values survive a reload.
+        let prefs = EditorPrefs {
+            tool: "rect".into(),
+            color: "#34c759".into(),
+            stroke_width: 8,
+        };
+        store.set(prefs.clone()).unwrap();
+        assert_eq!(EditorPrefsStore::load(path.clone()).get(), prefs);
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]

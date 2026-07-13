@@ -113,6 +113,20 @@ body {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
 }
 
+#error-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #d9342b;
+  color: #fff;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+
 .text-editor {
   position: absolute;
   background: transparent;

@@ -3,11 +3,12 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::capture::{self, CaptureError, CaptureMode, CaptureOutcome};
 use crate::history::{CaptureEntry, History};
-use crate::settings::{OverlayPosition, Settings, SettingsStore};
+use crate::settings::{EditorPrefs, EditorPrefsStore, OverlayPosition, Settings, SettingsStore};
 
 pub struct AppState {
     pub history: History,
     pub settings: SettingsStore,
+    pub editor_prefs: EditorPrefsStore,
     /// Capture the editor window should be showing. The editor pulls this on
     /// load, so opening never depends on an event landing before the page's
     /// listener is ready.
@@ -109,6 +110,16 @@ fn show_overlay(app: &AppHandle) {
 }
 
 #[tauri::command]
+pub fn get_editor_prefs(state: State<AppState>) -> EditorPrefs {
+    state.editor_prefs.get()
+}
+
+#[tauri::command]
+pub fn set_editor_prefs(state: State<AppState>, prefs: EditorPrefs) -> Result<EditorPrefs, String> {
+    state.editor_prefs.set(prefs).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn get_settings(state: State<AppState>) -> Settings {
     state.settings.get()
 }
@@ -147,10 +158,11 @@ pub fn open_editor(app: AppHandle, state: State<AppState>, id: String) -> Result
     *state.editor_target.lock().unwrap() = Some(entry.id.clone());
     if let Some(editor) = app.get_webview_window("editor") {
         // Window kept warm across sessions: its listener is live, so tell it
-        // to reload, then reveal it.
+        // to reload, then reveal it (unminimize first in case it was minimized).
         editor
             .emit("editor:load", &entry)
             .map_err(|e| e.to_string())?;
+        let _ = editor.unminimize();
         editor.show().map_err(|e| e.to_string())?;
         editor.set_focus().map_err(|e| e.to_string())?;
     } else {
@@ -187,6 +199,19 @@ pub fn get_capture(state: State<AppState>, id: String) -> Result<CaptureEntry, S
     resolve(&state.history, &id)
 }
 
+/// Return a capture's raw PNG bytes. The editor loads these as a same-origin
+/// `blob:` URL — loading via the `asset://` protocol instead taints the Konva
+/// canvas, which makes `toDataURL()` fail and export impossible.
+#[tauri::command]
+pub fn read_capture_bytes(
+    state: State<AppState>,
+    id: String,
+) -> Result<tauri::ipc::Response, String> {
+    let entry = resolve(&state.history, &id)?;
+    let bytes = std::fs::read(&entry.path).map_err(|e| e.to_string())?;
+    Ok(tauri::ipc::Response::new(bytes))
+}
+
 #[derive(serde::Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ExportAction {
@@ -209,6 +234,15 @@ pub fn export_png(
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(data)
         .map_err(|e| e.to_string())?;
+    // Never let an empty/invalid export through — a blank toDataURL() would
+    // otherwise silently overwrite the capture with 0 bytes and destroy it.
+    const PNG_MAGIC: &[u8] = b"\x89PNG\r\n\x1a\n";
+    if !bytes.starts_with(PNG_MAGIC) {
+        return Err(format!(
+            "export produced invalid image data ({} bytes) — annotation not saved",
+            bytes.len()
+        ));
+    }
     match action {
         ExportAction::Copy => {
             let image = tauri::image::Image::from_bytes(&bytes).map_err(|e| e.to_string())?;

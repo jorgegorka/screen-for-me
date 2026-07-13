@@ -10,7 +10,7 @@ use tauri::Manager;
 
 use commands::AppState;
 use history::History;
-use settings::SettingsStore;
+use settings::{EditorPrefsStore, SettingsStore};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -30,6 +30,7 @@ pub fn run() {
             app.manage(AppState {
                 history: History::new(data_dir.join("captures"))?,
                 settings: SettingsStore::load(data_dir.join("settings.json")),
+                editor_prefs: EditorPrefsStore::load(data_dir.join("editor_prefs.json")),
                 editor_target: std::sync::Mutex::new(None),
             });
 
@@ -46,10 +47,13 @@ pub fn run() {
             commands::reveal_capture,
             commands::open_editor,
             commands::get_capture,
+            commands::read_capture_bytes,
             commands::editor_target,
             commands::export_png,
             commands::get_settings,
             commands::set_settings,
+            commands::get_editor_prefs,
+            commands::set_editor_prefs,
             commands::save_capture_to_desktop,
             windows::open_history,
         ])
