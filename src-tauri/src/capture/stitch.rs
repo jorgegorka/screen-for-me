@@ -42,25 +42,76 @@ const SAMPLE_STEP: u32 = 4;
 /// Mean per-channel abs difference below which a strip match is trusted.
 const MAX_MEAN_DIFF: f64 = 6.0;
 
+/// Strip-start candidates are examined at this stride; starts are capped at
+/// h/2 so at least half the frame remains below the strip for the offset
+/// search range.
+const STRIP_CANDIDATE_STRIDE: u32 = STRIP_ROWS / 2;
+
+/// Start row of the most textured `STRIP_ROWS`-tall strip in the top half of
+/// `img`: per-channel variance over the sampled grid, summed across RGB.
+/// A blank strip (whitespace between form sections) matches at every offset;
+/// the busiest strip keeps the match unambiguous. Ties keep the smallest
+/// start.
+pub(crate) fn most_textured_strip(img: &RgbaImage) -> u32 {
+    let (w, h) = img.dimensions();
+    if h <= STRIP_ROWS || w == 0 {
+        return 0;
+    }
+    let max_start = (h / 2).min(h - STRIP_ROWS);
+    let mut best_start = 0u32;
+    let mut best_score = f64::MIN;
+    let mut s = 0;
+    while s <= max_start {
+        let mut sum = [0u64; 3];
+        let mut sum_sq = [0u64; 3];
+        let mut n = 0u64;
+        let mut y = 0;
+        while y < STRIP_ROWS {
+            let mut x = 0;
+            while x < w {
+                let p = img.get_pixel(x, s + y).0;
+                for c in 0..3 {
+                    sum[c] += u64::from(p[c]);
+                    sum_sq[c] += u64::from(p[c]) * u64::from(p[c]);
+                }
+                n += 1;
+                x += SAMPLE_STEP;
+            }
+            y += SAMPLE_STEP;
+        }
+        let nf = n as f64;
+        let score: f64 = (0..3)
+            .map(|c| sum_sq[c] as f64 / nf - (sum[c] as f64 / nf).powi(2))
+            .sum();
+        if score > best_score {
+            best_score = score;
+            best_start = s;
+        }
+        s += STRIP_CANDIDATE_STRIDE;
+    }
+    best_start
+}
+
 /// How many pixels the content moved between two normalized frames: slide the
-/// top strip of `next` down `prev` and take the best (smallest-offset) match.
-/// Browsers smooth-scroll, so the nominal scroll amount can't be trusted.
+/// most textured strip of `next` down `prev` and take the best (smallest-offset)
+/// match. Browsers smooth-scroll, so the nominal scroll amount can't be trusted.
 pub(crate) fn find_scroll_offset(prev: &RgbaImage, next: &RgbaImage) -> Option<u32> {
     let (w, h) = prev.dimensions();
     if next.dimensions() != (w, h) || h <= STRIP_ROWS || w == 0 {
         return None;
     }
+    let strip_start = most_textured_strip(next);
     let mut best_offset = 0u32;
     let mut best_diff = f64::MAX;
-    for offset in 0..=(h - STRIP_ROWS) {
+    for offset in 0..=(h - STRIP_ROWS - strip_start) {
         let mut sum = 0u64;
         let mut samples = 0u64;
         let mut y = 0;
         while y < STRIP_ROWS {
             let mut x = 0;
             while x < w {
-                let a = prev.get_pixel(x, y + offset).0;
-                let b = next.get_pixel(x, y).0;
+                let a = prev.get_pixel(x, strip_start + y + offset).0;
+                let b = next.get_pixel(x, strip_start + y).0;
                 for c in 0..3 {
                     sum += (i32::from(a[c]) - i32::from(b[c])).unsigned_abs() as u64;
                 }
@@ -304,5 +355,44 @@ mod tests {
         assert_eq!(offset, 37);
         let composite = denormalize(append_rows(prev_n, &next_n, offset), dir);
         assert_eq!(composite, window(&src, 0, 0, 237, 160));
+    }
+
+    /// Regression: whitespace between form sections used to blank the top
+    /// strip, matching every offset and losing the real one. The textured
+    /// strip below must recover the exact offset.
+    #[test]
+    fn blank_top_strip_still_matches_exact_offset() {
+        let mut src = noise_image(160, 600, 21);
+        // Uniform band covering both frames' top strips.
+        for y in 0..100 {
+            for x in 0..160 {
+                src.put_pixel(x, y, image::Rgba([250, 250, 250, 255]));
+            }
+        }
+        let prev = window(&src, 0, 0, 160, 200);
+        let next = window(&src, 0, 37, 160, 200);
+        assert_eq!(find_scroll_offset(&prev, &next), Some(37));
+    }
+
+    /// The chosen strip must not be one that lies entirely inside a blank
+    /// region (strips fully inside rows 0..100 start at s <= 68).
+    #[test]
+    fn textured_strip_skips_blank_region() {
+        let mut img = noise_image(160, 200, 23);
+        for y in 0..100 {
+            for x in 0..160 {
+                img.put_pixel(x, y, image::Rgba([250, 250, 250, 255]));
+            }
+        }
+        assert!(most_textured_strip(&img) > 68);
+    }
+
+    /// On an all-noise frame any candidate is fine; the start must be legal.
+    #[test]
+    fn textured_strip_is_legal_candidate() {
+        let img = noise_image(160, 200, 25);
+        let s = most_textured_strip(&img);
+        assert!(s <= 100, "start {s} beyond h/2");
+        assert_eq!(s % 16, 0, "start {s} not on the candidate stride");
     }
 }
