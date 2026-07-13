@@ -78,12 +78,21 @@ pub(crate) fn find_scroll_offset(prev: &RgbaImage, next: &RgbaImage) -> Option<u
     (best_diff <= MAX_MEAN_DIFF).then_some(best_offset)
 }
 
+/// A sampled pixel counts as changed when any RGB channel moves by more
+/// than this — generous enough to absorb antialiasing and fade noise.
+const CHANGED_CHANNEL_DIFF: u32 = 12;
+/// Frames read as "no movement" while at most this fraction of sampled
+/// pixels changed. True end-of-page noise is localized (scrollbar fade
+/// column, caret) and stays well under 1%; a real scroll moves every
+/// content row and lands several times higher even on sparse pages.
+const MAX_CHANGED_FRACTION: f64 = 0.01;
+
 /// Sampled full-frame similarity — distinguishes "reached the end of the
 /// page" from "a fixed header made offset 0 look like the best match".
-/// Tolerant of end-of-scroll noise (scrollbar fade, caret blink, elastic
-/// bounce): mean per-channel abs diff at or below `MAX_MEAN_DIFF` counts
-/// as no movement. A truly moved frame (fixed-header case) differs across
-/// the whole viewport and lands far above the threshold.
+/// Uses the changed-pixel FRACTION, not the mean diff: on sparse pages most
+/// pixels are background, so a real scroll's mean diff averages out below
+/// any usable threshold (measured 5.6 on a real form page) while its
+/// changed fraction stays high (4-6%).
 pub(crate) fn frames_similar(a: &RgbaImage, b: &RgbaImage) -> bool {
     if a.dimensions() != b.dimensions() {
         return false;
@@ -92,7 +101,7 @@ pub(crate) fn frames_similar(a: &RgbaImage, b: &RgbaImage) -> bool {
     if w == 0 || h == 0 {
         return false;
     }
-    let mut sum = 0u64;
+    let mut changed = 0u64;
     let mut samples = 0u64;
     let mut y = 0;
     while y < h {
@@ -100,15 +109,17 @@ pub(crate) fn frames_similar(a: &RgbaImage, b: &RgbaImage) -> bool {
         while x < w {
             let pa = a.get_pixel(x, y).0;
             let pb = b.get_pixel(x, y).0;
-            for c in 0..3 {
-                sum += (i32::from(pa[c]) - i32::from(pb[c])).unsigned_abs() as u64;
+            if (0..3).any(|c| {
+                (i32::from(pa[c]) - i32::from(pb[c])).unsigned_abs() > CHANGED_CHANNEL_DIFF
+            }) {
+                changed += 1;
             }
-            samples += 3;
+            samples += 1;
             x += SAMPLE_STEP;
         }
         y += SAMPLE_STEP;
     }
-    (sum as f64 / samples as f64) <= MAX_MEAN_DIFF
+    (changed as f64 / samples as f64) <= MAX_CHANGED_FRACTION
 }
 
 /// Grow the composite by the `new_rows` bottom rows of `next`.
@@ -183,6 +194,38 @@ mod tests {
                 p[3],
             ])
         });
+        assert!(frames_similar(&a, &b));
+    }
+
+    /// Regression: a sparse page (mostly background, thin content rows)
+    /// scrolled by half a period has a tiny MEAN diff — a mean-based
+    /// threshold reads it as "end of page" and stops mid-scroll. Only a
+    /// changed-pixel-fraction metric separates it from true end noise.
+    #[test]
+    fn sparse_content_scroll_not_similar() {
+        let frame = |phase: u32| {
+            RgbaImage::from_fn(160, 320, |_x, y| {
+                if (y + phase) % 160 < 4 {
+                    image::Rgba([180, 180, 180, 255])
+                } else {
+                    image::Rgba([250, 250, 250, 255])
+                }
+            })
+        };
+        assert!(!frames_similar(&frame(0), &frame(80)));
+    }
+
+    /// A narrow changing column (macOS overlay scrollbar fading out) is
+    /// end-of-page noise, not movement.
+    #[test]
+    fn scrollbar_fade_still_similar() {
+        let a = noise_image(800, 200, 3);
+        let mut b = a.clone();
+        for y in 0..200 {
+            for x in 792..796 {
+                b.put_pixel(x, y, image::Rgba([128, 128, 128, 255]));
+            }
+        }
         assert!(frames_similar(&a, &b));
     }
 
