@@ -26,10 +26,12 @@ pub fn capture(mode: CaptureMode, dest: &Path) -> Result<CaptureOutcome, Capture
         }
         Err(err) => return Err(CaptureError::Tool(err.to_string())),
     };
-    let source = screenshot
-        .uri()
-        .to_file_path()
-        .map_err(|_| CaptureError::Tool(format!("portal returned non-file URI: {}", screenshot.uri())))?;
+    let source = screenshot.uri().to_file_path().map_err(|_| {
+        CaptureError::Tool(format!(
+            "portal returned non-file URI: {}",
+            screenshot.uri()
+        ))
+    })?;
     std::fs::copy(&source, dest)?;
     let _ = std::fs::remove_file(&source);
     validate_output(dest)

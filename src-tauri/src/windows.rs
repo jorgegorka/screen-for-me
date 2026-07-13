@@ -1,0 +1,107 @@
+use tauri::{AppHandle, Manager};
+use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+
+/// Show a window that hides (rather than destroys) on close, creating it once.
+fn show_or_create(
+    app: &AppHandle,
+    label: &str,
+    url: &str,
+    title: &str,
+    size: (f64, f64),
+    min_size: (f64, f64),
+) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window(label) {
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
+    } else {
+        tauri::WebviewWindowBuilder::new(app, label, tauri::WebviewUrl::App(url.into()))
+            .title(title)
+            .inner_size(size.0, size.1)
+            .min_inner_size(min_size.0, min_size.1)
+            .build()
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn open_history(app: AppHandle) -> Result<(), String> {
+    show_or_create(
+        &app,
+        "history",
+        "history.html",
+        "Screen for me — Capture History",
+        (860.0, 620.0),
+        (520.0, 400.0),
+    )
+}
+
+pub fn open_settings(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+pub fn show_about(app: &AppHandle) {
+    let package = app.package_info();
+    let message = format!(
+        "Screen for me\nVersion {}\n\nA screenshot app: capture, annotate, and share.",
+        package.version
+    );
+    app.dialog()
+        .message(message)
+        .title("About Screen for me")
+        .kind(MessageDialogKind::Info)
+        .show(|_| {});
+}
+
+/// Check for updates against the configured endpoint and report the result in
+/// a native dialog. Endpoint/signing are placeholders until a release pipeline
+/// exists, so a failed check reports gracefully rather than erroring silently.
+pub fn check_for_updates(app: &AppHandle) {
+    use tauri_plugin_updater::UpdaterExt;
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let dialog = app.dialog().clone();
+        let result = match app.updater() {
+            Ok(updater) => updater.check().await,
+            Err(err) => {
+                dialog
+                    .message(format!("Could not check for updates:\n{err}"))
+                    .title("Check for Updates")
+                    .kind(MessageDialogKind::Warning)
+                    .show(|_| {});
+                return;
+            }
+        };
+        match result {
+            Ok(Some(update)) => {
+                dialog
+                    .message(format!(
+                        "Version {} is available. Download and install it from the Screen for me website.",
+                        update.version
+                    ))
+                    .title("Update Available")
+                    .kind(MessageDialogKind::Info)
+                    .show(|_| {});
+            }
+            Ok(None) => {
+                dialog
+                    .message("You're on the latest version.")
+                    .title("Check for Updates")
+                    .kind(MessageDialogKind::Info)
+                    .show(|_| {});
+            }
+            Err(err) => {
+                dialog
+                    .message(format!(
+                        "Couldn't reach the update server. Please try again later.\n\n({err})"
+                    ))
+                    .title("Check for Updates")
+                    .kind(MessageDialogKind::Warning)
+                    .show(|_| {});
+            }
+        }
+    });
+}

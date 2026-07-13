@@ -4,6 +4,7 @@ mod history;
 mod settings;
 mod shortcuts;
 mod tray;
+mod windows;
 
 use tauri::Manager;
 
@@ -14,6 +15,7 @@ use settings::SettingsStore;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_drag::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -49,6 +51,7 @@ pub fn run() {
             commands::get_settings,
             commands::set_settings,
             commands::save_capture_to_desktop,
+            windows::open_history,
         ])
         // The main window doubles as the Settings window: closing it hides it
         // so the tray can re-show it without recreating.
@@ -56,7 +59,7 @@ pub fn run() {
         // destroyed, so the tray/overlay can re-show them and the editor's
         // webview stays warm between annotations.
         .on_window_event(|window, event| {
-            if matches!(window.label(), "main" | "editor") {
+            if matches!(window.label(), "main" | "editor" | "history") {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
                     let _ = window.hide();

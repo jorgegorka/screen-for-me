@@ -5,15 +5,10 @@ use tauri::AppHandle;
 use crate::capture::CaptureMode;
 use crate::commands::trigger_capture;
 use crate::shortcuts;
+use crate::windows;
 
 pub fn setup(app: &AppHandle) -> tauri::Result<()> {
-    let area = MenuItem::with_id(
-        app,
-        "capture_area",
-        "Capture Area",
-        true,
-        Some(shortcuts::ACCEL_AREA),
-    )?;
+    let area = MenuItem::with_id(app, "capture_area", "Capture Area", true, Some(shortcuts::ACCEL_AREA))?;
     let window = MenuItem::with_id(
         app,
         "capture_window",
@@ -28,15 +23,25 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
         true,
         Some(shortcuts::ACCEL_FULLSCREEN),
     )?;
-    let settings = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit Screen for me", true, None::<&str>)?;
+    let history = MenuItem::with_id(app, "history", "Capture History…", true, None::<&str>)?;
+    let about = MenuItem::with_id(app, "about", "About Screen for me…", true, None::<&str>)?;
+    let updates = MenuItem::with_id(app, "updates", "Check for Updates…", true, None::<&str>)?;
+    let settings = MenuItem::with_id(app, "settings", "Settings…", true, Some("CmdOrCtrl+,"))?;
+    let quit = MenuItem::with_id(app, "quit", "Quit Screen for me", true, Some("CmdOrCtrl+Q"))?;
+
+    let sep = || PredefinedMenuItem::separator(app);
     let menu = Menu::with_items(
         app,
         &[
             &area,
             &window,
             &fullscreen,
-            &PredefinedMenuItem::separator(app)?,
+            &sep()?,
+            &history,
+            &sep()?,
+            &about,
+            &updates,
+            &sep()?,
             &settings,
             &quit,
         ],
@@ -51,13 +56,14 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
             "capture_area" => trigger_capture(app, CaptureMode::Area),
             "capture_window" => trigger_capture(app, CaptureMode::Window),
             "capture_fullscreen" => trigger_capture(app, CaptureMode::Fullscreen),
-            "settings" => {
-                use tauri::Manager;
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
+            "history" => {
+                if let Err(err) = windows::open_history(app.clone()) {
+                    eprintln!("failed to open history: {err}");
                 }
             }
+            "about" => windows::show_about(app),
+            "updates" => windows::check_for_updates(app),
+            "settings" => windows::open_settings(app),
             "quit" => app.exit(0),
             _ => {}
         })

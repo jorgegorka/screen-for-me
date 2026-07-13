@@ -38,7 +38,12 @@ Capture flow: shortcut/tray → `commands::trigger_capture` (spawn_blocking) →
 
 - **macOS Screen Recording permission**: without it, `screencapture` can exit 0 and write a wallpaper-only image. In dev, the TCC grant attaches to the *terminal* running the app; the packaged .app prompts once itself.
 - Transparent overlay window requires `macOSPrivateApi: true` (tauri.conf.json) + the `macos-private-api` cargo feature.
-- Capability file `src-tauri/capabilities/default.json` must list every window label (`main`, `overlay`, `editor`) — a new window with JS API calls needs its label added there.
+- Capability file `src-tauri/capabilities/default.json` must list every window label (`main`, `overlay`, `editor`, `history`) — a new window with JS API calls needs its label added there.
+- Windows that hide-instead-of-close (`main`, `editor`, `history`) are handled in the `on_window_event` match in lib.rs; `src-tauri/src/windows.rs` owns their open/show helpers plus the About and Check-for-Updates dialogs.
 - The asset protocol scope is `$APPDATA/captures/*`; captures displayed in webviews go through `convertFileSrc`.
 - macOS reserves Cmd+Shift+3/4/5, hence 7/8/9.
 - Accessory activation policy means no app menu bar; don't rely on menu-role shortcuts (Cmd+C in webviews) — handle keys in JS.
+
+## Updates
+
+The tray's "Check for Updates…" uses `tauri-plugin-updater` (config under `plugins.updater` in tauri.conf.json). **The endpoint (`releases.screenforme.example`) and signing key are placeholders** — until a real release pipeline exists, a check fails gracefully with a "couldn't reach the update server" dialog. To make it real: (1) host update manifests at a real `endpoints` URL (Tauri static-JSON or dynamic format); (2) replace `plugins.updater.pubkey` with the public key whose **private** key you sign releases with (`npm run tauri signer generate`); (3) build with `TAURI_SIGNING_PRIVATE_KEY`/`_PASSWORD` set and `createUpdaterArtifacts: true` (already on). The dev keypair generated during scaffolding lives outside the repo (session scratchpad) and is throwaway — generate a real one for production and never commit the private key.

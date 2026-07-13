@@ -130,7 +130,9 @@ pub fn open_editor(app: AppHandle, state: State<AppState>, id: String) -> Result
     if let Some(editor) = app.get_webview_window("editor") {
         // Window kept warm across sessions: its listener is live, so tell it
         // to reload, then reveal it.
-        editor.emit("editor:load", &entry).map_err(|e| e.to_string())?;
+        editor
+            .emit("editor:load", &entry)
+            .map_err(|e| e.to_string())?;
         editor.show().map_err(|e| e.to_string())?;
         editor.set_focus().map_err(|e| e.to_string())?;
     } else {
@@ -192,7 +194,9 @@ pub fn export_png(
     match action {
         ExportAction::Copy => {
             let image = tauri::image::Image::from_bytes(&bytes).map_err(|e| e.to_string())?;
-            app.clipboard().write_image(&image).map_err(|e| e.to_string())
+            app.clipboard()
+                .write_image(&image)
+                .map_err(|e| e.to_string())
         }
         ExportAction::SaveTo { dest } => std::fs::write(&dest, bytes).map_err(|e| e.to_string()),
         ExportAction::Overwrite { id } => {
@@ -225,7 +229,9 @@ pub fn copy_capture(app: AppHandle, state: State<AppState>, id: String) -> Resul
     let entry = resolve(&state.history, &id)?;
     let bytes = std::fs::read(&entry.path).map_err(|e| e.to_string())?;
     let image = tauri::image::Image::from_bytes(&bytes).map_err(|e| e.to_string())?;
-    app.clipboard().write_image(&image).map_err(|e| e.to_string())
+    app.clipboard()
+        .write_image(&image)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

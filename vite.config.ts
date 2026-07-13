@@ -11,6 +11,7 @@ export default defineConfig(async () => ({
         main: "index.html",
         overlay: "overlay.html",
         editor: "editor.html",
+        history: "history.html",
       },
     },
   },

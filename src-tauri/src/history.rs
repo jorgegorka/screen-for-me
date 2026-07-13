@@ -151,7 +151,10 @@ mod tests {
         h.prune();
         let entries = h.list();
         assert_eq!(entries.len(), MAX_CAPTURES);
-        assert_eq!(entries[0].id, format!("capture-{}.png", 1000 + MAX_CAPTURES + 4));
+        assert_eq!(
+            entries[0].id,
+            format!("capture-{}.png", 1000 + MAX_CAPTURES + 4)
+        );
         fs::remove_dir_all(h.dir()).unwrap();
     }
 
