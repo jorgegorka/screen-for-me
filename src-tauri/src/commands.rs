@@ -38,10 +38,35 @@ fn capture_and_publish(app: &AppHandle, mode: CaptureMode) -> Result<(), Capture
                 .to_string();
             if let Some(entry) = state.history.resolve(&id) {
                 let _ = app.emit("capture:new", &entry);
+                show_overlay(app);
             }
             Ok(())
         }
     }
+}
+
+/// Show the quick-access overlay at the bottom-left of the primary monitor.
+fn show_overlay(app: &AppHandle) {
+    let Some(overlay) = app.get_webview_window("overlay") else {
+        return;
+    };
+    const MARGIN: f64 = 16.0;
+    if let (Ok(Some(monitor)), Ok(size)) = (overlay.primary_monitor(), overlay.outer_size()) {
+        let scale = monitor.scale_factor();
+        let mon_pos = monitor.position().to_logical::<f64>(scale);
+        let mon_size = monitor.size().to_logical::<f64>(scale);
+        let win = size.to_logical::<f64>(scale);
+        let _ = overlay.set_position(tauri::LogicalPosition::new(
+            mon_pos.x + MARGIN,
+            mon_pos.y + mon_size.height - win.height - MARGIN,
+        ));
+    }
+    let _ = overlay.show();
+}
+
+#[tauri::command]
+pub fn open_editor(_id: String) -> Result<(), String> {
+    Err("The annotation editor is coming next".into())
 }
 
 #[tauri::command]

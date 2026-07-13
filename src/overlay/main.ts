@@ -1,0 +1,109 @@
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { save } from "@tauri-apps/plugin-dialog";
+
+interface CaptureEntry {
+  path: string;
+  id: string;
+  created_ms: number;
+}
+
+const AUTO_HIDE_MS = 8_000;
+
+const el = <T extends HTMLElement>(id: string) =>
+  document.getElementById(id) as T;
+
+let current: CaptureEntry | null = null;
+let hideTimer: number | undefined;
+let hovering = false;
+
+const appWindow = getCurrentWindow();
+
+function armAutoHide() {
+  window.clearTimeout(hideTimer);
+  hideTimer = window.setTimeout(() => {
+    if (hovering) armAutoHide();
+    else void appWindow.hide();
+  }, AUTO_HIDE_MS);
+}
+
+function toast(message: string) {
+  const node = el<HTMLDivElement>("toast");
+  node.textContent = message;
+  node.classList.remove("hidden");
+  window.setTimeout(() => node.classList.add("hidden"), 1500);
+}
+
+async function refreshBadge() {
+  const captures = await invoke<CaptureEntry[]>("list_captures");
+  const badge = el<HTMLSpanElement>("stack-badge");
+  if (captures.length > 1) {
+    badge.textContent = `+${captures.length - 1}`;
+    badge.classList.remove("hidden");
+  } else {
+    badge.classList.add("hidden");
+  }
+}
+
+function showCapture(entry: CaptureEntry) {
+  current = entry;
+  // cache-bust: the same window re-shows different files
+  el<HTMLImageElement>("thumb").src =
+    `${convertFileSrc(entry.path)}?t=${entry.created_ms}`;
+  el<HTMLDivElement>("overlay-card").classList.remove("hidden");
+  void refreshBadge();
+  armAutoHide();
+}
+
+async function run(action: () => Promise<void>, doneMessage?: string) {
+  if (!current) return;
+  try {
+    await action();
+    if (doneMessage) toast(doneMessage);
+  } catch (err) {
+    toast(String(err));
+  }
+  armAutoHide();
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  const card = el<HTMLDivElement>("overlay-card");
+  card.addEventListener("mouseenter", () => (hovering = true));
+  card.addEventListener("mouseleave", () => {
+    hovering = false;
+    armAutoHide();
+  });
+
+  el<HTMLButtonElement>("dismiss").onclick = () => void appWindow.hide();
+
+  el<HTMLButtonElement>("copy").onclick = () =>
+    run(() => invoke("copy_capture", { id: current!.id }), "Copied");
+
+  el<HTMLButtonElement>("save").onclick = () =>
+    run(async () => {
+      const dest = await save({
+        defaultPath: current!.id,
+        filters: [{ name: "PNG image", extensions: ["png"] }],
+      });
+      if (dest) {
+        await invoke("save_capture_to", { id: current!.id, dest });
+        toast("Saved");
+      }
+    });
+
+  el<HTMLButtonElement>("reveal").onclick = () =>
+    run(() => invoke("reveal_capture", { id: current!.id }));
+
+  el<HTMLButtonElement>("annotate").onclick = () =>
+    run(() => invoke("open_editor", { id: current!.id }));
+
+  void listen<CaptureEntry>("capture:new", (event) => {
+    showCapture(event.payload);
+  });
+
+  // If the window was shown before the page finished loading, catch up.
+  void invoke<CaptureEntry[]>("list_captures").then((captures) => {
+    if (captures.length > 0) showCapture(captures[0]);
+  });
+});

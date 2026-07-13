@@ -11,6 +11,7 @@
   },
   "app": {
     "withGlobalTauri": true,
+    "macOSPrivateApi": true,
     "windows": [
       {
         "label": "main",
@@ -18,10 +19,32 @@
         "width": 800,
         "height": 600,
         "visible": false
+      },
+      {
+        "label": "overlay",
+        "title": "Capture",
+        "url": "overlay.html",
+        "width": 300,
+        "height": 264,
+        "visible": false,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": false,
+        "visibleOnAllWorkspaces": true,
+        "acceptFirstMouse": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/captures/*"]
+      }
     }
   },
   "bundle": {

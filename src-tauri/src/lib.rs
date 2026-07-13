@@ -37,6 +37,7 @@ pub fn run() {
             commands::copy_capture,
             commands::save_capture_to,
             commands::reveal_capture,
+            commands::open_editor,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
