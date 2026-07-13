@@ -65,8 +65,68 @@ fn show_overlay(app: &AppHandle) {
 }
 
 #[tauri::command]
-pub fn open_editor(_id: String) -> Result<(), String> {
-    Err("The annotation editor is coming next".into())
+pub fn open_editor(app: AppHandle, state: State<AppState>, id: String) -> Result<(), String> {
+    let entry = resolve(&state.history, &id)?;
+    if let Some(editor) = app.get_webview_window("editor") {
+        editor.emit("editor:load", &entry).map_err(|e| e.to_string())?;
+        editor.show().map_err(|e| e.to_string())?;
+        editor.set_focus().map_err(|e| e.to_string())?;
+    } else {
+        tauri::WebviewWindowBuilder::new(
+            &app,
+            "editor",
+            tauri::WebviewUrl::App(format!("editor.html?id={}", entry.id).into()),
+        )
+        .title("Screen for me — Annotate")
+        .inner_size(1200.0, 800.0)
+        .min_inner_size(700.0, 500.0)
+        .build()
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_capture(state: State<AppState>, id: String) -> Result<CaptureEntry, String> {
+    resolve(&state.history, &id)
+}
+
+#[derive(serde::Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum ExportAction {
+    /// Put the PNG on the clipboard.
+    Copy,
+    /// Write the PNG to a user-chosen path.
+    SaveTo { dest: String },
+    /// Replace an existing capture with the annotated version.
+    Overwrite { id: String },
+}
+
+#[tauri::command]
+pub fn export_png(
+    app: AppHandle,
+    state: State<AppState>,
+    data: String,
+    action: ExportAction,
+) -> Result<(), String> {
+    use base64::Engine;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(data)
+        .map_err(|e| e.to_string())?;
+    match action {
+        ExportAction::Copy => {
+            let image = tauri::image::Image::from_bytes(&bytes).map_err(|e| e.to_string())?;
+            app.clipboard().write_image(&image).map_err(|e| e.to_string())
+        }
+        ExportAction::SaveTo { dest } => std::fs::write(&dest, bytes).map_err(|e| e.to_string()),
+        ExportAction::Overwrite { id } => {
+            let entry = resolve(&state.history, &id)?;
+            std::fs::write(&entry.path, bytes).map_err(|e| e.to_string())?;
+            // Refresh the overlay thumbnail with the annotated version.
+            let _ = app.emit("capture:new", &entry);
+            Ok(())
+        }
+    }
 }
 
 #[tauri::command]

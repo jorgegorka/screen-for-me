@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Annotate</title>
+    <link rel="stylesheet" href="/src/editor/editor.css" />
+    <script type="module" src="/src/editor/main.ts" defer></script>
+  </head>
+  <body>
+    <header id="toolbar">
+      <div class="group" id="tools">
+        <button data-tool="select" title="Select / move (V)">Select</button>
+        <button data-tool="arrow" title="Arrow (A)">Arrow</button>
+        <button data-tool="rect" title="Rectangle (R)">Rect</button>
+        <button data-tool="ellipse" title="Ellipse (E)">Ellipse</button>
+        <button data-tool="line" title="Line (L)">Line</button>
+        <button data-tool="pen" title="Freehand pen (P)">Pen</button>
+        <button data-tool="highlight" title="Highlighter (H)">Highlight</button>
+        <button data-tool="text" title="Text (T)">Text</button>
+        <button data-tool="pixelate" title="Pixelate region (B)">Pixelate</button>
+        <button data-tool="crop" title="Crop (C)">Crop</button>
+      </div>
+      <div class="group" id="style-controls">
+        <div id="colors"></div>
+        <input
+          id="stroke-width"
+          type="range"
+          min="1"
+          max="16"
+          value="4"
+          title="Stroke width"
+        />
+      </div>
+      <div class="group">
+        <button id="undo" title="Undo (⌘Z)">↩</button>
+        <button id="redo" title="Redo (⇧⌘Z)">↪</button>
+        <button id="reset-crop" class="hidden" title="Remove crop">Uncrop</button>
+      </div>
+      <div class="group crop-confirm hidden" id="crop-confirm">
+        <button id="crop-apply">Apply crop</button>
+        <button id="crop-cancel">Cancel</button>
+      </div>
+      <div class="group right">
+        <button id="copy" title="Copy annotated image">Copy</button>
+        <button id="save" title="Save annotated image as…">Save</button>
+        <button id="done" title="Save into capture and close">Done</button>
+      </div>
+    </header>
+    <main id="canvas-scroll">
+      <div id="stage-holder"></div>
+    </main>
+  </body>
+</html>
