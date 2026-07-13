@@ -9,17 +9,15 @@ const appWindow = getCurrentWindow();
 const hint = el<HTMLDivElement>("hint");
 const selection = el<HTMLDivElement>("selection");
 const hud = el<HTMLDivElement>("hud");
-const pill = el<HTMLDivElement>("pill");
 const progress = el<HTMLSpanElement>("progress");
 
-// Keep pill in scope for CSS selectors
-void pill;
-
 type Phase = "select" | "staged" | "running";
+type Direction = "up" | "down" | "left" | "right";
+const DIRECTIONS: readonly string[] = ["up", "down", "left", "right"];
 let phase: Phase = "select";
 let dragStart: { x: number; y: number } | null = null;
 let rect: Rect | null = null;
-let direction = "down";
+let direction: Direction = "down";
 
 function renderSelection(r: Rect) {
   selection.style.left = `${r.x}px`;
@@ -79,21 +77,37 @@ document.addEventListener("mouseup", (event) => {
 
 for (const button of hud.querySelectorAll<HTMLButtonElement>(".directions button")) {
   button.addEventListener("click", () => {
-    direction = button.dataset.direction ?? "down";
+    const d = button.dataset.direction;
+    direction = d && DIRECTIONS.includes(d) ? (d as Direction) : "down";
     hud.querySelectorAll(".directions button").forEach((b) => b.classList.remove("active"));
     button.classList.add("active");
   });
 }
 
-el<HTMLButtonElement>("start").addEventListener("click", () => {
-  if (phase !== "staged" || !rect) return;
+// Pill-only mode: Rust shrinks this window to the pill. Idempotent — used
+// both for the optimistic switch on Start and when Rust confirms via
+// `scroll:running`.
+function enterRunning() {
   phase = "running";
-  // Rust shrinks this window to the pill; swap the page to pill-only mode.
   selection.classList.add("hidden");
   hud.classList.add("hidden");
+  hint.classList.add("hidden");
   document.body.classList.add("running");
+}
+
+el<HTMLButtonElement>("start").addEventListener("click", () => {
+  if (phase !== "staged" || !rect) return;
+  enterRunning();
   void invoke("run_scrolling_capture", { rect, direction }).catch((err) => {
-    progress.textContent = String(err);
+    // Roll back to the staged state so the user can retry or cancel.
+    phase = "staged";
+    document.body.classList.remove("running");
+    if (rect) {
+      renderSelection(rect);
+      showHud(rect);
+    }
+    hint.textContent = String(err);
+    hint.classList.remove("hidden");
   });
 });
 
@@ -107,6 +121,11 @@ document.addEventListener("keydown", (event) => {
   } else {
     void appWindow.close();
   }
+});
+
+// Rust is the authority on when the run actually starts.
+void listen("scroll:running", () => {
+  enterRunning();
 });
 
 void listen<number>("scroll:progress", (event) => {
