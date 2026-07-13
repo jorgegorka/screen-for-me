@@ -43,7 +43,8 @@ pub fn run(
     scroll_input::warp_cursor(
         region.x + region.width / 2.0,
         region.y + region.height / 2.0,
-    );
+    )
+    .map_err(CaptureError::Tool)?;
     // Let the warp land and the shrunken HUD window settle before frame one.
     std::thread::sleep(Duration::from_millis(200));
 

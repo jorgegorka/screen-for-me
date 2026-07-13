@@ -492,6 +492,10 @@ fn run_scrolling_capture_macos(
     let stop = state.scroll_stop.clone();
 
     tauri::async_runtime::spawn_blocking(move || {
+        // Owns a clone of the flag so a panic anywhere below (e.g. an
+        // `expect` inside the image crate) still releases it on unwind,
+        // instead of permanently bricking the feature.
+        let _running_guard = RunningGuard(running.clone());
         let result = (|| -> Result<(), CaptureError> {
             let work_dir = app
                 .path()
@@ -516,9 +520,17 @@ fn run_scrolling_capture_macos(
             eprintln!("scrolling capture failed: {err}");
             let _ = app.emit("capture:error", err.to_string());
         }
-        running.store(false, std::sync::atomic::Ordering::SeqCst);
+        // `_running_guard` drops here (or on panic-unwind) and releases the flag.
     });
     Ok(())
+}
+
+/// Resets the scroll_running flag even if the capture worker panics.
+struct RunningGuard(std::sync::Arc<std::sync::atomic::AtomicBool>);
+impl Drop for RunningGuard {
+    fn drop(&mut self) {
+        self.0.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
 }
 
 fn resolve(history: &History, id: &str) -> Result<CaptureEntry, String> {

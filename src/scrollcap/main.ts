@@ -7,6 +7,9 @@ const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as
 
 const appWindow = getCurrentWindow();
 const hint = el<HTMLDivElement>("hint");
+// A start-failure overwrites this with an error message; resetToSelect
+// restores the original instruction rather than leaving the error stuck.
+const hintDefaultText = hint.textContent;
 const selection = el<HTMLDivElement>("selection");
 const hud = el<HTMLDivElement>("hud");
 const progress = el<HTMLSpanElement>("progress");
@@ -45,6 +48,7 @@ function resetToSelect() {
   rect = null;
   selection.classList.add("hidden");
   hud.classList.add("hidden");
+  hint.textContent = hintDefaultText;
   hint.classList.remove("hidden");
 }
 

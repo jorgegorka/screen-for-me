@@ -209,4 +209,20 @@ mod tests {
         let composite = denormalize(append_rows(prev_n, &next_n, offset), dir);
         assert_eq!(composite, window(&src, 0, 363, 160, 237));
     }
+
+    /// Same for Left: new content enters at the left edge, composite grows
+    /// leftward — the horizontal mirror of the Up case.
+    #[test]
+    fn left_scroll_stitches_through_normalize() {
+        let src = noise_image(600, 160, 17);
+        let prev = window(&src, 37, 0, 200, 160);
+        let next = window(&src, 0, 0, 200, 160);
+        let dir = ScrollDirection::Left;
+        let prev_n = normalize(&prev, dir);
+        let next_n = normalize(&next, dir);
+        let offset = find_scroll_offset(&prev_n, &next_n).expect("confident match");
+        assert_eq!(offset, 37);
+        let composite = denormalize(append_rows(prev_n, &next_n, offset), dir);
+        assert_eq!(composite, window(&src, 0, 0, 237, 160));
+    }
 }

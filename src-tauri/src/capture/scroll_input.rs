@@ -31,8 +31,12 @@ pub fn ensure_accessibility() -> bool {
 
 /// Move the pointer so scroll events route to the window under the rect
 /// (the system dispatches wheel events by cursor position, not event location).
-pub fn warp_cursor(x: f64, y: f64) {
-    let _ = CGDisplay::warp_mouse_cursor_position(CGPoint::new(x, y));
+/// A failed warp means scroll events would go wherever the cursor already
+/// was, silently stitching the wrong content — so the caller must treat
+/// this as fatal rather than ignore it.
+pub fn warp_cursor(x: f64, y: f64) -> Result<(), String> {
+    CGDisplay::warp_mouse_cursor_position(CGPoint::new(x, y))
+        .map_err(|_| "failed to move the cursor to the capture area".to_string())
 }
 
 /// One scroll step. LINE units scroll discretely (no trackpad inertia), which
