@@ -102,6 +102,11 @@ pub fn open_scrollcap(app: &AppHandle) -> tauri::Result<()> {
     .skip_taskbar(true)
     .resizable(false)
     .accept_first_mouse(true)
+    // NSWindowSharingNone: screencapture never sees this window, so the Stop
+    // pill can overlap the region (tall selections leave it no room outside)
+    // without being baked into frame 1 or pinning the stitch offset at 0 as a
+    // fake fixed header.
+    .content_protected(true)
     .focused(true);
     if let Some(monitor) = crate::commands::active_monitor(app) {
         let scale = monitor.scale_factor();
