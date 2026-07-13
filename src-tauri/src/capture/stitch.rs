@@ -78,25 +78,37 @@ pub(crate) fn find_scroll_offset(prev: &RgbaImage, next: &RgbaImage) -> Option<u
     (best_diff <= MAX_MEAN_DIFF).then_some(best_offset)
 }
 
-/// Sampled full-frame equality — distinguishes "reached the end of the page"
-/// from "a fixed header made offset 0 look like the best match".
-pub(crate) fn frames_identical(a: &RgbaImage, b: &RgbaImage) -> bool {
+/// Sampled full-frame similarity — distinguishes "reached the end of the
+/// page" from "a fixed header made offset 0 look like the best match".
+/// Tolerant of end-of-scroll noise (scrollbar fade, caret blink, elastic
+/// bounce): mean per-channel abs diff at or below `MAX_MEAN_DIFF` counts
+/// as no movement. A truly moved frame (fixed-header case) differs across
+/// the whole viewport and lands far above the threshold.
+pub(crate) fn frames_similar(a: &RgbaImage, b: &RgbaImage) -> bool {
     if a.dimensions() != b.dimensions() {
         return false;
     }
     let (w, h) = a.dimensions();
+    if w == 0 || h == 0 {
+        return false;
+    }
+    let mut sum = 0u64;
+    let mut samples = 0u64;
     let mut y = 0;
     while y < h {
         let mut x = 0;
         while x < w {
-            if a.get_pixel(x, y) != b.get_pixel(x, y) {
-                return false;
+            let pa = a.get_pixel(x, y).0;
+            let pb = b.get_pixel(x, y).0;
+            for c in 0..3 {
+                sum += (i32::from(pa[c]) - i32::from(pb[c])).unsigned_abs() as u64;
             }
+            samples += 3;
             x += SAMPLE_STEP;
         }
         y += SAMPLE_STEP;
     }
-    true
+    (sum as f64 / samples as f64) <= MAX_MEAN_DIFF
 }
 
 /// Grow the composite by the `new_rows` bottom rows of `next`.
@@ -145,7 +157,7 @@ mod tests {
     fn identical_frames_offset_zero() {
         let frame = noise_image(160, 200, 3);
         assert_eq!(find_scroll_offset(&frame, &frame), Some(0));
-        assert!(frames_identical(&frame, &frame));
+        assert!(frames_similar(&frame, &frame));
     }
 
     #[test]
@@ -153,7 +165,32 @@ mod tests {
         let a = noise_image(160, 200, 1);
         let b = noise_image(160, 200, 2);
         assert_eq!(find_scroll_offset(&a, &b), None);
-        assert!(!frames_identical(&a, &b));
+        assert!(!frames_similar(&a, &b));
+    }
+
+    /// End-of-page frames are never pixel-identical (scrollbar fade, caret,
+    /// bounce settling); a small uniform shift must still count as "no
+    /// movement".
+    #[test]
+    fn slightly_noisy_frames_similar() {
+        let a = noise_image(160, 200, 3);
+        let b = RgbaImage::from_fn(160, 200, |x, y| {
+            let p = a.get_pixel(x, y).0;
+            image::Rgba([
+                p[0].saturating_add(3),
+                p[1].saturating_add(3),
+                p[2].saturating_add(3),
+                p[3],
+            ])
+        });
+        assert!(frames_similar(&a, &b));
+    }
+
+    #[test]
+    fn dimension_mismatch_not_similar() {
+        let a = noise_image(160, 200, 3);
+        let b = noise_image(160, 199, 3);
+        assert!(!frames_similar(&a, &b));
     }
 
     #[test]

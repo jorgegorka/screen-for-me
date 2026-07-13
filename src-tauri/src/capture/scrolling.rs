@@ -91,8 +91,9 @@ pub fn run(
         };
         let frame_n = stitch::normalize(&frame, direction);
         let offset = match stitch::find_scroll_offset(&prev_n, &frame_n) {
-            // No movement at all: the end of the scrollable content.
-            Some(0) if stitch::frames_identical(&prev_n, &frame_n) => break,
+            // No real movement (only scrollbar-fade/caret noise): the end
+            // of the scrollable content.
+            Some(0) if stitch::frames_similar(&prev_n, &frame_n) => break,
             // Fixed header pinned the match at 0, or nothing matched: trust
             // the nominal scroll distance instead.
             Some(0) | None => nominal_px.clamp(1, frame_n.height().saturating_sub(1).max(1)),
