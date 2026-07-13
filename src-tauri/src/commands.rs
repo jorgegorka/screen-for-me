@@ -3,9 +3,11 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::capture::{self, CaptureError, CaptureMode, CaptureOutcome};
 use crate::history::{CaptureEntry, History};
+use crate::settings::{OverlayPosition, Settings, SettingsStore};
 
 pub struct AppState {
     pub history: History,
+    pub settings: SettingsStore,
 }
 
 /// Entry point shared by tray items, global shortcuts, and the IPC command.
@@ -45,23 +47,76 @@ fn capture_and_publish(app: &AppHandle, mode: CaptureMode) -> Result<(), Capture
     }
 }
 
-/// Show the quick-access overlay at the bottom-left of the primary monitor.
+const OVERLAY_BASE_WIDTH: f64 = 300.0;
+const OVERLAY_BASE_HEIGHT: f64 = 264.0;
+
+/// Show the quick-access overlay at the configured corner of the active
+/// monitor (the one under the cursor) or the primary one.
 fn show_overlay(app: &AppHandle) {
     let Some(overlay) = app.get_webview_window("overlay") else {
         return;
     };
-    const MARGIN: f64 = 16.0;
-    if let (Ok(Some(monitor)), Ok(size)) = (overlay.primary_monitor(), overlay.outer_size()) {
+    let settings = app.state::<AppState>().settings.get();
+    let width = OVERLAY_BASE_WIDTH * settings.overlay_size;
+    let height = OVERLAY_BASE_HEIGHT * settings.overlay_size;
+    let _ = overlay.set_size(tauri::LogicalSize::new(width, height));
+
+    let active_monitor = if settings.move_to_active_screen {
+        app.cursor_position()
+            .ok()
+            .and_then(|cursor| app.monitor_from_point(cursor.x, cursor.y).ok().flatten())
+    } else {
+        None
+    };
+    let monitor = active_monitor.or_else(|| overlay.primary_monitor().ok().flatten());
+
+    if let Some(monitor) = monitor {
+        const MARGIN: f64 = 16.0;
         let scale = monitor.scale_factor();
         let mon_pos = monitor.position().to_logical::<f64>(scale);
         let mon_size = monitor.size().to_logical::<f64>(scale);
-        let win = size.to_logical::<f64>(scale);
-        let _ = overlay.set_position(tauri::LogicalPosition::new(
-            mon_pos.x + MARGIN,
-            mon_pos.y + mon_size.height - win.height - MARGIN,
-        ));
+        let x = match settings.position {
+            OverlayPosition::Left => mon_pos.x + MARGIN,
+            OverlayPosition::Center => mon_pos.x + (mon_size.width - width) / 2.0,
+            OverlayPosition::Right => mon_pos.x + mon_size.width - width - MARGIN,
+        };
+        let y = mon_pos.y + mon_size.height - height - MARGIN;
+        let _ = overlay.set_position(tauri::LogicalPosition::new(x, y));
     }
     let _ = overlay.show();
+}
+
+#[tauri::command]
+pub fn get_settings(state: State<AppState>) -> Settings {
+    state.settings.get()
+}
+
+#[tauri::command]
+pub fn set_settings(
+    app: AppHandle,
+    state: State<AppState>,
+    settings: Settings,
+) -> Result<Settings, String> {
+    let saved = state.settings.set(settings).map_err(|e| e.to_string())?;
+    let _ = app.emit("settings:changed", &saved);
+    Ok(saved)
+}
+
+/// Auto-close "Save and Close": copy the capture to the user's Desktop.
+#[tauri::command]
+pub fn save_capture_to_desktop(
+    app: AppHandle,
+    state: State<AppState>,
+    id: String,
+) -> Result<String, String> {
+    use tauri::path::BaseDirectory;
+    let entry = resolve(&state.history, &id)?;
+    let dest = app
+        .path()
+        .resolve(&entry.id, BaseDirectory::Desktop)
+        .map_err(|e| e.to_string())?;
+    std::fs::copy(&entry.path, &dest).map_err(|e| e.to_string())?;
+    Ok(dest.to_string_lossy().into_owned())
 }
 
 #[tauri::command]

@@ -3,12 +3,73 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Screen for me</title>
+    <title>Settings</title>
+    <link rel="stylesheet" href="/src/settings/settings.css" />
+    <script type="module" src="/src/settings/main.ts" defer></script>
   </head>
   <body>
-    <p style="font-family: system-ui; padding: 2rem; color: #666">
-      Screen for me runs from the menu bar — use the tray icon or
-      the capture shortcuts.
-    </p>
+    <main>
+      <section>
+        <div class="row">
+          <label class="key" for="position">Position on screen:</label>
+          <div class="value">
+            <select id="position">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <span class="key">Multi-display:</span>
+          <div class="value">
+            <label><input type="checkbox" id="move-active" /> Move to active screen</label>
+            <p class="hint">Active screen is the screen where your cursor is pointing.</p>
+          </div>
+        </div>
+        <div class="row">
+          <label class="key" for="overlay-size">Overlay size:</label>
+          <div class="value">
+            <input type="range" id="overlay-size" min="0" max="4" step="1" list="size-steps" />
+            <datalist id="size-steps">
+              <option value="0"></option><option value="1"></option><option value="2"></option>
+              <option value="3"></option><option value="4"></option>
+            </datalist>
+          </div>
+        </div>
+      </section>
+      <hr />
+      <section>
+        <div class="row">
+          <span class="key">Auto-close:</span>
+          <div class="value">
+            <label><input type="checkbox" id="auto-close" /> Enable</label>
+            <div class="sub">
+              <label for="auto-action">Action:</label>
+              <select id="auto-action">
+                <option value="close">Close</option>
+                <option value="save_and_close">Save to Desktop and Close</option>
+              </select>
+            </div>
+            <div class="sub">
+              <label for="auto-interval">Interval:</label>
+              <select id="auto-interval">
+                <option value="5">5 seconds</option>
+                <option value="10">10 seconds</option>
+                <option value="30">30 seconds</option>
+                <option value="60">60 seconds</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <span class="key">Drag &amp; drop:</span>
+          <div class="value">
+            <label><input type="checkbox" id="close-after-drag" /> Close after dragging</label>
+            <p class="hint">Hold ⌥ (option) when the drag starts to keep the item on the overlay.</p>
+          </div>
+        </div>
+      </section>
+    </main>
   </body>
 </html>

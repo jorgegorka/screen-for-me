@@ -1,6 +1,7 @@
 mod capture;
 mod commands;
 mod history;
+mod settings;
 mod shortcuts;
 mod tray;
 
@@ -8,6 +9,7 @@ use tauri::Manager;
 
 use commands::AppState;
 use history::History;
+use settings::SettingsStore;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -22,9 +24,10 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
-            let captures_dir = app.path().app_data_dir()?.join("captures");
+            let data_dir = app.path().app_data_dir()?;
             app.manage(AppState {
-                history: History::new(captures_dir)?,
+                history: History::new(data_dir.join("captures"))?,
+                settings: SettingsStore::load(data_dir.join("settings.json")),
             });
 
             tray::setup(app.handle())?;
@@ -41,7 +44,20 @@ pub fn run() {
             commands::open_editor,
             commands::get_capture,
             commands::export_png,
+            commands::get_settings,
+            commands::set_settings,
+            commands::save_capture_to_desktop,
         ])
+        // The main window doubles as the Settings window: closing it hides it
+        // so the tray can re-show it without recreating.
+        .on_window_event(|window, event| {
+            if window.label() == "main" {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

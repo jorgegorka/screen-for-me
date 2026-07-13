@@ -10,7 +10,12 @@ interface CaptureEntry {
   created_ms: number;
 }
 
-const AUTO_HIDE_MS = 8_000;
+interface Settings {
+  auto_close_enabled: boolean;
+  auto_close_action: "close" | "save_and_close";
+  auto_close_seconds: number;
+  close_after_drag: boolean;
+}
 
 const el = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -18,15 +23,30 @@ const el = <T extends HTMLElement>(id: string) =>
 let current: CaptureEntry | null = null;
 let hideTimer: number | undefined;
 let hovering = false;
+let settings: Settings = {
+  auto_close_enabled: false,
+  auto_close_action: "close",
+  auto_close_seconds: 30,
+  close_after_drag: true,
+};
 
 const appWindow = getCurrentWindow();
 
 function armAutoHide() {
   window.clearTimeout(hideTimer);
+  if (!settings.auto_close_enabled) return;
   hideTimer = window.setTimeout(() => {
-    if (hovering) armAutoHide();
-    else void appWindow.hide();
-  }, AUTO_HIDE_MS);
+    if (hovering) {
+      armAutoHide();
+      return;
+    }
+    void (async () => {
+      if (settings.auto_close_action === "save_and_close" && current) {
+        await invoke("save_capture_to_desktop", { id: current.id }).catch(() => {});
+      }
+      await appWindow.hide();
+    })();
+  }, settings.auto_close_seconds * 1000);
 }
 
 function toast(message: string) {
@@ -91,8 +111,11 @@ window.addEventListener("DOMContentLoaded", () => {
     const onMove = (move: MouseEvent) => {
       if (Math.hypot(move.clientX - down.clientX, move.clientY - down.clientY) < 5) return;
       cancel();
-      void startDrag({ item: [entry.path], icon: entry.path });
-      armAutoHide();
+      const keepOpen = move.altKey; // ⌥ at drag start keeps the overlay
+      void startDrag({ item: [entry.path], icon: entry.path }).then(() => {
+        if (settings.close_after_drag && !keepOpen) void appWindow.hide();
+        else armAutoHide();
+      });
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", cancel);
@@ -121,6 +144,15 @@ window.addEventListener("DOMContentLoaded", () => {
 
   void listen<CaptureEntry>("capture:new", (event) => {
     showCapture(event.payload);
+  });
+
+  void invoke<Settings>("get_settings").then((s) => {
+    settings = s;
+    armAutoHide();
+  });
+  void listen<Settings>("settings:changed", (event) => {
+    settings = event.payload;
+    armAutoHide();
   });
 
   // If the window was shown before the page finished loading, catch up.

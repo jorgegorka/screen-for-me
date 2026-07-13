@@ -28,6 +28,7 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
         true,
         Some(shortcuts::ACCEL_FULLSCREEN),
     )?;
+    let settings = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Screen for me", true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
@@ -36,6 +37,7 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
             &window,
             &fullscreen,
             &PredefinedMenuItem::separator(app)?,
+            &settings,
             &quit,
         ],
     )?;
@@ -49,6 +51,13 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
             "capture_area" => trigger_capture(app, CaptureMode::Area),
             "capture_window" => trigger_capture(app, CaptureMode::Window),
             "capture_fullscreen" => trigger_capture(app, CaptureMode::Fullscreen),
+            "settings" => {
+                use tauri::Manager;
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
             "quit" => app.exit(0),
             _ => {}
         })
