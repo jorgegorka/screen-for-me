@@ -6,6 +6,8 @@ mod linux;
 mod macos;
 #[cfg(target_os = "macos")]
 pub mod stitch;
+#[cfg(target_os = "macos")]
+pub mod scroll_input;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
