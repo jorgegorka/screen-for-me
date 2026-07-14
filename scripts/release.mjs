@@ -10,7 +10,7 @@
 //   APPLE_SIGNING_IDENTITY              "Developer ID Application: Jorge Alvarez (X665SZW588)"
 //   APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID   notarization (app-specific password)
 import { execSync } from "node:child_process";
-import { readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { buildLatestJson } from "./latest-json.mjs";
 
