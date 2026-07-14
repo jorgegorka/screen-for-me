@@ -69,11 +69,11 @@ that the `v<version>` release doesn't exist, builds a Developer ID-signed and
 notarized bundle, emits minisign-signed updater artifacts
 (`createUpdaterArtifacts`), generates `latest.json`
 (`scripts/latest-json.mjs`, unit-tested), and uploads the .dmg, .app.tar.gz
-and manifest with `gh`. Secrets live outside the repo in
-`~/.screenforme-release.env` (chmod 600): `TAURI_SIGNING_PRIVATE_KEY` (path to
-`~/.tauri/screenforme.key`), its `_PASSWORD`, and `APPLE_SIGNING_IDENTITY` /
-`APPLE_ID` / `APPLE_PASSWORD` (app-specific) / `APPLE_TEAM_ID` for
-notarization. Never commit the private key; the pubkey in tauri.conf.json must
+and manifest with `gh`. Secrets are exported in the shell environment (never
+committed): `TAURI_SIGNING_PRIVATE_KEY` (path to `~/.tauri/screenforme.key`),
+its `_PASSWORD`, and `APPLE_SIGNING_IDENTITY` / `APPLE_ID` / `APPLE_PASSWORD`
+(app-specific) / `APPLE_TEAM_ID` for notarization. Never commit the private
+key; the pubkey in tauri.conf.json must
 match it or every update check fails signature verification. In-app:
 `windows.rs::check_for_updates(app, silent)` — the tray item is the loud path,
 and lib.rs auto-checks silently 10 s after launch then daily (release builds

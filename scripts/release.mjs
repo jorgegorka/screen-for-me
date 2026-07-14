@@ -4,14 +4,13 @@
 //   npm run release              full pipeline
 //   npm run release -- --dry-run validate env + versions, print the plan, exit
 //
-// Secrets come from the environment or ~/.screenforme-release.env (untracked):
+// Secrets come from the shell environment:
 //   TAURI_SIGNING_PRIVATE_KEY           path to ~/.tauri/screenforme.key
 //   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  its password
 //   APPLE_SIGNING_IDENTITY              "Developer ID Application: Jorge Alvarez (X665SZW588)"
 //   APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID   notarization (app-specific password)
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { buildLatestJson } from "./latest-json.mjs";
 
@@ -30,17 +29,7 @@ function run(cmd) {
   execSync(cmd, { stdio: "inherit", cwd: ROOT });
 }
 
-// --- secrets: environment wins over the env file -------------------------
-const envFile = join(homedir(), ".screenforme-release.env");
-if (existsSync(envFile)) {
-  for (const rawLine of readFileSync(envFile, "utf8").split("\n")) {
-    const line = rawLine.replace(/\r$/, "");
-    const m = line.match(/^(?:export\s+)?([A-Z_]+)=(.*)$/);
-    if (m && !(m[1] in process.env)) {
-      process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
-    }
-  }
-}
+// --- secrets: required environment variables -------------------------------
 const REQUIRED = [
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
@@ -51,7 +40,7 @@ const REQUIRED = [
 ];
 const missing = REQUIRED.filter((k) => !process.env[k]);
 if (missing.length) {
-  fail(`missing env vars: ${missing.join(", ")} (set them in ${envFile})`);
+  fail(`missing env vars: ${missing.join(", ")} (export them in your shell)`);
 }
 
 // --- version consistency ---------------------------------------------------
