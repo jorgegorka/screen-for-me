@@ -55,6 +55,12 @@ main {
   gap: 4px;
 }
 
+/* `display: flex` above overrides the UA's [hidden] rule, so restore it —
+   otherwise every tabpanel stays visible and tabs appear to do nothing. */
+main[hidden] {
+  display: none;
+}
+
 hr {
   border: none;
   border-top: 1px solid #ddd;
