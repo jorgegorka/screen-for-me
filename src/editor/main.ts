@@ -12,7 +12,7 @@ import { clampRect, fitScale, imageToScreen, type Rect, type Size } from "./geom
 import { counterTextColor, nextCounterNumber } from "./counter";
 import { UndoStack } from "./history";
 import { pixelateRegion } from "./pixelate";
-import { buildCounter, rebuildLayer, serializeLayer, type ShapeType } from "./shapes";
+import { buildArrow, buildCounter, rebuildLayer, serializeLayer, type ShapeType } from "./shapes";
 
 type Tool = ShapeType | "select" | "crop";
 
@@ -183,13 +183,11 @@ function startDraft(pos: { x: number; y: number }): Konva.Shape | null {
   const base = { stroke: color, strokeWidth, name: "" };
   switch (tool) {
     case "arrow":
-      return new Konva.Arrow({
-        ...base,
+      return buildArrow({
         name: "arrow",
         points: [pos.x, pos.y, pos.x, pos.y],
         fill: color,
-        pointerLength: 6 + strokeWidth * 2.5,
-        pointerWidth: 6 + strokeWidth * 2.5,
+        strokeWidth,
       });
     case "rect":
       return new Konva.Rect({
@@ -577,9 +575,10 @@ function selectColor(value: string, applyToSelection: boolean) {
         node.setAttr("fill", value);
         (node as Konva.Group).findOne("Circle")?.setAttr("fill", value);
         (node as Konva.Group).findOne("Text")?.setAttr("fill", counterTextColor(value));
+      } else if (node.name() === "arrow") {
+        node.setAttr("fill", value);
       } else {
         node.setAttr("stroke", value);
-        if (node.name() === "arrow") node.setAttr("fill", value);
       }
     }
     if (transformer.nodes().length > 0) {

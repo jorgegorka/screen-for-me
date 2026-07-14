@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Editor arrows are now solid and tapered (thin tail widening into the
+  head, Skitch-style) and scale with their length, so they grow naturally
+  out of the tail point while dragging.
+
 ### Fixed
 
 - Settings window tabs (General / Shortcuts / About) now switch their content.
