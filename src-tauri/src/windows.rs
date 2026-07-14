@@ -1,16 +1,24 @@
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
+/// Windows that hide (rather than destroy) on close, handled in lib.rs's
+/// `on_window_event`; `timer` and `scrollcap` are transient and excluded.
+pub const HIDE_ON_CLOSE: &[&str] = &["main", "editor", "history"];
+
 /// Show a window that hides (rather than destroys) on close, creating it once.
-fn show_or_create(
+/// `on_reuse` runs against an already-existing (warm) window before it is
+/// shown; a fresh window skips it.
+pub fn show_or_create(
     app: &AppHandle,
     label: &str,
     url: &str,
     title: &str,
     size: (f64, f64),
     min_size: (f64, f64),
+    on_reuse: impl FnOnce(&tauri::WebviewWindow) -> Result<(), String>,
 ) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(label) {
+        on_reuse(&window)?;
         window.show().map_err(|e| e.to_string())?;
         window.set_focus().map_err(|e| e.to_string())?;
     } else {
@@ -33,6 +41,7 @@ pub fn open_history(app: AppHandle) -> Result<(), String> {
         "Screen for me — Capture History",
         (860.0, 620.0),
         (520.0, 400.0),
+        |_| Ok(()),
     )
 }
 
@@ -60,11 +69,11 @@ pub fn open_timer(app: &AppHandle) -> tauri::Result<()> {
     .always_on_top(true)
     .skip_taskbar(true)
     .resizable(false)
-    .accept_first_mouse(true);
+    .accept_first_mouse(true)
+    // Never in a shot: the timer must not appear if a capture fires under it.
+    .content_protected(true);
     if let Some(monitor) = crate::commands::active_monitor(app) {
-        let scale = monitor.scale_factor();
-        let pos = monitor.position().to_logical::<f64>(scale);
-        let size = monitor.size().to_logical::<f64>(scale);
+        let (pos, size) = crate::commands::monitor_logical_bounds(&monitor);
         builder = builder.position(
             pos.x + (size.width - SIZE) / 2.0,
             pos.y + (size.height - SIZE) / 2.0,
@@ -109,9 +118,7 @@ pub fn open_scrollcap(app: &AppHandle) -> tauri::Result<()> {
     .content_protected(true)
     .focused(true);
     if let Some(monitor) = crate::commands::active_monitor(app) {
-        let scale = monitor.scale_factor();
-        let pos = monitor.position().to_logical::<f64>(scale);
-        let size = monitor.size().to_logical::<f64>(scale);
+        let (pos, size) = crate::commands::monitor_logical_bounds(&monitor);
         builder = builder
             .position(pos.x, pos.y)
             .inner_size(size.width, size.height);
@@ -123,12 +130,12 @@ pub fn open_scrollcap(app: &AppHandle) -> tauri::Result<()> {
 pub fn show_about(app: &AppHandle) {
     let package = app.package_info();
     let message = format!(
-        "Screen for me\nVersion {}\n\nA screenshot app: capture, annotate, and share.",
+        "Developed by Mario & Jorge Alvarez\nVersion {}\n\nA screenshot app: capture, annotate, and share.",
         package.version
     );
     app.dialog()
         .message(message)
-        .title("About Screen for me")
+        .title("Screen for me")
         .kind(MessageDialogKind::Info)
         .show(|_| {});
 }

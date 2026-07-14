@@ -30,6 +30,24 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
+            // Give NSAlert dialogs (About, updater) the app icon even in dev,
+            // where the bare binary has no bundle icon to fall back on.
+            #[cfg(target_os = "macos")]
+            {
+                use objc2::AnyThread;
+                use objc2_app_kit::{NSApplication, NSImage};
+                use objc2_foundation::{MainThreadMarker, NSData};
+                let mtm = MainThreadMarker::new().expect("setup runs on the main thread");
+                let data = NSData::with_bytes(include_bytes!("../icons/128x128@2x.png"));
+                if let Some(image) = NSImage::initWithData(NSImage::alloc(), &data) {
+                    // Safety: valid NSImage, called on the main thread (mtm).
+                    unsafe {
+                        NSApplication::sharedApplication(mtm)
+                            .setApplicationIconImage(Some(&image));
+                    }
+                }
+            }
+
             let data_dir = app.path().app_data_dir()?;
             app.manage(AppState {
                 history: History::new(data_dir.join("captures"))?,
