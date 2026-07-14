@@ -12,7 +12,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { buildLatestJson } from "./latest-json.mjs";
 
 const ROOT = new URL("..", import.meta.url).pathname;
@@ -33,7 +33,8 @@ function run(cmd) {
 // --- secrets: environment wins over the env file -------------------------
 const envFile = join(homedir(), ".screenforme-release.env");
 if (existsSync(envFile)) {
-  for (const line of readFileSync(envFile, "utf8").split("\n")) {
+  for (const rawLine of readFileSync(envFile, "utf8").split("\n")) {
+    const line = rawLine.replace(/\r$/, "");
     const m = line.match(/^(?:export\s+)?([A-Z_]+)=(.*)$/);
     if (m && !(m[1] in process.env)) {
       process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
@@ -59,7 +60,10 @@ const conf = JSON.parse(
   readFileSync(join(ROOT, "src-tauri/tauri.conf.json"), "utf8"),
 );
 const cargo = readFileSync(join(ROOT, "src-tauri/Cargo.toml"), "utf8");
-const cargoVersion = cargo.match(/^version = "([^"]+)"/m)?.[1];
+const cargoPackageSection = cargo
+  .slice(cargo.indexOf("[package]"))
+  .split(/\n\[/)[0];
+const cargoVersion = cargoPackageSection.match(/^version = "([^"]+)"/m)?.[1];
 const version = pkg.version;
 if (conf.version !== version || cargoVersion !== version) {
   fail(
@@ -87,7 +91,8 @@ const tarball = join(
 );
 const appPath = join(BUNDLE, "macos", "Screen for me.app");
 const manifestPath = join(BUNDLE, "latest.json");
-const assetUrl = `https://github.com/${REPO}/releases/download/${tag}/Screen_for_me_${version}_aarch64.app.tar.gz`;
+const assetName = basename(tarball);
+const assetUrl = `https://github.com/${REPO}/releases/download/${tag}/${assetName}`;
 
 if (dryRun) {
   console.log(`release ${tag} — dry run OK`);
@@ -123,9 +128,21 @@ const manifest = buildLatestJson({
 });
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
-// --- publish -----------------------------------------------------------------
-run(
-  `gh release create ${tag} -R ${REPO} --title "${version}" --generate-notes ` +
-    `"${dmg}" "${tarball}" "${manifestPath}"`,
-);
+// --- publish -------------------------------------------------------------
+// Create as a draft first and only flip it public after every asset has
+// uploaded successfully — drafts are invisible to the releases/latest/download
+// endpoint, so a failure mid-upload leaves an unpublished draft instead of a
+// broken published release.
+try {
+  run(
+    `gh release create ${tag} -R ${REPO} --draft --title "${version}" --generate-notes ` +
+      `"${dmg}" "${tarball}" "${manifestPath}"`,
+  );
+} catch (err) {
+  fail(
+    `release creation/upload failed — a draft release ${tag} may exist on ${REPO}; ` +
+      `delete it with "gh release delete ${tag} -R ${REPO}" before retrying. (${err.message})`,
+  );
+}
+run(`gh release edit ${tag} -R ${REPO} --draft=false`);
 console.log(`\nreleased ${tag} — the updater endpoint now serves this build.`);
