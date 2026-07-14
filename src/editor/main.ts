@@ -277,6 +277,10 @@ function onPointerMove() {
   if (!draft) return;
   switch (draft.name()) {
     case "arrow":
+      // buildArrow returns a generic Konva.Shape — no .points() method
+      // (Konva only registers it on Line.prototype); update the attr directly.
+      draft.setAttr("points", [draftStart.x, draftStart.y, pos.x, pos.y]);
+      break;
     case "line":
       (draft as Konva.Line).points([draftStart.x, draftStart.y, pos.x, pos.y]);
       break;
