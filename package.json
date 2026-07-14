@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "bundle": "tauri build; node scripts/rename-bundles.mjs",
+    "release": "node scripts/release.mjs",
     "test": "vitest run"
   },
   "dependencies": {
