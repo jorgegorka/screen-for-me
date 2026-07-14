@@ -62,9 +62,9 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQ3QTVDRTI5MjhEMTI4RjgKUldUNEtORW9LYzZsMTRpMUMyV2FJY2cwbjcyU0RLZlpYaVlPcVoxdmxVeG1OR1VpYnFXV003bEIK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIyNDdCQTVCNjI4MzNERUYKUldUdlBZTmlXN3BISW1yenJ5WWpXYWNpUm9kdzRpN0d5OWpKazhudlU3VHZkNlJpQmVERXRSNlIK",
       "endpoints": [
-        "https://releases.screenforme.example/updates/{{target}}/{{arch}}/{{current_version}}"
+        "https://github.com/jorgegorka/screen-for-me/releases/latest/download/latest.json"
       ]
     }
   }
