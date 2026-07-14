@@ -4,11 +4,7 @@
 //   npm run release              full pipeline
 //   npm run release -- --dry-run validate env + versions, print the plan, exit
 //
-// Secrets come from the shell environment:
-//   TAURI_SIGNING_PRIVATE_KEY           path to ~/.tauri/screenforme.key
-//   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  its password
-//   APPLE_SIGNING_IDENTITY              "Developer ID Application: Jorge Alvarez (X665SZW588)"
-//   APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID   notarization (app-specific password)
+// Secrets come from the shell environment; see REQUIRED below.
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
