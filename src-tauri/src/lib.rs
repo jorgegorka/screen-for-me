@@ -74,6 +74,23 @@ pub fn run() {
             if let Some(main) = app.get_webview_window("main") {
                 let _ = main.set_title(&i18n::t("window.settings"));
             }
+
+            // Auto-check for updates: shortly after launch, then daily (a
+            // menu-bar app runs for weeks). Silent — only an actual update
+            // shows UI. Release builds only: dev builds run version 1.x too
+            // and would nag against the published releases.
+            #[cfg(not(debug_assertions))]
+            {
+                let handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                    loop {
+                        windows::check_for_updates(&handle, true);
+                        tokio::time::sleep(std::time::Duration::from_secs(60 * 60 * 24))
+                            .await;
+                    }
+                });
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
