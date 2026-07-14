@@ -26,7 +26,10 @@
 
   "updates.title": "Buscar actualizaciones",
   "updates.available_title": "Actualización disponible",
-  "updates.available": "La versión {version} está disponible. Descárgala e instálala desde el sitio web de Screen for me.",
+  "updates.available": "La versión {version} está disponible. ¿Quieres instalarla ahora?",
+  "updates.install": "Instalar y reiniciar",
+  "updates.later": "Más tarde",
+  "updates.install_failed": "No se pudo instalar la actualización:\n{err}",
   "updates.latest": "Tienes la última versión.",
   "updates.unreachable": "No se pudo conectar con el servidor de actualizaciones. Inténtalo de nuevo más tarde.\n\n({err})",
   "updates.check_failed": "No se pudo buscar actualizaciones:\n{err}",

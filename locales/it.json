@@ -26,7 +26,10 @@
 
   "updates.title": "Controlla aggiornamenti",
   "updates.available_title": "Aggiornamento disponibile",
-  "updates.available": "La versione {version} è disponibile. Scaricala e installala dal sito web di Screen for me.",
+  "updates.available": "La versione {version} è disponibile. Vuoi installarla adesso?",
+  "updates.install": "Installa e riavvia",
+  "updates.later": "Più tardi",
+  "updates.install_failed": "Impossibile installare l'aggiornamento:\n{err}",
   "updates.latest": "Hai già l'ultima versione.",
   "updates.unreachable": "Impossibile raggiungere il server degli aggiornamenti. Riprova più tardi.\n\n({err})",
   "updates.check_failed": "Impossibile controllare gli aggiornamenti:\n{err}",

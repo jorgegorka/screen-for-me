@@ -26,7 +26,10 @@
 
   "updates.title": "Rechercher des mises à jour",
   "updates.available_title": "Mise à jour disponible",
-  "updates.available": "La version {version} est disponible. Téléchargez-la et installez-la depuis le site web de Screen for me.",
+  "updates.available": "La version {version} est disponible. Voulez-vous l'installer maintenant ?",
+  "updates.install": "Installer et redémarrer",
+  "updates.later": "Plus tard",
+  "updates.install_failed": "L'installation de la mise à jour a échoué :\n{err}",
   "updates.latest": "Vous utilisez la dernière version.",
   "updates.unreachable": "Impossible de joindre le serveur de mise à jour. Veuillez réessayer plus tard.\n\n({err})",
   "updates.check_failed": "Impossible de rechercher des mises à jour :\n{err}",

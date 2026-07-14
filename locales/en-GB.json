@@ -26,7 +26,10 @@
 
   "updates.title": "Check for Updates",
   "updates.available_title": "Update Available",
-  "updates.available": "Version {version} is available. Download and install it from the Screen for me website.",
+  "updates.available": "Version {version} is available. Would you like to install it now?",
+  "updates.install": "Install & Restart",
+  "updates.later": "Later",
+  "updates.install_failed": "The update could not be installed:\n{err}",
   "updates.latest": "You're on the latest version.",
   "updates.unreachable": "Couldn't reach the update server. Please try again later.\n\n({err})",
   "updates.check_failed": "Could not check for updates:\n{err}",
