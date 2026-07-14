@@ -122,12 +122,21 @@ body {
 #canvas-scroll {
   height: calc(100% - 46px);
   overflow: auto;
-  display: grid;
-  place-items: center;
+  display: flex;
 }
 
+/* Auto margins centre the stage when it fits and, unlike grid centring, keep
+   the top/left edges reachable by scrolling once it is zoomed past the
+   viewport. */
 #stage-holder {
+  margin: auto;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+}
+
+#zoom-level {
+  min-width: 52px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 #error-bar {

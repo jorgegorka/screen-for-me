@@ -8,7 +8,15 @@ import { el } from "../shared/dom";
 import { initI18n, t } from "../shared/i18n";
 import { normalizeRect } from "../shared/geometry";
 import type { CaptureEntry } from "../shared/ipc";
-import { clampRect, fitScale, imageToScreen, type Rect, type Size } from "./geometry";
+import {
+  clampRect,
+  clampScale,
+  imageToScreen,
+  initialScale,
+  nextFitScale,
+  type Rect,
+  type Size,
+} from "./geometry";
 import { counterTextColor, nextCounterNumber } from "./counter";
 import { UndoStack } from "./history";
 import { pixelateRegion } from "./pixelate";
@@ -58,6 +66,14 @@ function buildStage() {
     width: 10,
     height: 10,
   });
+  // Virtual scrolling: #stage-holder is a spacer with the full zoomed size,
+  // while the canvas itself (Konva's content div) never exceeds the visible
+  // viewport and sticks to it as the user scrolls. A canvas sized to the whole
+  // zoomed image would exceed WebKit's canvas limits on large captures (e.g.
+  // scrolling captures) and kill the webview.
+  stage.content.style.position = "sticky";
+  stage.content.style.top = "0px";
+  stage.content.style.left = "0px";
   bgLayer = new Konva.Layer({ listening: false });
   annLayer = new Konva.Layer();
   uiLayer = new Konva.Layer();
@@ -80,11 +96,99 @@ function buildStage() {
 
 function applyView() {
   const view = crop ?? { x: 0, y: 0, ...imageSize };
-  stage.size({ width: view.width * scale, height: view.height * scale });
+  const scroll = el<HTMLDivElement>("canvas-scroll");
+  const holder = el<HTMLDivElement>("stage-holder");
+  const width = view.width * scale;
+  const height = view.height * scale;
+  holder.style.width = `${width}px`;
+  holder.style.height = `${height}px`;
+  stage.size({
+    width: Math.min(width, scroll.clientWidth),
+    height: Math.min(height, scroll.clientHeight),
+  });
   stage.scale({ x: scale, y: scale });
-  stage.position({ x: -view.x * scale, y: -view.y * scale });
+  syncStagePosition();
   el<HTMLButtonElement>("reset-crop").classList.toggle("hidden", crop === null);
+  el<HTMLButtonElement>("zoom-level").textContent = `${Math.round(scale * 100)}%`;
+}
+
+/** Align the viewport-pinned canvas with the scrolled/zoomed view. */
+function syncStagePosition() {
+  const view = crop ?? { x: 0, y: 0, ...imageSize };
+  const scroll = el<HTMLDivElement>("canvas-scroll");
+  stage.position({
+    x: -view.x * scale - scroll.scrollLeft,
+    y: -view.y * scale - scroll.scrollTop,
+  });
   stage.batchDraw();
+}
+
+// ---------------------------------------------------------------------------
+// Zoom
+
+/**
+ * Set the view scale, keeping the image point under `focal` (client
+ * coordinates; defaults to the viewport centre) stationary on screen.
+ */
+function setZoom(next: number, focal?: { x: number; y: number }) {
+  const target = clampScale(next);
+  if (target === scale) return;
+  const scroll = el<HTMLDivElement>("canvas-scroll");
+  const holder = el<HTMLDivElement>("stage-holder");
+  const box = scroll.getBoundingClientRect();
+  const point = focal ?? { x: box.left + scroll.clientWidth / 2, y: box.top + scroll.clientHeight / 2 };
+  const view = crop ?? { x: 0, y: 0, ...imageSize };
+  const before = holder.getBoundingClientRect();
+  const image = {
+    x: (point.x - before.left) / scale + view.x,
+    y: (point.y - before.top) / scale + view.y,
+  };
+  scale = target;
+  applyView();
+  const after = holder.getBoundingClientRect();
+  scroll.scrollLeft += after.left + (image.x - view.x) * scale - point.x;
+  scroll.scrollTop += after.top + (image.y - view.y) * scale - point.y;
+  syncStagePosition();
+}
+
+function zoomBy(factor: number) {
+  setZoom(scale * factor);
+}
+
+/** Fit the current view: smart fit first, toggling to the whole image on repeat. */
+function zoomFit() {
+  const view = crop ?? { x: 0, y: 0, ...imageSize };
+  scale = nextFitScale(scale, view, viewportSize());
+  applyView();
+}
+
+function bindViewportEvents() {
+  const scroll = el<HTMLDivElement>("canvas-scroll");
+  scroll.addEventListener("scroll", syncStagePosition);
+  window.addEventListener("resize", () => {
+    if (imageSize.width > 0) applyView();
+  });
+  // Pinch on Chromium-style engines and ⌘/Ctrl+scroll everywhere.
+  scroll.addEventListener(
+    "wheel",
+    (event) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      setZoom(scale * Math.exp(-event.deltaY * 0.01), { x: event.clientX, y: event.clientY });
+    },
+    { passive: false },
+  );
+  // Trackpad pinch on WebKit arrives as proprietary gesture events.
+  let gestureBase = 1;
+  scroll.addEventListener("gesturestart", (event) => {
+    event.preventDefault();
+    gestureBase = scale;
+  });
+  scroll.addEventListener("gesturechange", (event) => {
+    event.preventDefault();
+    const g = event as unknown as { scale: number; clientX: number; clientY: number };
+    setZoom(gestureBase * g.scale, { x: g.clientX, y: g.clientY });
+  });
 }
 
 /** Pointer position in image coordinates. */
@@ -109,7 +213,7 @@ async function loadCapture(entry: CaptureEntry) {
   await sourceImage.decode();
   URL.revokeObjectURL(url);
   imageSize = { width: sourceImage.naturalWidth, height: sourceImage.naturalHeight };
-  scale = fitScale(imageSize, viewportSize());
+  scale = initialScale(imageSize, viewportSize());
 
   bgLayer.destroyChildren();
   bgLayer.add(
@@ -120,6 +224,10 @@ async function loadCapture(entry: CaptureEntry) {
   undoStack = new UndoStack(serializeLayer(annLayer));
   syncUndoButtons();
   applyView();
+  // A width-fitted tall capture starts taller than the viewport: read from the top.
+  const scroll = el<HTMLDivElement>("canvas-scroll");
+  scroll.scrollTop = 0;
+  scroll.scrollLeft = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -461,7 +569,9 @@ function editText(node: Konva.Text) {
   transformer.nodes([]);
   annLayer.batchDraw();
 
-  const stageBox = stage.container().getBoundingClientRect();
+  // The canvas (Konva content div) is viewport-pinned; its rect, not the
+  // scrolling holder's, anchors screen-space overlays.
+  const stageBox = stage.content.getBoundingClientRect();
   // getAbsolutePosition(stage) is in image coordinates (excludes the stage's
   // fit-scale/pan transform) — map it to screen space before styling.
   const abs = node.getAbsolutePosition(stage);
@@ -523,9 +633,23 @@ const PNG_PREFIX = "data:image/png;base64,";
 function renderPng(): string {
   transformer.nodes([]);
   marquee?.hide();
-  uiLayer.batchDraw();
+  // The on-screen stage is viewport-pinned and only renders the visible slice,
+  // so temporarily give it the whole view for export — at a scale that keeps
+  // the intermediate layer canvases within WebKit's size limits. toDataURL
+  // re-renders vectors at `pixelRatio`, so the export itself stays native-res.
+  const view = crop ?? { x: 0, y: 0, ...imageSize };
+  const dpr = window.devicePixelRatio || 1;
+  const MAX_LAYER_DIM = 8192;
+  const exportScale = Math.min(
+    1,
+    MAX_LAYER_DIM / (view.width * dpr),
+    MAX_LAYER_DIM / (view.height * dpr),
+  );
+  stage.size({ width: view.width * exportScale, height: view.height * exportScale });
+  stage.scale({ x: exportScale, y: exportScale });
+  stage.position({ x: -view.x * exportScale, y: -view.y * exportScale });
   try {
-    let pixelRatio = 1 / scale;
+    let pixelRatio = 1 / exportScale;
     for (let attempt = 0; attempt < 5; attempt++) {
       let dataUrl = "";
       try {
@@ -548,6 +672,7 @@ function renderPng(): string {
     throw new Error(t("editor.export_failed"));
   } finally {
     marquee?.show();
+    applyView();
   }
 }
 
@@ -620,6 +745,10 @@ function buildToolbar() {
 
   el<HTMLButtonElement>("undo").onclick = undo;
   el<HTMLButtonElement>("redo").onclick = redo;
+  el<HTMLButtonElement>("zoom-in").onclick = () => zoomBy(1.25);
+  el<HTMLButtonElement>("zoom-out").onclick = () => zoomBy(1 / 1.25);
+  el<HTMLButtonElement>("zoom-level").onclick = () => setZoom(1);
+  el<HTMLButtonElement>("zoom-fit").onclick = zoomFit;
   el<HTMLButtonElement>("crop-apply").onclick = applyCrop;
   el<HTMLButtonElement>("crop-cancel").onclick = () => cancelCrop();
   el<HTMLButtonElement>("reset-crop").onclick = () => {
@@ -664,6 +793,21 @@ function bindKeyboard() {
     if (primary && event.key.toLowerCase() === "z") {
       event.preventDefault();
       event.shiftKey ? redo() : undo();
+      return;
+    }
+    if (primary && (event.key === "=" || event.key === "+")) {
+      event.preventDefault();
+      zoomBy(1.25);
+      return;
+    }
+    if (primary && event.key === "-") {
+      event.preventDefault();
+      zoomBy(1 / 1.25);
+      return;
+    }
+    if (primary && event.key === "0") {
+      event.preventDefault();
+      zoomFit();
       return;
     }
     if (event.key === "Delete" || event.key === "Backspace") {
@@ -721,6 +865,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   buildStage();
   buildToolbar();
   bindKeyboard();
+  bindViewportEvents();
   await applyPrefs();
 
   // Reload requests while the window is already open (reuse path).
