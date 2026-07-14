@@ -38,7 +38,7 @@ pub fn open_history(app: AppHandle) -> Result<(), String> {
         &app,
         "history",
         "history.html",
-        "Screen for me — Capture History",
+        &crate::i18n::t("window.history"),
         (860.0, 620.0),
         (520.0, 400.0),
         |_| Ok(()),
@@ -61,7 +61,7 @@ pub fn open_timer(app: &AppHandle) -> tauri::Result<()> {
         "timer",
         tauri::WebviewUrl::App("timer.html".into()),
     )
-    .title("Self-Timer")
+    .title(crate::i18n::t("window.timer"))
     .inner_size(SIZE, SIZE)
     .decorations(false)
     .transparent(true)
@@ -103,7 +103,7 @@ pub fn open_scrollcap(app: &AppHandle) -> tauri::Result<()> {
         "scrollcap",
         tauri::WebviewUrl::App("scrollcap.html".into()),
     )
-    .title("Scrolling Capture")
+    .title(crate::i18n::t("window.scrollcap"))
     .decorations(false)
     .transparent(true)
     .shadow(false)
@@ -129,13 +129,13 @@ pub fn open_scrollcap(app: &AppHandle) -> tauri::Result<()> {
 
 pub fn show_about(app: &AppHandle) {
     let package = app.package_info();
-    let message = format!(
-        "Developed by Mario & Jorge Alvarez\nVersion {}\n\nA screenshot app: capture, annotate, and share.",
-        package.version
+    let message = crate::i18n::t_with(
+        "about.message",
+        &[("version", &package.version.to_string())],
     );
     app.dialog()
         .message(message)
-        .title("Screen for me")
+        .title(crate::i18n::t("about.title"))
         .kind(MessageDialogKind::Info)
         .show(|_| {});
 }
@@ -152,8 +152,11 @@ pub fn check_for_updates(app: &AppHandle) {
             Ok(updater) => updater.check().await,
             Err(err) => {
                 dialog
-                    .message(format!("Could not check for updates:\n{err}"))
-                    .title("Check for Updates")
+                    .message(crate::i18n::t_with(
+                        "updates.check_failed",
+                        &[("err", &err.to_string())],
+                    ))
+                    .title(crate::i18n::t("updates.title"))
                     .kind(MessageDialogKind::Warning)
                     .show(|_| {});
                 return;
@@ -162,27 +165,28 @@ pub fn check_for_updates(app: &AppHandle) {
         match result {
             Ok(Some(update)) => {
                 dialog
-                    .message(format!(
-                        "Version {} is available. Download and install it from the Screen for me website.",
-                        update.version
+                    .message(crate::i18n::t_with(
+                        "updates.available",
+                        &[("version", &update.version)],
                     ))
-                    .title("Update Available")
+                    .title(crate::i18n::t("updates.available_title"))
                     .kind(MessageDialogKind::Info)
                     .show(|_| {});
             }
             Ok(None) => {
                 dialog
-                    .message("You're on the latest version.")
-                    .title("Check for Updates")
+                    .message(crate::i18n::t("updates.latest"))
+                    .title(crate::i18n::t("updates.title"))
                     .kind(MessageDialogKind::Info)
                     .show(|_| {});
             }
             Err(err) => {
                 dialog
-                    .message(format!(
-                        "Couldn't reach the update server. Please try again later.\n\n({err})"
+                    .message(crate::i18n::t_with(
+                        "updates.unreachable",
+                        &[("err", &err.to_string())],
                     ))
-                    .title("Check for Updates")
+                    .title(crate::i18n::t("updates.title"))
                     .kind(MessageDialogKind::Warning)
                     .show(|_| {});
             }

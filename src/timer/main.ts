@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
+import { initI18n } from "../shared/i18n";
+
 const appWindow = getCurrentWindow();
 const count = document.getElementById("count") as HTMLDivElement;
 
@@ -29,4 +31,5 @@ async function main() {
   });
 }
 
+void initI18n();
 void main();

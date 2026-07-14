@@ -5,6 +5,7 @@ import { startDrag } from "@crabnebula/tauri-plugin-drag";
 
 import { savePngAs } from "../shared/dialogs";
 import { el } from "../shared/dom";
+import { initI18n, t } from "../shared/i18n";
 import type { CaptureEntry, Settings } from "../shared/ipc";
 
 /** The overlay only cares about the auto-close/drag subset of Settings. */
@@ -82,6 +83,7 @@ async function run(action: () => Promise<void>, doneMessage?: string) {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+  void initI18n();
   const card = el<HTMLDivElement>("overlay-card");
   card.addEventListener("mouseenter", () => (hovering = true));
   card.addEventListener("mouseleave", () => {
@@ -115,14 +117,14 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   el<HTMLButtonElement>("copy").onclick = () =>
-    run(() => invoke("copy_capture", { id: current!.id }), "Copied");
+    run(() => invoke("copy_capture", { id: current!.id }), t("overlay.toast_copied"));
 
   el<HTMLButtonElement>("save").onclick = () =>
     run(async () => {
       const dest = await savePngAs(current!.id);
       if (dest) {
         await invoke("save_capture_to", { id: current!.id, dest });
-        toast("Saved");
+        toast(t("overlay.toast_saved"));
       }
     });
 

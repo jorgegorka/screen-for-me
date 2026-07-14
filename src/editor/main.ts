@@ -5,6 +5,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { savePngAs } from "../shared/dialogs";
 import { el } from "../shared/dom";
+import { initI18n, t } from "../shared/i18n";
 import { normalizeRect } from "../shared/geometry";
 import type { CaptureEntry } from "../shared/ipc";
 import { clampRect, fitScale, imageToScreen, type Rect, type Size } from "./geometry";
@@ -533,7 +534,7 @@ function renderPng(): string {
       }
       pixelRatio /= 2;
     }
-    throw new Error("Could not export the image.");
+    throw new Error(t("editor.export_failed"));
   } finally {
     marquee?.show();
   }
@@ -703,6 +704,7 @@ async function applyPrefs() {
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
+  await initI18n();
   buildStage();
   buildToolbar();
   bindKeyboard();

@@ -1,6 +1,7 @@
 mod capture;
 mod commands;
 mod history;
+mod i18n;
 mod settings;
 mod shortcuts;
 mod tray;
@@ -60,8 +61,18 @@ pub fn run() {
                 scroll_running: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
             });
 
+            // Resolve the UI language before anything user-visible is built.
+            let language = app.state::<AppState>().settings.get().language;
+            i18n::set_language(i18n::resolve(&language));
+
             tray::setup(app.handle())?;
             shortcuts::setup(app.handle())?;
+
+            // Config-declared windows carry the English titles from
+            // tauri.conf.json; retitle the visible one for the active language.
+            if let Some(main) = app.get_webview_window("main") {
+                let _ = main.set_title(&i18n::t("window.settings"));
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -75,6 +86,7 @@ pub fn run() {
             commands::export_png,
             commands::get_settings,
             commands::set_settings,
+            commands::resolved_language,
             commands::get_editor_prefs,
             commands::set_editor_prefs,
             commands::save_capture_to_desktop,

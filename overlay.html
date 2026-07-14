@@ -3,22 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Capture</title>
+    <title data-i18n="window.overlay">Capture</title>
     <link rel="stylesheet" href="/src/overlay/overlay.css" />
     <script type="module" src="/src/overlay/main.ts" defer></script>
   </head>
   <body>
     <div id="overlay-card" class="card hidden">
-      <button id="dismiss" class="dismiss" title="Dismiss">✕</button>
+      <button id="dismiss" class="dismiss" title="Dismiss" data-i18n-title="overlay.dismiss">✕</button>
       <div class="thumb-wrap">
-        <img id="thumb" alt="Latest capture" draggable="false" />
+        <img id="thumb" alt="Latest capture" data-i18n-alt="overlay.latest_capture" draggable="false" />
         <span id="stack-badge" class="badge hidden"></span>
       </div>
       <div class="actions">
-        <button id="copy" title="Copy to clipboard">Copy</button>
-        <button id="save" title="Save as…">Save</button>
-        <button id="annotate" title="Annotate">Annotate</button>
-        <button id="reveal" title="Show in Finder">Finder</button>
+        <button id="copy" title="Copy to clipboard" data-i18n="overlay.copy" data-i18n-title="overlay.copy_tooltip">Copy</button>
+        <button id="save" title="Save as…" data-i18n="overlay.save" data-i18n-title="overlay.save_tooltip">Save</button>
+        <button id="annotate" title="Annotate" data-i18n="overlay.annotate" data-i18n-title="overlay.annotate">Annotate</button>
+        <button id="reveal" title="Show in Finder" data-i18n="overlay.reveal" data-i18n-title="overlay.reveal_tooltip">Finder</button>
       </div>
       <div id="toast" class="toast hidden"></div>
     </div>

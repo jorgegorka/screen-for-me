@@ -4,6 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { savePngAs } from "../shared/dialogs";
 import { el } from "../shared/dom";
+import { initI18n, t } from "../shared/i18n";
 import type { CaptureEntry } from "../shared/ipc";
 
 function formatTime(ms: number): string {
@@ -13,9 +14,11 @@ function formatTime(ms: number): string {
   });
 }
 
-function actionButton(label: string, onClick: () => void): HTMLButtonElement {
+function actionButton(key: string, onClick: () => void): HTMLButtonElement {
   const button = document.createElement("button");
-  button.textContent = label;
+  // data-i18n so a live language switch re-labels these via applyTranslations.
+  button.setAttribute("data-i18n", key);
+  button.textContent = t(key);
   button.onclick = onClick;
   return button;
 }
@@ -38,16 +41,16 @@ function card(entry: CaptureEntry): HTMLElement {
   const actions = document.createElement("div");
   actions.className = "actions";
   actions.append(
-    actionButton("Annotate", async () => {
+    actionButton("history.annotate", async () => {
       await invoke("open_editor", { id: entry.id });
       await getCurrentWindow().hide();
     }),
-    actionButton("Copy", () => void invoke("copy_capture", { id: entry.id })),
-    actionButton("Save", async () => {
+    actionButton("history.copy", () => void invoke("copy_capture", { id: entry.id })),
+    actionButton("history.save", async () => {
       const dest = await savePngAs(entry.id);
       if (dest) await invoke("save_capture_to", { id: entry.id, dest });
     }),
-    actionButton("Finder", () => void invoke("reveal_capture", { id: entry.id })),
+    actionButton("history.reveal", () => void invoke("reveal_capture", { id: entry.id })),
   );
 
   node.append(thumb, meta, actions);
@@ -61,7 +64,8 @@ async function render() {
   el<HTMLParagraphElement>("empty").classList.toggle("hidden", captures.length > 0);
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
+  await initI18n();
   void render();
   void listen("capture:new", () => void render());
 });

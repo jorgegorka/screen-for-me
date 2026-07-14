@@ -172,9 +172,36 @@ pub fn set_settings(
     state: State<AppState>,
     settings: Settings,
 ) -> Result<Settings, String> {
+    let old_language = state.settings.get().language;
     let saved = state.settings.set(settings).map_err(|e| e.to_string())?;
+    if saved.language != old_language {
+        crate::i18n::set_language(crate::i18n::resolve(&saved.language));
+        // Menu and title APIs must run on the main thread on macOS.
+        let handle = app.clone();
+        let _ = app.run_on_main_thread(move || {
+            if let Err(err) = crate::tray::refresh(&handle) {
+                eprintln!("failed to rebuild tray menu: {err}");
+            }
+            for (label, key) in [
+                ("main", "window.settings"),
+                ("history", "window.history"),
+                ("editor", "window.editor"),
+            ] {
+                if let Some(window) = handle.get_webview_window(label) {
+                    let _ = window.set_title(&crate::i18n::t(key));
+                }
+            }
+        });
+    }
     let _ = app.emit("settings:changed", &saved);
     Ok(saved)
+}
+
+/// The language tag the webviews should render in ("en-GB", "es", …), with the
+/// "system" setting already resolved against the OS locale.
+#[tauri::command]
+pub fn resolved_language() -> String {
+    crate::i18n::current().tag().to_string()
 }
 
 /// Auto-close "Save and Close": copy the capture to the user's Desktop.
@@ -206,7 +233,7 @@ pub fn open_editor(app: AppHandle, state: State<AppState>, id: String) -> Result
         &app,
         "editor",
         "editor.html",
-        "Screen for me — Annotate",
+        &crate::i18n::t("window.editor"),
         (1200.0, 800.0),
         (700.0, 500.0),
         |editor| {
@@ -429,12 +456,8 @@ fn run_scrolling_capture_macos(
         running.store(false, std::sync::atomic::Ordering::SeqCst);
         let _ = window.destroy();
         app.dialog()
-            .message(
-                "Scrolling Capture needs Accessibility access to scroll the page for you.\n\n\
-                 Enable \"Screen for me\" in System Settings → Privacy & Security → \
-                 Accessibility, then try again.",
-            )
-            .title("Accessibility Permission Needed")
+            .message(crate::i18n::t("perm.accessibility_body"))
+            .title(crate::i18n::t("perm.accessibility_title"))
             .kind(MessageDialogKind::Warning)
             .show(|_| {});
         return Ok(());

@@ -44,9 +44,19 @@ pub enum CaptureError {
     Spawn(#[from] std::io::Error),
     #[error("capture tool failed: {0}")]
     Tool(String),
-    #[error(
-        "capture produced no usable image — on macOS this usually means the app lacks \
-         Screen Recording permission (System Settings → Privacy & Security → Screen Recording)"
+    #[cfg_attr(
+        target_os = "macos",
+        error(
+            "capture produced no usable image — this usually means the app lacks \
+             Screen Recording permission (System Settings → Privacy & Security → Screen Recording)"
+        )
+    )]
+    #[cfg_attr(
+        not(target_os = "macos"),
+        error(
+            "capture produced no usable image — the screenshot portal returned an \
+             empty or truncated file"
+        )
     )]
     EmptyCapture,
 }

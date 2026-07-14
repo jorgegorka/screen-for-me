@@ -14,4 +14,5 @@ export interface Settings {
   auto_close_action: "close" | "save_and_close";
   auto_close_seconds: number;
   close_after_drag: boolean;
+  language: "system" | "en-GB" | "es" | "fr" | "de" | "it";
 }

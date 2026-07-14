@@ -16,7 +16,10 @@ pub enum AutoCloseAction {
     SaveAndClose,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+/// UI languages selectable in Settings; anything else is reset to "system".
+pub const LANGUAGES: &[&str] = &["system", "en-GB", "es", "fr", "de", "it"];
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct Settings {
     pub position: OverlayPosition,
@@ -27,6 +30,8 @@ pub struct Settings {
     pub auto_close_action: AutoCloseAction,
     pub auto_close_seconds: u32,
     pub close_after_drag: bool,
+    /// "system" (follow the OS locale) or one of the supported tags.
+    pub language: String,
 }
 
 impl Default for Settings {
@@ -39,6 +44,7 @@ impl Default for Settings {
             auto_close_action: AutoCloseAction::Close,
             auto_close_seconds: 30,
             close_after_drag: true,
+            language: "system".into(),
         }
     }
 }
@@ -48,6 +54,9 @@ impl Settings {
     pub fn sanitized(mut self) -> Self {
         self.overlay_size = self.overlay_size.clamp(0.75, 2.0);
         self.auto_close_seconds = self.auto_close_seconds.clamp(3, 600);
+        if !LANGUAGES.contains(&self.language.as_str()) {
+            self.language = "system".into();
+        }
         self
     }
 }
@@ -150,7 +159,7 @@ mod tests {
         s.position = OverlayPosition::Right;
         s.auto_close_enabled = true;
         s.auto_close_seconds = 10;
-        store.set(s).unwrap();
+        store.set(s.clone()).unwrap();
         let reloaded = SettingsStore::load(path.clone()).get();
         assert_eq!(reloaded, s);
         let _ = std::fs::remove_file(&path);
@@ -166,6 +175,24 @@ mod tests {
         .sanitized();
         assert_eq!(s.overlay_size, 2.0);
         assert_eq!(s.auto_close_seconds, 3);
+    }
+
+    #[test]
+    fn sanitize_resets_unknown_language() {
+        let s = Settings {
+            language: "zz".into(),
+            ..Default::default()
+        }
+        .sanitized();
+        assert_eq!(s.language, "system");
+        for tag in LANGUAGES {
+            let s = Settings {
+                language: (*tag).into(),
+                ..Default::default()
+            }
+            .sanitized();
+            assert_eq!(s.language, *tag);
+        }
     }
 
     #[test]

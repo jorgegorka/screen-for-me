@@ -2,13 +2,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { el } from "../shared/dom";
+import { initI18n, t, tn } from "../shared/i18n";
 import { hudPosition, isSelectable, normalizeRect, type Rect } from "./geometry";
 
 const appWindow = getCurrentWindow();
 const hint = el<HTMLDivElement>("hint");
-// A start-failure overwrites this with an error message; resetToSelect
-// restores the original instruction rather than leaving the error stuck.
-const hintDefaultText = hint.textContent;
 const selection = el<HTMLDivElement>("selection");
 const hud = el<HTMLDivElement>("hud");
 const progress = el<HTMLSpanElement>("progress");
@@ -46,7 +44,9 @@ function resetToSelect() {
   rect = null;
   selection.classList.add("hidden");
   hud.classList.add("hidden");
-  hint.textContent = hintDefaultText;
+  // A start-failure overwrites the hint with an error message; restore the
+  // instruction via t() so it also survives a live language switch.
+  hint.textContent = t("scrollcap.hint");
   hint.classList.remove("hidden");
 }
 
@@ -132,5 +132,8 @@ void listen("scroll:running", () => {
 });
 
 void listen<number>("scroll:progress", (event) => {
-  progress.textContent = `${event.payload} frames`;
+  // Overwrites the data-i18n "Capturing…" text; progress updates keep it live.
+  progress.textContent = tn("scrollcap.frames", event.payload);
 });
+
+void initI18n();
