@@ -1,11 +1,8 @@
-export interface Size {
-  width: number;
-  height: number;
-}
+import type { Rect } from "../shared/geometry";
 
-export interface Rect {
-  x: number;
-  y: number;
+export type { Rect };
+
+export interface Size {
   width: number;
   height: number;
 }
@@ -21,32 +18,17 @@ export function fitScale(image: Size, viewport: Size): number {
 }
 
 /**
- * Parameters for Konva `stage.toDataURL` that produce a native-resolution
- * export. The stage renders the image at `scale`; crop is in image pixels.
+ * Map an image-space point to stage-container (screen) space, given the stage
+ * position (pan, already in screen pixels) and the fit scale.
  */
-export function exportParams(image: Size, scale: number, crop?: Rect | null) {
-  const region = crop ?? { x: 0, y: 0, ...image };
+export function imageToScreen(
+  point: { x: number; y: number },
+  stagePos: { x: number; y: number },
+  scale: number,
+): { x: number; y: number } {
   return {
-    x: region.x * scale,
-    y: region.y * scale,
-    width: region.width * scale,
-    height: region.height * scale,
-    pixelRatio: 1 / scale,
-  };
-}
-
-/** Normalize a drag between two points into a positive-size rect. */
-export function dragRect(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-): Rect {
-  return {
-    x: Math.min(x1, x2),
-    y: Math.min(y1, y2),
-    width: Math.abs(x2 - x1),
-    height: Math.abs(y2 - y1),
+    x: stagePos.x + point.x * scale,
+    y: stagePos.y + point.y * scale,
   };
 }
 

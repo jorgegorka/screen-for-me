@@ -46,8 +46,8 @@ Capture flow: shortcut/tray → `commands::trigger_capture` (spawn_blocking) →
 
 - **macOS Screen Recording permission**: without it, `screencapture` can exit 0 and write a wallpaper-only image. In dev, the TCC grant attaches to the *terminal* running the app; the packaged .app prompts once itself.
 - Transparent overlay window requires `macOSPrivateApi: true` (tauri.conf.json) + the `macos-private-api` cargo feature.
-- Capability file `src-tauri/capabilities/default.json` must list every window label (`main`, `overlay`, `editor`, `history`) — a new window with JS API calls needs its label added there.
-- Windows that hide-instead-of-close (`main`, `editor`, `history`) are handled in the `on_window_event` match in lib.rs; `src-tauri/src/windows.rs` owns their open/show helpers plus the About and Check-for-Updates dialogs.
+- Capability file `src-tauri/capabilities/default.json` applies to `"windows": ["*"]`, so new windows get JS API permissions automatically; split the capability only if a window ever needs a narrower set.
+- Windows that hide-instead-of-close are listed in `windows.rs::HIDE_ON_CLOSE` (consumed by the `on_window_event` handler in lib.rs); `src-tauri/src/windows.rs` owns their open/show helpers plus the About and Check-for-Updates dialogs.
 - The asset protocol scope is `$APPDATA/captures/*`; captures displayed in webviews go through `convertFileSrc`.
 - macOS reserves Cmd+Shift+3/4/5, hence 7/8/9.
 - **Cursor→monitor on macOS**: don't use `AppHandle::cursor_position()` for active-screen detection — tao (0.35.x) returns it in physical pixels scaled by the *primary* monitor and mixes units in the Y-flip, so on scaled/Retina displays the point misses every monitor and `monitor_from_point` returns `None` (silently falling back to primary). `commands.rs::cursor_point` reads the cursor from CoreGraphics (`CGEvent::location`), which is in the same logical-point space as `CGDisplayBounds`/`monitor_from_point`. Non-macOS falls back to `cursor_position()`.

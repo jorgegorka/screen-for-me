@@ -71,61 +71,56 @@ impl Default for EditorPrefs {
     }
 }
 
-pub struct EditorPrefsStore {
+/// JSON-file-backed store: a missing or corrupt file yields `T::default()`,
+/// and `sanitize` normalizes values on load and set (identity when a type has
+/// no invariants to enforce).
+pub struct JsonStore<T> {
     path: PathBuf,
-    current: Mutex<EditorPrefs>,
+    sanitize: fn(T) -> T,
+    current: Mutex<T>,
+}
+
+impl<T> JsonStore<T>
+where
+    T: serde::Serialize + serde::de::DeserializeOwned + Default + Clone,
+{
+    fn load_with(path: PathBuf, sanitize: fn(T) -> T) -> Self {
+        let current = std::fs::read(&path)
+            .ok()
+            .and_then(|bytes| serde_json::from_slice::<T>(&bytes).ok())
+            .map(sanitize)
+            .unwrap_or_default();
+        Self {
+            path,
+            sanitize,
+            current: Mutex::new(current),
+        }
+    }
+
+    pub fn get(&self) -> T {
+        self.current.lock().unwrap().clone()
+    }
+
+    pub fn set(&self, value: T) -> std::io::Result<T> {
+        let value = (self.sanitize)(value);
+        *self.current.lock().unwrap() = value.clone();
+        std::fs::write(&self.path, serde_json::to_vec_pretty(&value)?)?;
+        Ok(value)
+    }
+}
+
+pub type SettingsStore = JsonStore<Settings>;
+pub type EditorPrefsStore = JsonStore<EditorPrefs>;
+
+impl SettingsStore {
+    pub fn load(path: PathBuf) -> Self {
+        Self::load_with(path, Settings::sanitized)
+    }
 }
 
 impl EditorPrefsStore {
     pub fn load(path: PathBuf) -> Self {
-        let current = std::fs::read(&path)
-            .ok()
-            .and_then(|bytes| serde_json::from_slice::<EditorPrefs>(&bytes).ok())
-            .unwrap_or_default();
-        Self {
-            path,
-            current: Mutex::new(current),
-        }
-    }
-
-    pub fn get(&self) -> EditorPrefs {
-        self.current.lock().unwrap().clone()
-    }
-
-    pub fn set(&self, prefs: EditorPrefs) -> std::io::Result<EditorPrefs> {
-        *self.current.lock().unwrap() = prefs.clone();
-        std::fs::write(&self.path, serde_json::to_vec_pretty(&prefs)?)?;
-        Ok(prefs)
-    }
-}
-
-pub struct SettingsStore {
-    path: PathBuf,
-    current: Mutex<Settings>,
-}
-
-impl SettingsStore {
-    pub fn load(path: PathBuf) -> Self {
-        let current = std::fs::read(&path)
-            .ok()
-            .and_then(|bytes| serde_json::from_slice::<Settings>(&bytes).ok())
-            .map(Settings::sanitized)
-            .unwrap_or_default();
-        Self {
-            path,
-            current: Mutex::new(current),
-        }
-    }
-
-    pub fn get(&self) -> Settings {
-        *self.current.lock().unwrap()
-    }
-
-    pub fn set(&self, settings: Settings) -> std::io::Result<Settings> {
-        let settings = settings.sanitized();
-        *self.current.lock().unwrap() = settings;
-        std::fs::write(&self.path, serde_json::to_vec_pretty(&settings)?)?;
-        Ok(settings)
+        Self::load_with(path, |prefs| prefs)
     }
 }
 
@@ -171,24 +166,6 @@ mod tests {
         .sanitized();
         assert_eq!(s.overlay_size, 2.0);
         assert_eq!(s.auto_close_seconds, 3);
-    }
-
-    #[test]
-    fn editor_prefs_roundtrip_and_defaults() {
-        let path = temp_path("editor-prefs");
-        let _ = std::fs::remove_file(&path);
-        // Missing file → defaults (arrow / red / 4).
-        let store = EditorPrefsStore::load(path.clone());
-        assert_eq!(store.get(), EditorPrefs::default());
-        // Persisted values survive a reload.
-        let prefs = EditorPrefs {
-            tool: "rect".into(),
-            color: "#34c759".into(),
-            stroke_width: 8,
-        };
-        store.set(prefs.clone()).unwrap();
-        assert_eq!(EditorPrefsStore::load(path.clone()).get(), prefs);
-        let _ = std::fs::remove_file(&path);
     }
 
     #[test]

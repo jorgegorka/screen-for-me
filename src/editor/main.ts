@@ -2,24 +2,19 @@ import Konva from "konva";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { save } from "@tauri-apps/plugin-dialog";
 
-import { clampRect, dragRect, fitScale, type Rect, type Size } from "./geometry";
+import { savePngAs } from "../shared/dialogs";
+import { el } from "../shared/dom";
+import { normalizeRect } from "../shared/geometry";
+import type { CaptureEntry } from "../shared/ipc";
+import { clampRect, fitScale, imageToScreen, type Rect, type Size } from "./geometry";
 import { UndoStack } from "./history";
 import { pixelateRegion } from "./pixelate";
 import { rebuildLayer, serializeLayer, type ShapeType } from "./shapes";
 
-interface CaptureEntry {
-  path: string;
-  id: string;
-  created_ms: number;
-}
-
 type Tool = ShapeType | "select" | "crop";
 
 const COLORS = ["#ff3b30", "#ffcc00", "#34c759", "#4f8ef7", "#af52de", "#ffffff", "#000000"];
-
-const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 // ---------------------------------------------------------------------------
 // State
@@ -265,7 +260,7 @@ function onPointerDown() {
 function onPointerMove() {
   const pos = pointerPos();
   if (marquee) {
-    const rect = dragRect(draftStart.x, draftStart.y, pos.x, pos.y);
+    const rect = normalizeRect(draftStart.x, draftStart.y, pos.x, pos.y);
     marquee.setAttrs(rect);
     uiLayer.batchDraw();
     return;
@@ -277,15 +272,14 @@ function onPointerMove() {
       (draft as Konva.Line).points([draftStart.x, draftStart.y, pos.x, pos.y]);
       break;
     case "pen":
-    case "highlight":
-      (draft as Konva.Line).points([
-        ...(draft as Konva.Line).points(),
-        pos.x,
-        pos.y,
-      ]);
+    case "highlight": {
+      const pts = (draft as Konva.Line).points();
+      pts.push(pos.x, pos.y);
+      (draft as Konva.Line).points(pts);
       break;
+    }
     case "rect":
-      draft.setAttrs(dragRect(draftStart.x, draftStart.y, pos.x, pos.y));
+      draft.setAttrs(normalizeRect(draftStart.x, draftStart.y, pos.x, pos.y));
       break;
     case "ellipse":
       draft.setAttrs({
@@ -431,13 +425,16 @@ function editText(node: Konva.Text) {
   annLayer.batchDraw();
 
   const stageBox = stage.container().getBoundingClientRect();
+  // getAbsolutePosition(stage) is in image coordinates (excludes the stage's
+  // fit-scale/pan transform) — map it to screen space before styling.
   const abs = node.getAbsolutePosition(stage);
+  const screen = imageToScreen(abs, stage.position(), scale);
   const area = document.createElement("textarea");
   document.body.appendChild(area);
   area.className = "text-editor";
   area.value = node.text();
-  area.style.left = `${stageBox.left + stage.x() + abs.x}px`;
-  area.style.top = `${stageBox.top + stage.y() + abs.y}px`;
+  area.style.left = `${stageBox.left + screen.x}px`;
+  area.style.top = `${stageBox.top + screen.y}px`;
   area.style.width = `${Math.max(160, node.width() * scale + 20)}px`;
   area.style.height = `${Math.max(node.height() * scale + 8, node.fontSize() * scale * 1.4)}px`;
   area.style.fontSize = `${node.fontSize() * scale}px`;
@@ -592,10 +589,7 @@ function buildToolbar() {
     void guard(() => exportPng({ kind: "copy" }));
   el<HTMLButtonElement>("save").onclick = () =>
     void guard(async () => {
-      const dest = await save({
-        defaultPath: `annotated-${captureId}`,
-        filters: [{ name: "PNG image", extensions: ["png"] }],
-      });
+      const dest = await savePngAs(`annotated-${captureId}`);
       if (dest) await exportPng({ kind: "save_to", dest });
     });
   el<HTMLButtonElement>("done").onclick = () =>

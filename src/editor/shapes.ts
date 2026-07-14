@@ -29,7 +29,7 @@ const ATTRS: Record<ShapeType, string[]> = {
   pixelate: [...COMMON, "width", "height", "src"],
 };
 
-export function nodeToSpec(node: Konva.Node): ShapeSpec | null {
+function nodeToSpec(node: Konva.Node): ShapeSpec | null {
   const type = node.name() as ShapeType;
   if (!(type in ATTRS)) return null;
   const attrs: Record<string, unknown> = {};
@@ -40,7 +40,7 @@ export function nodeToSpec(node: Konva.Node): ShapeSpec | null {
   return { type, attrs };
 }
 
-export function specToNode(
+function specToNode(
   spec: ShapeSpec,
   onImageReady: () => void,
 ): Konva.Shape {

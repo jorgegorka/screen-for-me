@@ -1,9 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { el } from "../shared/dom";
 import { hudPosition, isSelectable, normalizeRect, type Rect } from "./geometry";
-
-const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 const appWindow = getCurrentWindow();
 const hint = el<HTMLDivElement>("hint");
@@ -16,7 +15,6 @@ const progress = el<HTMLSpanElement>("progress");
 
 type Phase = "select" | "staged" | "running";
 type Direction = "up" | "down" | "left" | "right";
-const DIRECTIONS: readonly string[] = ["up", "down", "left", "right"];
 let phase: Phase = "select";
 let dragStart: { x: number; y: number } | null = null;
 let rect: Rect | null = null;
@@ -81,8 +79,9 @@ document.addEventListener("mouseup", (event) => {
 
 for (const button of hud.querySelectorAll<HTMLButtonElement>(".directions button")) {
   button.addEventListener("click", () => {
-    const d = button.dataset.direction;
-    direction = d && DIRECTIONS.includes(d) ? (d as Direction) : "down";
+    // Values come from data-direction in the markup; Rust deserializes the
+    // ScrollDirection enum and rejects anything unknown via the Start catch.
+    direction = button.dataset.direction as Direction;
     hud.querySelectorAll(".directions button").forEach((b) => b.classList.remove("active"));
     button.classList.add("active");
   });

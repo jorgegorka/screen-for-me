@@ -59,13 +59,6 @@ impl History {
         path.exists().then(|| entry_from_path(path)).flatten()
     }
 
-    pub fn delete(&self, id: &str) -> bool {
-        match self.resolve(id) {
-            Some(entry) => fs::remove_file(entry.path).is_ok(),
-            None => false,
-        }
-    }
-
     pub fn prune(&self) {
         let entries = self.list();
         for old in entries.iter().skip(MAX_CAPTURES) {
@@ -155,16 +148,6 @@ mod tests {
             entries[0].id,
             format!("capture-{}.png", 1000 + MAX_CAPTURES + 4)
         );
-        fs::remove_dir_all(h.dir()).unwrap();
-    }
-
-    #[test]
-    fn delete_removes_file() {
-        let h = temp_history();
-        fs::write(h.dir().join("capture-1000.png"), b"a").unwrap();
-        assert!(h.delete("capture-1000.png"));
-        assert!(h.list().is_empty());
-        assert!(!h.delete("capture-1000.png"));
         fs::remove_dir_all(h.dir()).unwrap();
     }
 }

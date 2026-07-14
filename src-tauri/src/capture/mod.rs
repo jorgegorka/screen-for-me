@@ -11,6 +11,17 @@ pub mod scroll_input;
 #[cfg(target_os = "macos")]
 pub mod scrolling;
 
+/// Scroll direction for scrolling capture. Lives here (not in the macOS-only
+/// `stitch` module) so the IPC command can deserialize it on every platform.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ScrollDirection {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CaptureMode {
@@ -51,6 +62,27 @@ pub fn capture(mode: CaptureMode, dest: &Path) -> Result<CaptureOutcome, Capture
         let _ = (mode, dest);
         Err(CaptureError::Tool("unsupported platform".into()))
     }
+}
+
+/// Run `/usr/sbin/screencapture` with `args` plus the destination path,
+/// shaping a non-zero exit into `CaptureError::Tool` (stderr when present).
+/// Output validation stays with the callers — interactive and silent modes
+/// disagree on what a missing file means.
+#[cfg(target_os = "macos")]
+pub(crate) fn run_screencapture(args: &[&str], dest: &Path) -> Result<(), CaptureError> {
+    let output = std::process::Command::new("/usr/sbin/screencapture")
+        .args(args)
+        .arg(dest)
+        .output()?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(CaptureError::Tool(if stderr.is_empty() {
+            format!("screencapture exited with {}", output.status)
+        } else {
+            stderr
+        }));
+    }
+    Ok(())
 }
 
 /// A cancelled interactive selection leaves no file; a permission-starved

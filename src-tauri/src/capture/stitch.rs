@@ -5,25 +5,18 @@
 //! frame so the scroll direction becomes "down", stitching always appends rows
 //! at the bottom, and `denormalize` undoes the transform on the final image.
 
-use image::{GenericImage, GenericImageView, RgbaImage};
+use image::RgbaImage;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ScrollDirection {
-    Up,
-    Down,
-    Left,
-    Right,
-}
+use super::ScrollDirection;
 
-pub(crate) fn normalize(frame: &RgbaImage, dir: ScrollDirection) -> RgbaImage {
+pub(crate) fn normalize(frame: RgbaImage, dir: ScrollDirection) -> RgbaImage {
     use image::imageops::{flip_vertical, rotate270, rotate90};
     match dir {
-        ScrollDirection::Down => frame.clone(),
-        ScrollDirection::Up => flip_vertical(frame),
+        ScrollDirection::Down => frame,
+        ScrollDirection::Up => flip_vertical(&frame),
         // Content moving right maps to moving down under a clockwise rotation.
-        ScrollDirection::Right => rotate90(frame),
-        ScrollDirection::Left => rotate270(frame),
+        ScrollDirection::Right => rotate90(&frame),
+        ScrollDirection::Left => rotate270(&frame),
     }
 }
 
@@ -58,6 +51,8 @@ pub(crate) fn most_textured_strip(img: &RgbaImage) -> u32 {
         return 0;
     }
     let max_start = (h / 2).min(h - STRIP_ROWS);
+    let raw = img.as_raw();
+    let row_stride = w as usize * 4;
     let mut best_start = 0u32;
     let mut best_score = f64::MIN;
     let mut s = 0;
@@ -67,12 +62,14 @@ pub(crate) fn most_textured_strip(img: &RgbaImage) -> u32 {
         let mut n = 0u64;
         let mut y = 0;
         while y < STRIP_ROWS {
+            let row = (s + y) as usize * row_stride;
             let mut x = 0;
             while x < w {
-                let p = img.get_pixel(x, s + y).0;
+                let p = &raw[row + x as usize * 4..][..3];
                 for c in 0..3 {
-                    sum[c] += u64::from(p[c]);
-                    sum_sq[c] += u64::from(p[c]) * u64::from(p[c]);
+                    let v = u64::from(p[c]);
+                    sum[c] += v;
+                    sum_sq[c] += v * v;
                 }
                 n += 1;
                 x += SAMPLE_STEP;
@@ -101,6 +98,9 @@ pub(crate) fn find_scroll_offset(prev: &RgbaImage, next: &RgbaImage) -> Option<u
         return None;
     }
     let strip_start = most_textured_strip(next);
+    let raw_prev = prev.as_raw();
+    let raw_next = next.as_raw();
+    let row_stride = w as usize * 4;
     let mut best_offset = 0u32;
     let mut best_diff = f64::MAX;
     for offset in 0..=(h - STRIP_ROWS - strip_start) {
@@ -108,10 +108,12 @@ pub(crate) fn find_scroll_offset(prev: &RgbaImage, next: &RgbaImage) -> Option<u
         let mut samples = 0u64;
         let mut y = 0;
         while y < STRIP_ROWS {
+            let row_a = (strip_start + y + offset) as usize * row_stride;
+            let row_b = (strip_start + y) as usize * row_stride;
             let mut x = 0;
             while x < w {
-                let a = prev.get_pixel(x, strip_start + y + offset).0;
-                let b = next.get_pixel(x, strip_start + y).0;
+                let a = &raw_prev[row_a + x as usize * 4..][..3];
+                let b = &raw_next[row_b + x as usize * 4..][..3];
                 for c in 0..3 {
                     sum += (i32::from(a[c]) - i32::from(b[c])).unsigned_abs() as u64;
                 }
@@ -124,6 +126,11 @@ pub(crate) fn find_scroll_offset(prev: &RgbaImage, next: &RgbaImage) -> Option<u
         if diff < best_diff {
             best_diff = diff;
             best_offset = offset;
+            // A perfect match can't be beaten, and the first strict minimum
+            // wins ties anyway — later offsets can't change the result.
+            if sum == 0 {
+                break;
+            }
         }
     }
     (best_diff <= MAX_MEAN_DIFF).then_some(best_offset)
@@ -152,14 +159,18 @@ pub(crate) fn frames_similar(a: &RgbaImage, b: &RgbaImage) -> bool {
     if w == 0 || h == 0 {
         return false;
     }
+    let raw_a = a.as_raw();
+    let raw_b = b.as_raw();
+    let row_stride = w as usize * 4;
     let mut changed = 0u64;
     let mut samples = 0u64;
     let mut y = 0;
     while y < h {
+        let row = y as usize * row_stride;
         let mut x = 0;
         while x < w {
-            let pa = a.get_pixel(x, y).0;
-            let pb = b.get_pixel(x, y).0;
+            let pa = &raw_a[row + x as usize * 4..][..3];
+            let pb = &raw_b[row + x as usize * 4..][..3];
             if (0..3).any(|c| {
                 (i32::from(pa[c]) - i32::from(pb[c])).unsigned_abs() > CHANGED_CHANNEL_DIFF
             }) {
@@ -173,21 +184,76 @@ pub(crate) fn frames_similar(a: &RgbaImage, b: &RgbaImage) -> bool {
     (changed as f64 / samples as f64) <= MAX_CHANGED_FRACTION
 }
 
-/// Grow the composite by the `new_rows` bottom rows of `next`.
-pub(crate) fn append_rows(composite: RgbaImage, next: &RgbaImage, new_rows: u32) -> RgbaImage {
-    let (w, composite_h) = composite.dimensions();
-    let (next_w, next_h) = next.dimensions();
-    let new_rows = new_rows.min(next_h);
-    let mut out = RgbaImage::new(w, composite_h + new_rows);
-    out.copy_from(&composite, 0, 0).expect("composite fits");
-    let strip = next.view(0, next_h - new_rows, next_w.min(w), new_rows).to_image();
-    out.copy_from(&strip, 0, composite_h).expect("strip fits");
-    out
+/// Largest offset `find_scroll_offset` can detect on a normalized frame
+/// extending `frame_axis_px` along the scroll axis: `most_textured_strip`
+/// may pick a strip starting as deep as h/2, leaving only the rows below
+/// the shifted strip as search range. The capture loop must keep its
+/// commanded per-step pixel extent at or below this, or matching silently
+/// degrades to the nominal fallback.
+pub(crate) fn max_detectable_offset(frame_axis_px: u32) -> u32 {
+    (frame_axis_px - frame_axis_px / 2).saturating_sub(STRIP_ROWS)
+}
+
+/// The growing stitched image, kept as raw RGBA rows so appending a frame's
+/// new rows costs O(rows added) — rebuilding an `RgbaImage` per frame copies
+/// the whole composite every time (quadratic; final composites reach
+/// hundreds of MB). Materialized once at the end via `into_image`.
+pub(crate) struct Composite {
+    width: u32,
+    height: u32,
+    data: Vec<u8>,
+}
+
+impl Composite {
+    /// Start from the first normalized frame.
+    pub(crate) fn new(first: &RgbaImage) -> Self {
+        Composite {
+            width: first.width(),
+            height: first.height(),
+            data: first.as_raw().clone(),
+        }
+    }
+
+    pub(crate) fn height(&self) -> u32 {
+        self.height
+    }
+
+    /// Grow the composite by the `new_rows` bottom rows of `next`.
+    pub(crate) fn append_rows(&mut self, next: &RgbaImage, new_rows: u32) {
+        let (next_w, next_h) = next.dimensions();
+        let new_rows = new_rows.min(next_h);
+        let row_stride = self.width as usize * 4;
+        let next_stride = next_w as usize * 4;
+        let copy_bytes = row_stride.min(next_stride);
+        let raw = next.as_raw();
+        self.data.reserve(new_rows as usize * row_stride);
+        for y in (next_h - new_rows)..next_h {
+            let start = y as usize * next_stride;
+            self.data.extend_from_slice(&raw[start..start + copy_bytes]);
+            // A frame narrower than the composite pads with blank pixels.
+            self.data.resize(self.data.len() + (row_stride - copy_bytes), 0);
+        }
+        self.height += new_rows;
+    }
+
+    pub(crate) fn into_image(self) -> RgbaImage {
+        RgbaImage::from_raw(self.width, self.height, self.data)
+            .expect("raw buffer matches dimensions")
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use image::GenericImageView;
+
+    /// Stitch `next` onto `prev` and return the finished image, like one
+    /// iteration of the capture loop.
+    fn stitch_once(prev: RgbaImage, next: &RgbaImage, new_rows: u32) -> RgbaImage {
+        let mut composite = Composite::new(&prev);
+        composite.append_rows(next, new_rows);
+        composite.into_image()
+    }
 
     /// Deterministic per-pixel noise so strips match at exactly one offset.
     fn noise_image(w: u32, h: u32, seed: u32) -> RgbaImage {
@@ -292,7 +358,7 @@ mod tests {
         let src = noise_image(160, 600, 9);
         let prev = window(&src, 0, 0, 160, 200);
         let next = window(&src, 0, 37, 160, 200);
-        let composite = append_rows(prev, &next, 37);
+        let composite = stitch_once(prev, &next, 37);
         assert_eq!(composite.dimensions(), (160, 237));
         assert_eq!(composite, window(&src, 0, 0, 160, 237));
     }
@@ -306,7 +372,7 @@ mod tests {
             ScrollDirection::Left,
             ScrollDirection::Right,
         ] {
-            assert_eq!(denormalize(normalize(&frame, dir), dir), frame, "{dir:?}");
+            assert_eq!(denormalize(normalize(frame.clone(), dir), dir), frame, "{dir:?}");
         }
     }
 
@@ -318,11 +384,11 @@ mod tests {
         let prev = window(&src, 0, 0, 200, 160);
         let next = window(&src, 37, 0, 200, 160);
         let dir = ScrollDirection::Right;
-        let prev_n = normalize(&prev, dir);
-        let next_n = normalize(&next, dir);
+        let prev_n = normalize(prev, dir);
+        let next_n = normalize(next, dir);
         let offset = find_scroll_offset(&prev_n, &next_n).expect("confident match");
         assert_eq!(offset, 37);
-        let composite = denormalize(append_rows(prev_n, &next_n, offset), dir);
+        let composite = denormalize(stitch_once(prev_n, &next_n, offset), dir);
         assert_eq!(composite, window(&src, 0, 0, 237, 160));
     }
 
@@ -333,11 +399,11 @@ mod tests {
         let prev = window(&src, 0, 400, 160, 200);
         let next = window(&src, 0, 363, 160, 200);
         let dir = ScrollDirection::Up;
-        let prev_n = normalize(&prev, dir);
-        let next_n = normalize(&next, dir);
+        let prev_n = normalize(prev, dir);
+        let next_n = normalize(next, dir);
         let offset = find_scroll_offset(&prev_n, &next_n).expect("confident match");
         assert_eq!(offset, 37);
-        let composite = denormalize(append_rows(prev_n, &next_n, offset), dir);
+        let composite = denormalize(stitch_once(prev_n, &next_n, offset), dir);
         assert_eq!(composite, window(&src, 0, 363, 160, 237));
     }
 
@@ -349,11 +415,11 @@ mod tests {
         let prev = window(&src, 37, 0, 200, 160);
         let next = window(&src, 0, 0, 200, 160);
         let dir = ScrollDirection::Left;
-        let prev_n = normalize(&prev, dir);
-        let next_n = normalize(&next, dir);
+        let prev_n = normalize(prev, dir);
+        let next_n = normalize(next, dir);
         let offset = find_scroll_offset(&prev_n, &next_n).expect("confident match");
         assert_eq!(offset, 37);
-        let composite = denormalize(append_rows(prev_n, &next_n, offset), dir);
+        let composite = denormalize(stitch_once(prev_n, &next_n, offset), dir);
         assert_eq!(composite, window(&src, 0, 0, 237, 160));
     }
 

@@ -1,15 +1,10 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { save } from "@tauri-apps/plugin-dialog";
 
-interface CaptureEntry {
-  path: string;
-  id: string;
-  created_ms: number;
-}
-
-const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+import { savePngAs } from "../shared/dialogs";
+import { el } from "../shared/dom";
+import type { CaptureEntry } from "../shared/ipc";
 
 function formatTime(ms: number): string {
   return new Date(ms).toLocaleString(undefined, {
@@ -49,10 +44,7 @@ function card(entry: CaptureEntry): HTMLElement {
     }),
     actionButton("Copy", () => void invoke("copy_capture", { id: entry.id })),
     actionButton("Save", async () => {
-      const dest = await save({
-        defaultPath: entry.id,
-        filters: [{ name: "PNG image", extensions: ["png"] }],
-      });
+      const dest = await savePngAs(entry.id);
       if (dest) await invoke("save_capture_to", { id: entry.id, dest });
     }),
     actionButton("Finder", () => void invoke("reveal_capture", { id: entry.id })),

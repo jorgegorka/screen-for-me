@@ -1,29 +1,22 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { save } from "@tauri-apps/plugin-dialog";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
 
-interface CaptureEntry {
-  path: string;
-  id: string;
-  created_ms: number;
-}
+import { savePngAs } from "../shared/dialogs";
+import { el } from "../shared/dom";
+import type { CaptureEntry, Settings } from "../shared/ipc";
 
-interface Settings {
-  auto_close_enabled: boolean;
-  auto_close_action: "close" | "save_and_close";
-  auto_close_seconds: number;
-  close_after_drag: boolean;
-}
-
-const el = <T extends HTMLElement>(id: string) =>
-  document.getElementById(id) as T;
+/** The overlay only cares about the auto-close/drag subset of Settings. */
+type OverlaySettings = Pick<
+  Settings,
+  "auto_close_enabled" | "auto_close_action" | "auto_close_seconds" | "close_after_drag"
+>;
 
 let current: CaptureEntry | null = null;
 let hideTimer: number | undefined;
 let hovering = false;
-let settings: Settings = {
+let settings: OverlaySettings = {
   auto_close_enabled: false,
   auto_close_action: "close",
   auto_close_seconds: 30,
@@ -126,10 +119,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   el<HTMLButtonElement>("save").onclick = () =>
     run(async () => {
-      const dest = await save({
-        defaultPath: current!.id,
-        filters: [{ name: "PNG image", extensions: ["png"] }],
-      });
+      const dest = await savePngAs(current!.id);
       if (dest) {
         await invoke("save_capture_to", { id: current!.id, dest });
         toast("Saved");

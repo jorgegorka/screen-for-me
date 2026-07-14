@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampRect, dragRect, exportParams, fitScale } from "./geometry";
+import { clampRect, fitScale, imageToScreen } from "./geometry";
 
 describe("fitScale", () => {
   it("never upscales past 100%", () => {
@@ -12,28 +12,15 @@ describe("fitScale", () => {
   });
 });
 
-describe("exportParams", () => {
-  const image = { width: 2000, height: 1000 };
-
-  it("round-trips to native resolution without a crop", () => {
-    const p = exportParams(image, 0.5);
-    expect(p).toEqual({ x: 0, y: 0, width: 1000, height: 500, pixelRatio: 2 });
-    // effective output = stage-space size * pixelRatio = native pixels
-    expect(p.width * p.pixelRatio).toBe(image.width);
-    expect(p.height * p.pixelRatio).toBe(image.height);
+describe("imageToScreen", () => {
+  it("scales image coordinates by the fit scale", () => {
+    // @2x capture displayed at 0.5: image point (1650, 900) sits at (825, 450) on screen
+    expect(imageToScreen({ x: 1650, y: 900 }, { x: 0, y: 0 }, 0.5)).toEqual({ x: 825, y: 450 });
   });
 
-  it("maps an image-space crop into stage space", () => {
-    const p = exportParams(image, 0.5, { x: 100, y: 50, width: 800, height: 400 });
-    expect(p).toEqual({ x: 50, y: 25, width: 400, height: 200, pixelRatio: 2 });
-    expect(p.width * p.pixelRatio).toBe(800);
-  });
-});
-
-describe("dragRect", () => {
-  it("normalizes any drag direction", () => {
-    expect(dragRect(10, 20, 4, 6)).toEqual({ x: 4, y: 6, width: 6, height: 14 });
-    expect(dragRect(4, 6, 10, 20)).toEqual({ x: 4, y: 6, width: 6, height: 14 });
+  it("applies the stage pan from a crop view", () => {
+    // crop view starting at image x=200 → stage.position = (-200*0.5, 0)
+    expect(imageToScreen({ x: 300, y: 40 }, { x: -100, y: 0 }, 0.5)).toEqual({ x: 50, y: 20 });
   });
 });
 

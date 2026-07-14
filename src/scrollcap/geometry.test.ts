@@ -1,16 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hudPosition, isSelectable, normalizeRect } from "./geometry";
-
-describe("normalizeRect", () => {
-  it("orders coordinates regardless of drag direction", () => {
-    expect(normalizeRect(100, 80, 20, 200)).toEqual({
-      x: 20,
-      y: 80,
-      width: 80,
-      height: 120,
-    });
-  });
-});
+import { hudPosition, isSelectable } from "./geometry";
 
 describe("isSelectable", () => {
   it("rejects rects under the minimum size", () => {

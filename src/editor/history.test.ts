@@ -28,4 +28,18 @@ describe("UndoStack", () => {
     stack.commit("a");
     expect(stack.canUndo).toBe(false);
   });
+
+  it("drops the oldest snapshots beyond the depth cap", () => {
+    const stack = new UndoStack("s0");
+    for (let i = 1; i <= 60; i++) stack.commit(`s${i}`);
+    // undo bottoms out after 50 steps: the oldest 10 states were dropped
+    let last: string | null = null;
+    let steps = 0;
+    for (let next = stack.undo(); next !== null; next = stack.undo()) {
+      last = next;
+      steps++;
+    }
+    expect(steps).toBe(50);
+    expect(last).toBe("s10");
+  });
 });

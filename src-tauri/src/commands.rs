@@ -25,21 +25,28 @@ pub struct AppState {
     pub scroll_running: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
-/// Entry point shared by tray items, global shortcuts, and the IPC command.
-/// Runs the (blocking, possibly interactive) capture off the main thread.
+/// Entry point shared by tray items and global shortcuts.
 pub fn trigger_capture(app: &AppHandle, mode: CaptureMode) {
     *app.state::<AppState>().last_capture_mode.lock().unwrap() = mode;
-    let app = app.clone();
+    spawn_capture(app.clone(), mode, None);
+}
+
+/// Run the (blocking, possibly interactive) capture off the main thread,
+/// optionally after a delay.
+fn spawn_capture(app: AppHandle, mode: CaptureMode, delay: Option<std::time::Duration>) {
     tauri::async_runtime::spawn_blocking(move || {
+        if let Some(delay) = delay {
+            std::thread::sleep(delay);
+        }
         if let Err(err) = capture_and_publish(&app, mode) {
             eprintln!("capture failed: {err}");
-            let _ = app.emit("capture:error", err.to_string());
         }
     });
 }
 
 fn capture_and_publish(app: &AppHandle, mode: CaptureMode) -> Result<(), CaptureError> {
-    // The overlay must not appear in the shot.
+    // The overlay is content-protected (never in the shot), but hide it anyway
+    // so it doesn't sit under the interactive crosshair.
     if let Some(overlay) = app.get_webview_window("overlay") {
         let _ = overlay.hide();
     }
@@ -69,6 +76,8 @@ fn publish_capture(app: &AppHandle, path: &std::path::Path) {
     }
 }
 
+// Single owner of the overlay's size: the conf window entry omits width/height
+// and `show_overlay` always set_size's (scaled) before the first show.
 const OVERLAY_BASE_WIDTH: f64 = 300.0;
 const OVERLAY_BASE_HEIGHT: f64 = 264.0;
 
@@ -99,6 +108,17 @@ pub(crate) fn active_monitor(app: &AppHandle) -> Option<tauri::Monitor> {
         .or_else(|| app.primary_monitor().ok().flatten())
 }
 
+/// A monitor's position and size in the global logical-point space.
+pub(crate) fn monitor_logical_bounds(
+    monitor: &tauri::Monitor,
+) -> (tauri::LogicalPosition<f64>, tauri::LogicalSize<f64>) {
+    let scale = monitor.scale_factor();
+    (
+        monitor.position().to_logical::<f64>(scale),
+        monitor.size().to_logical::<f64>(scale),
+    )
+}
+
 /// Show the quick-access overlay at the configured corner of the active
 /// monitor (the one under the cursor) or the primary one.
 fn show_overlay(app: &AppHandle) {
@@ -119,9 +139,7 @@ fn show_overlay(app: &AppHandle) {
 
     if let Some(monitor) = monitor {
         const MARGIN: f64 = 16.0;
-        let scale = monitor.scale_factor();
-        let mon_pos = monitor.position().to_logical::<f64>(scale);
-        let mon_size = monitor.size().to_logical::<f64>(scale);
+        let (mon_pos, mon_size) = monitor_logical_bounds(&monitor);
         let x = match settings.position {
             OverlayPosition::Left => mon_pos.x + MARGIN,
             OverlayPosition::Center => mon_pos.x + (mon_size.width - width) / 2.0,
@@ -180,30 +198,25 @@ pub fn save_capture_to_desktop(
 pub fn open_editor(app: AppHandle, state: State<AppState>, id: String) -> Result<(), String> {
     let entry = resolve(&state.history, &id)?;
     *state.editor_target.lock().unwrap() = Some(entry.id.clone());
-    if let Some(editor) = app.get_webview_window("editor") {
-        // Window kept warm across sessions: its listener is live, so tell it
-        // to reload, then reveal it (unminimize first in case it was minimized).
-        editor
-            .emit("editor:load", &entry)
-            .map_err(|e| e.to_string())?;
-        let _ = editor.unminimize();
-        editor.show().map_err(|e| e.to_string())?;
-        editor.set_focus().map_err(|e| e.to_string())?;
-    } else {
-        // First open (or after a hard close): the page pulls the target via
-        // `editor_target` once it has loaded.
-        tauri::WebviewWindowBuilder::new(
-            &app,
-            "editor",
-            tauri::WebviewUrl::App("editor.html".into()),
-        )
-        .title("Screen for me — Annotate")
-        .inner_size(1200.0, 800.0)
-        .min_inner_size(700.0, 500.0)
-        .build()
-        .map_err(|e| e.to_string())?;
-    }
-    Ok(())
+    // On first open (or after a hard close) the page pulls the target via
+    // `editor_target` once it has loaded. A warm window's listener is live,
+    // so tell it to reload before revealing it (unminimize first in case it
+    // was minimized).
+    crate::windows::show_or_create(
+        &app,
+        "editor",
+        "editor.html",
+        "Screen for me — Annotate",
+        (1200.0, 800.0),
+        (700.0, 500.0),
+        |editor| {
+            editor
+                .emit("editor:load", &entry)
+                .map_err(|e| e.to_string())?;
+            let _ = editor.unminimize();
+            Ok(())
+        },
+    )
 }
 
 /// The capture the editor should currently display (set by `open_editor`).
@@ -215,11 +228,6 @@ pub fn editor_target(state: State<AppState>) -> Result<CaptureEntry, String> {
         .unwrap()
         .clone()
         .ok_or("no capture selected for the editor")?;
-    resolve(&state.history, &id)
-}
-
-#[tauri::command]
-pub fn get_capture(state: State<AppState>, id: String) -> Result<CaptureEntry, String> {
     resolve(&state.history, &id)
 }
 
@@ -268,12 +276,7 @@ pub fn export_png(
         ));
     }
     match action {
-        ExportAction::Copy => {
-            let image = tauri::image::Image::from_bytes(&bytes).map_err(|e| e.to_string())?;
-            app.clipboard()
-                .write_image(&image)
-                .map_err(|e| e.to_string())
-        }
+        ExportAction::Copy => copy_png_to_clipboard(&app, &bytes),
         ExportAction::SaveTo { dest } => std::fs::write(&dest, bytes).map_err(|e| e.to_string()),
         ExportAction::Overwrite { id } => {
             let entry = resolve(&state.history, &id)?;
@@ -286,28 +289,23 @@ pub fn export_png(
 }
 
 #[tauri::command]
-pub fn capture_screen(app: AppHandle, mode: CaptureMode) {
-    trigger_capture(&app, mode);
-}
-
-#[tauri::command]
 pub fn list_captures(state: State<AppState>) -> Vec<CaptureEntry> {
     state.history.list()
 }
 
-#[tauri::command]
-pub fn delete_capture(state: State<AppState>, id: String) -> bool {
-    state.history.delete(&id)
+/// Put PNG bytes on the system clipboard as an image.
+fn copy_png_to_clipboard(app: &AppHandle, bytes: &[u8]) -> Result<(), String> {
+    let image = tauri::image::Image::from_bytes(bytes).map_err(|e| e.to_string())?;
+    app.clipboard()
+        .write_image(&image)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub fn copy_capture(app: AppHandle, state: State<AppState>, id: String) -> Result<(), String> {
     let entry = resolve(&state.history, &id)?;
     let bytes = std::fs::read(&entry.path).map_err(|e| e.to_string())?;
-    let image = tauri::image::Image::from_bytes(&bytes).map_err(|e| e.to_string())?;
-    app.clipboard()
-        .write_image(&image)
-        .map_err(|e| e.to_string())
+    copy_png_to_clipboard(&app, &bytes)
 }
 
 #[tauri::command]
@@ -350,13 +348,7 @@ pub fn timed_capture_fire(app: AppHandle) {
         let _ = window.destroy();
     }
     let mode = *app.state::<AppState>().last_capture_mode.lock().unwrap();
-    tauri::async_runtime::spawn_blocking(move || {
-        std::thread::sleep(std::time::Duration::from_millis(150));
-        if let Err(err) = capture_and_publish(&app, mode) {
-            eprintln!("timed capture failed: {err}");
-            let _ = app.emit("capture:error", err.to_string());
-        }
-    });
+    spawn_capture(app, mode, Some(std::time::Duration::from_millis(150)));
 }
 
 /// Selection rect in scrollcap-window-local logical pixels (CSS px).
@@ -372,7 +364,7 @@ pub struct SelectionRect {
 pub fn run_scrolling_capture(
     app: AppHandle,
     rect: SelectionRect,
-    direction: String,
+    direction: crate::capture::ScrollDirection,
 ) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     return run_scrolling_capture_macos(app, rect, direction);
@@ -394,19 +386,11 @@ pub fn stop_scrolling_capture(state: State<AppState>) {
 fn run_scrolling_capture_macos(
     app: AppHandle,
     rect: SelectionRect,
-    direction: String,
+    direction: crate::capture::ScrollDirection,
 ) -> Result<(), String> {
     use crate::capture::scrolling::{self, ScrollRegion};
-    use crate::capture::stitch::ScrollDirection;
     use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
-    let direction = match direction.as_str() {
-        "up" => ScrollDirection::Up,
-        "down" => ScrollDirection::Down,
-        "left" => ScrollDirection::Left,
-        "right" => ScrollDirection::Right,
-        other => return Err(format!("unknown scroll direction: {other}")),
-    };
     let window = app
         .get_webview_window("scrollcap")
         .ok_or("scrollcap window is not open")?;
@@ -456,7 +440,8 @@ fn run_scrolling_capture_macos(
         return Ok(());
     }
 
-    // The overlay must not appear in frames either.
+    // The overlay is content-protected (never in the frames), but hide it so
+    // it stays out of the user's way while the page scrolls.
     if let Some(overlay) = app.get_webview_window("overlay") {
         let _ = overlay.hide();
     }
@@ -473,9 +458,7 @@ fn run_scrolling_capture_macos(
         .ok()
         .flatten()
         .map(|m| {
-            let s = m.scale_factor();
-            let pos = m.position().to_logical::<f64>(s);
-            let size = m.size().to_logical::<f64>(s);
+            let (pos, size) = monitor_logical_bounds(&m);
             (pos.x, pos.x + size.width, pos.y + size.height)
         })
         .unwrap_or((f64::MIN, f64::MAX, f64::MAX));
@@ -524,7 +507,6 @@ fn run_scrolling_capture_macos(
         }
         if let Err(err) = result {
             eprintln!("scrolling capture failed: {err}");
-            let _ = app.emit("capture:error", err.to_string());
         }
         // `_running_guard` drops here (or on panic-unwind) and releases the flag.
     });

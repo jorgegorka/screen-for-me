@@ -10,7 +10,7 @@ use core_graphics::event::{CGEvent, CGEventTapLocation, ScrollEventUnit};
 use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 use core_graphics::geometry::CGPoint;
 
-use super::stitch::ScrollDirection;
+use super::ScrollDirection;
 
 #[link(name = "ApplicationServices", kind = "framework")]
 extern "C" {
@@ -39,16 +39,17 @@ pub fn warp_cursor(x: f64, y: f64) -> Result<(), String> {
         .map_err(|_| "failed to move the cursor to the capture area".to_string())
 }
 
-/// One scroll step. LINE units scroll discretely (no trackpad inertia), which
-/// keeps the settle delay short and the frame offsets stitchable.
-pub fn post_scroll(direction: ScrollDirection, lines: i32) -> Result<(), String> {
+/// One 1-line scroll event. LINE units scroll discretely (no trackpad
+/// inertia), which keeps the settle delay short and the frame offsets
+/// stitchable.
+fn post_scroll_line(direction: ScrollDirection) -> Result<(), String> {
     // Positive wheel1 scrolls toward the top of the page; positive wheel2
     // toward the left edge. "Down" means revealing content below → negative.
     let (vertical, horizontal) = match direction {
-        ScrollDirection::Down => (-lines, 0),
-        ScrollDirection::Up => (lines, 0),
-        ScrollDirection::Right => (0, -lines),
-        ScrollDirection::Left => (0, lines),
+        ScrollDirection::Down => (-1, 0),
+        ScrollDirection::Up => (1, 0),
+        ScrollDirection::Right => (0, -1),
+        ScrollDirection::Left => (0, 1),
     };
     let source = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
         .map_err(|_| "failed to create CGEventSource".to_string())?;
@@ -63,13 +64,13 @@ const GLIDE_STEP_GAP: std::time::Duration = std::time::Duration::from_millis(25)
 
 /// One capture step as a glide: `lines` individual 1-line events spaced
 /// `GLIDE_STEP_GAP` apart, so the page rolls between grabs instead of
-/// teleporting. LINE units, like `post_scroll` — no trackpad inertia.
+/// teleporting.
 pub fn post_scroll_smooth(direction: ScrollDirection, lines: i32) -> Result<(), String> {
     for i in 0..lines.max(1) {
         if i > 0 {
             std::thread::sleep(GLIDE_STEP_GAP);
         }
-        post_scroll(direction, 1)?;
+        post_scroll_line(direction)?;
     }
     Ok(())
 }
