@@ -8,6 +8,7 @@ export type ShapeType =
   | "pen"
   | "highlight"
   | "text"
+  | "counter"
   | "pixelate";
 
 export interface ShapeSpec {
@@ -26,6 +27,7 @@ const ATTRS: Record<ShapeType, string[]> = {
   pen: [...COMMON, "points", "stroke", "strokeWidth", "lineCap", "lineJoin", "tension"],
   highlight: [...COMMON, "points", "stroke", "strokeWidth", "lineCap", "lineJoin", "globalCompositeOperation"],
   text: [...COMMON, "text", "fontSize", "fill", "fontStyle", "width"],
+  counter: [...COMMON, "radius", "fill", "number"],
   pixelate: [...COMMON, "width", "height", "src"],
 };
 
@@ -40,10 +42,53 @@ function nodeToSpec(node: Konva.Node): ShapeSpec | null {
   return { type, attrs };
 }
 
+export interface CounterConfig {
+  x: number;
+  y: number;
+  radius: number;
+  fill: string;
+  number: number;
+  rotation?: number;
+  scaleX?: number;
+  scaleY?: number;
+  opacity?: number;
+}
+
+/**
+ * Numbered badge: a group of circle + white number, with its semantic state
+ * (radius/fill/number) baked into attrs on the group so the flat serializer
+ * can round-trip it (same trick as pixelate's `src`).
+ */
+export function buildCounter(config: CounterConfig): Konva.Group {
+  const { radius, fill, number, ...rest } = config;
+  const group = new Konva.Group({ ...rest, name: "counter" });
+  group.setAttr("radius", radius);
+  group.setAttr("fill", fill);
+  group.setAttr("number", number);
+  group.add(new Konva.Circle({ radius, fill }));
+  group.add(
+    new Konva.Text({
+      text: String(number),
+      fill: "#ffffff",
+      fontStyle: "bold",
+      fontSize: radius * 1.2,
+      fontFamily: "-apple-system, system-ui, sans-serif",
+      width: radius * 2,
+      height: radius * 2,
+      x: -radius,
+      y: -radius,
+      align: "center",
+      verticalAlign: "middle",
+      listening: false,
+    }),
+  );
+  return group;
+}
+
 function specToNode(
   spec: ShapeSpec,
   onImageReady: () => void,
-): Konva.Shape {
+): Konva.Shape | Konva.Group {
   const attrs = { ...spec.attrs, name: spec.type };
   switch (spec.type) {
     case "arrow":
@@ -58,6 +103,8 @@ function specToNode(
       return new Konva.Line(attrs as Konva.LineConfig);
     case "text":
       return new Konva.Text(attrs as Konva.TextConfig);
+    case "counter":
+      return buildCounter(spec.attrs as unknown as CounterConfig);
     case "pixelate": {
       const node = new Konva.Image({
         ...(attrs as Konva.ImageConfig),

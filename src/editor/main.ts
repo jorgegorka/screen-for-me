@@ -8,9 +8,10 @@ import { el } from "../shared/dom";
 import { normalizeRect } from "../shared/geometry";
 import type { CaptureEntry } from "../shared/ipc";
 import { clampRect, fitScale, imageToScreen, type Rect, type Size } from "./geometry";
+import { nextCounterNumber } from "./counter";
 import { UndoStack } from "./history";
 import { pixelateRegion } from "./pixelate";
-import { rebuildLayer, serializeLayer, type ShapeType } from "./shapes";
+import { buildCounter, rebuildLayer, serializeLayer, type ShapeType } from "./shapes";
 
 type Tool = ShapeType | "select" | "crop";
 
@@ -232,7 +233,7 @@ function startDraft(pos: { x: number; y: number }): Konva.Shape | null {
 }
 
 function onPointerDown() {
-  if (tool === "select" || tool === "text") return;
+  if (tool === "select" || tool === "text" || tool === "counter") return;
   const pos = pointerPos();
   draftStart = pos;
   if (tool === "crop" || tool === "pixelate") {
@@ -384,6 +385,10 @@ function onStageClick(e: Konva.KonvaEventObject<MouseEvent>) {
     addText(pointerPos());
     return;
   }
+  if (tool === "counter") {
+    addCounter(pointerPos());
+    return;
+  }
   if (tool !== "select") return;
   const target = e.target;
   if (target === stage || target.getLayer() === bgLayer) {
@@ -391,8 +396,10 @@ function onStageClick(e: Konva.KonvaEventObject<MouseEvent>) {
     uiLayer.batchDraw();
     return;
   }
-  if (target.getLayer() === annLayer && target.name() !== "pixelate") {
-    transformer.nodes([target]);
+  // Counter badges are groups; clicks land on the inner circle.
+  const node = target.findAncestor(".counter") ?? target;
+  if (node.getLayer() === annLayer && node.name() !== "pixelate") {
+    transformer.nodes([node]);
     uiLayer.batchDraw();
   }
 }
@@ -401,6 +408,24 @@ function onStageDblClick(e: Konva.KonvaEventObject<MouseEvent>) {
   if (tool === "select" && e.target.name() === "text") {
     editText(e.target as Konva.Text);
   }
+}
+
+/** Stamp a numbered badge; the tool stays active for sequential stamping. */
+function addCounter(pos: { x: number; y: number }) {
+  const existing = annLayer
+    .getChildren((node) => node.name() === "counter")
+    .map((node) => Number((node as Konva.Node).getAttr("number")))
+    .filter((n) => Number.isFinite(n));
+  const node = buildCounter({
+    x: pos.x,
+    y: pos.y,
+    radius: Math.max(14, strokeWidth * 3.5),
+    fill: color,
+    number: nextCounterNumber(existing),
+  });
+  annLayer.add(node);
+  annLayer.batchDraw();
+  commit();
 }
 
 function addText(pos: { x: number; y: number }) {
@@ -538,7 +563,10 @@ function selectColor(value: string, applyToSelection: boolean) {
   if (applyToSelection) {
     for (const node of transformer.nodes()) {
       if (node.name() === "text") node.setAttr("fill", value);
-      else {
+      else if (node.name() === "counter") {
+        node.setAttr("fill", value);
+        (node as Konva.Group).findOne("Circle")?.setAttr("fill", value);
+      } else {
         node.setAttr("stroke", value);
         if (node.name() === "arrow") node.setAttr("fill", value);
       }
@@ -643,6 +671,7 @@ function bindKeyboard() {
       p: "pen",
       h: "highlight",
       t: "text",
+      n: "counter",
       b: "pixelate",
       c: "crop",
     };
@@ -658,7 +687,7 @@ function bindKeyboard() {
 async function applyPrefs() {
   const valid: Tool[] = [
     "select", "arrow", "rect", "ellipse", "line",
-    "pen", "highlight", "text", "pixelate", "crop",
+    "pen", "highlight", "text", "counter", "pixelate", "crop",
   ];
   try {
     const prefs = await invoke<{ tool: string; color: string; stroke_width: number }>(
