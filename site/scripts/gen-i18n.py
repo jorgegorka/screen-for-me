@@ -34,6 +34,26 @@ T = [
         "fr": 'content="Une application de capture d\'écran gratuite et open source pour macOS et Linux. La boucle capture-partage la plus rapide."',
         "de": 'content="Eine kostenlose Open-Source-Screenshot-App für macOS und Linux. Der schnellste Weg vom Screenshot zum Teilen."',
         "it": 'content="Un\'app di screenshot gratuita e open source per macOS e Linux. Il ciclo cattura-condivisione più rapido."'}),
+    ('<meta property="og:title" content="Screen for me — the fastest capture-to-share loop">', {
+        "es": '<meta property="og:title" content="Screen for me — el ciclo de captura a compartir más rápido">',
+        "fr": '<meta property="og:title" content="Screen for me — la boucle capture-partage la plus rapide">',
+        "de": '<meta property="og:title" content="Screen for me — der schnellste Weg vom Screenshot zum Teilen">',
+        "it": '<meta property="og:title" content="Screen for me — il ciclo cattura-condivisione più rapido">'}),
+    ('<meta property="og:locale" content="en_GB">', {
+        "es": '<meta property="og:locale" content="es_ES">',
+        "fr": '<meta property="og:locale" content="fr_FR">',
+        "de": '<meta property="og:locale" content="de_DE">',
+        "it": '<meta property="og:locale" content="it_IT">'}),
+    ('<meta property="og:image:alt" content="Capture. Mark it up. Drag it anywhere.">', {
+        "es": '<meta property="og:image:alt" content="Captura. Anota. Arrastra a cualquier parte.">',
+        "fr": '<meta property="og:image:alt" content="Capturez. Annotez. Glissez-la où vous voulez.">',
+        "de": '<meta property="og:image:alt" content="Aufnehmen. Beschriften. Überallhin ziehen.">',
+        "it": '<meta property="og:image:alt" content="Cattura. Annota. Trascinala ovunque.">'}),
+    ('"description": "A free, open-source screenshot app for macOS and Linux — capture, annotate, and drag your screenshot into any app in seconds.",', {
+        "es": '"description": "Una aplicación de capturas de pantalla gratuita y de código abierto para macOS y Linux: captura, anota y arrastra tu captura a cualquier aplicación en segundos.",',
+        "fr": '"description": "Une application de capture d\'écran gratuite et open source pour macOS et Linux : capturez, annotez et glissez votre capture dans n\'importe quelle application en quelques secondes.",',
+        "de": '"description": "Eine kostenlose Open-Source-Screenshot-App für macOS und Linux — aufnehmen, beschriften und den Screenshot in Sekunden in jede App ziehen.",',
+        "it": '"description": "Un\'app di screenshot gratuita e open source per macOS e Linux: cattura, annota e trascina lo screenshot in qualsiasi app in pochi secondi.",'}),
     ('<nav class="top-nav" aria-label="Site">', {
         "es": '<nav class="top-nav" aria-label="Sitio">',
         "fr": '<nav class="top-nav" aria-label="Site">',
@@ -311,7 +331,7 @@ T = [
 
 # path rewrites for subdirectory pages (count = expected occurrences)
 PATHS = [
-    ('href="assets/icon.png"', 'href="../assets/icon.png"', 1),
+    ('href="assets/icon.png"', 'href="../assets/icon.png"', 2),
     ('src="assets/icon.png"', 'src="../assets/icon.png"', 2),
     ('href="site.css"', 'href="../site.css"', 1),
     ('src="site.js"', 'src="../site.js"', 1),
@@ -324,6 +344,8 @@ CANONICAL = [
      '<link rel="canonical" href="https://screenforme.app/{lang}/">'),
     ('<meta property="og:url" content="https://screenforme.app/">',
      '<meta property="og:url" content="https://screenforme.app/{lang}/">'),
+    ('"inLanguage": "en",',
+     '"inLanguage": "{lang}",'),
 ]
 
 def lang_switch_src(css_class, indent):

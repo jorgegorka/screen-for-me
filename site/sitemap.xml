@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://screenforme.app/</loc>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://screenforme.app/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://screenforme.app/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://screenforme.app/es/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://screenforme.app/fr/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://screenforme.app/de/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://screenforme.app/it/"/>
+  </url>
+  <url>
+    <loc>https://screenforme.app/es/</loc>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://screenforme.app/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://screenforme.app/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://screenforme.app/es/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://screenforme.app/fr/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://screenforme.app/de/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://screenforme.app/it/"/>
+  </url>
+  <url>
+    <loc>https://screenforme.app/fr/</loc>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://screenforme.app/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://screenforme.app/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://screenforme.app/es/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://screenforme.app/fr/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://screenforme.app/de/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://screenforme.app/it/"/>
+  </url>
+  <url>
+    <loc>https://screenforme.app/de/</loc>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://screenforme.app/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://screenforme.app/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://screenforme.app/es/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://screenforme.app/fr/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://screenforme.app/de/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://screenforme.app/it/"/>
+  </url>
+  <url>
+    <loc>https://screenforme.app/it/</loc>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://screenforme.app/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://screenforme.app/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://screenforme.app/es/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://screenforme.app/fr/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://screenforme.app/de/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://screenforme.app/it/"/>
+  </url>
+</urlset>
