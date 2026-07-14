@@ -1,0 +1,9 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [
+      "site/site.css"
+    ],
+    "ignoreValues": []
+  }
+}

@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Screen for me — the fastest capture-to-share loop for macOS &amp; Linux</title>
+  <meta name="description" content="Screen for me is a free, open-source screenshot app for macOS and Linux. Capture, annotate, and drag your screenshot straight into any app — in seconds.">
+  <meta property="og:title" content="Screen for me">
+  <meta property="og:description" content="A free, open-source screenshot app for macOS and Linux. The fastest capture-to-share loop.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://screenforme.app/">
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <link rel="canonical" href="https://screenforme.app/">
+  <link rel="alternate" hreflang="x-default" href="https://screenforme.app/">
+  <link rel="alternate" hreflang="en" href="https://screenforme.app/">
+  <link rel="alternate" hreflang="es" href="https://screenforme.app/es/">
+  <link rel="alternate" hreflang="fr" href="https://screenforme.app/fr/">
+  <link rel="alternate" hreflang="de" href="https://screenforme.app/de/">
+  <link rel="alternate" hreflang="it" href="https://screenforme.app/it/">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+
+<svg width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="spectrum" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%"  stop-color="#8794ff"/>
+      <stop offset="38%" stop-color="#9172e7"/>
+      <stop offset="62%" stop-color="#d05aa6"/>
+      <stop offset="100%" stop-color="#ee3138"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<header class="top">
+  <a class="top-brand" href="#">
+    <img src="assets/icon.png" alt="" width="30" height="30">
+    <span>Screen for me</span>
+  </a>
+  <nav class="top-nav" aria-label="Site">
+    <a href="#features">Features</a>
+    <a href="#open-source">Open source</a>
+    <a class="top-github" href="https://github.com/jorgegorka/screen-for-me" aria-label="Screen for me on GitHub">
+      <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+    </a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <h1>Capture. Mark it up.<br>Drag it anywhere.</h1>
+    <p class="hero-sub">Screen for me is a screenshot app for macOS and Linux built around one idea:
+      the moment between taking a capture and using it should be seconds, not a trip through your Downloads folder.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="https://github.com/jorgegorka/screen-for-me/releases/latest">
+        Download for macOS
+      </a>
+      <a class="btn btn-ghost" href="https://github.com/jorgegorka/screen-for-me">View on GitHub</a>
+    </div>
+    <p class="hero-meta">Free &amp; open source · MIT licence · No account, no cloud</p>
+
+    <!-- The brand mark, at page scale: a screen traced by the signal, framing the product. -->
+    <figure class="hero-stage" data-media="assets/hero.png" data-media-alt="The Screen for me quick-access overlay floating over a desktop, mid-capture">
+      <svg class="hero-wire" viewBox="0 0 960 560" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="4" y="4" width="952" height="552" rx="26" pathLength="1000"
+              fill="none" stroke="url(#spectrum)" stroke-width="2.5" class="wire-path"/>
+      </svg>
+      <div class="hero-desktop" role="img" aria-label="A dimmed desktop with an area selection in progress and the Screen for me quick-access overlay in the corner">
+        <div class="desk-wallpaper"></div>
+        <div class="desk-side mock-window" aria-hidden="true">
+          <div class="mock-titlebar"><i></i><i></i><i></i></div>
+          <div class="mock-body">
+            <div class="mock-line w-80"></div>
+            <div class="mock-line w-60"></div>
+            <div class="mock-line w-90"></div>
+            <div class="mock-line w-45"></div>
+            <div class="mock-line w-70"></div>
+          </div>
+        </div>
+        <div class="desk-dim"></div>
+        <div class="marquee">
+          <span class="marquee-dims">1180 × 640</span>
+          <i class="handle h-nw"></i><i class="handle h-ne"></i><i class="handle h-sw"></i><i class="handle h-se"></i>
+          <div class="marquee-content">
+            <div class="mock-window">
+              <div class="mock-titlebar"><i></i><i></i><i></i></div>
+              <div class="mock-body">
+                <div class="mock-line w-70"></div>
+                <div class="mock-line w-90"></div>
+                <div class="mock-line w-55"></div>
+                <div class="mock-chart" aria-hidden="true">
+                  <i style="--h:34%"></i><i style="--h:58%"></i><i style="--h:42%"></i><i style="--h:76%"></i><i style="--h:64%"></i><i style="--h:88%"></i><i style="--h:52%"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hud hud-overlay">
+          <div class="hud-thumb">
+            <div class="hud-thumb-img"></div>
+            <span class="hud-badge">3</span>
+          </div>
+          <div class="hud-actions">
+            <span class="hud-btn hud-btn-primary">Copy</span>
+            <span class="hud-btn">Save</span>
+            <span class="hud-btn">Edit</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+  </section>
+
+  <!-- ============ THE LOOP ============ -->
+  <section class="loop" id="loop">
+    <div class="loop-intro">
+      <h2>The whole loop, in the time it takes to say it</h2>
+      <ol class="loop-steps">
+        <li>
+          <span class="loop-kbd"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd></span>
+          <h3>Press the shortcut</h3>
+          <p>Area, window, or full screen: from anywhere, over any app. The menu bar works too.</p>
+        </li>
+        <li>
+          <span class="loop-kbd loop-kbd-hud" aria-hidden="true"><span class="mini-hud"><i></i><b>Copy</b></span></span>
+          <h3>The overlay appears</h3>
+          <p>A small panel slips into the corner with your capture: copy it, save it, or open the editor.</p>
+        </li>
+        <li>
+          <span class="loop-kbd loop-kbd-drag" aria-hidden="true"><svg viewBox="0 0 48 28" width="48" height="28"><rect x="1.5" y="4" width="26" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".55"/><path d="M32 13h10m0 0-4-4m4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <h3>Drag it straight in</h3>
+          <p>Pull the thumbnail out of the overlay and drop it into Slack, an email, a doc — the app you were already in.</p>
+        </li>
+      </ol>
+    </div>
+
+    <figure class="demo-frame" data-media-video="assets/demo.mp4" data-media="assets/demo-poster.png" data-media-alt="Screen recording of the full Screen for me capture-to-share loop">
+      <div class="demo-placeholder">
+        <span class="demo-play" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>
+        </span>
+        <p>Two-minute walkthrough, coming with the first release</p>
+      </div>
+    </figure>
+  </section>
+
+  <!-- ============ FEATURES ============ -->
+  <section class="features" id="features">
+
+    <article class="feature">
+      <div class="feature-copy">
+        <h2>Capture exactly what you mean</h2>
+        <p>Draw an area with pixel-precise crosshairs, pick a single window, or grab the whole screen.
+           A self-timer covers the menus and tooltips that vanish the moment you press a key.</p>
+        <ul class="feature-list">
+          <li><span class="fkbd"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd></span> Area</li>
+          <li><span class="fkbd"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>8</kbd></span> Window</li>
+          <li><span class="fkbd"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>9</kbd></span> Full screen</li>
+        </ul>
+        <p class="feature-note">Shortcuts are global and configurable. On Linux, it's <kbd>Ctrl</kbd> instead of <kbd>⌘</kbd>.</p>
+      </div>
+      <figure class="feature-visual" data-media="assets/feature-capture.png" data-media-alt="Area capture in progress: crosshair selection with live pixel dimensions">
+        <div class="vis vis-capture" role="img" aria-label="Crosshair area selection with a live 640 by 400 pixel readout">
+          <div class="vis-desk"></div>
+          <div class="vis-window mock-window" aria-hidden="true">
+            <div class="mock-titlebar"><i></i><i></i><i></i></div>
+            <div class="mock-body">
+              <div class="mock-line w-70"></div>
+              <div class="mock-line w-88"></div>
+              <div class="mock-line w-55"></div>
+              <div class="mock-line w-75"></div>
+            </div>
+          </div>
+          <div class="vis-marquee">
+            <span class="marquee-dims">640 × 400</span>
+            <i class="handle h-nw"></i><i class="handle h-ne"></i><i class="handle h-sw"></i><i class="handle h-se"></i>
+          </div>
+          <div class="vis-cross vis-cross-v"></div>
+          <div class="vis-cross vis-cross-h"></div>
+        </div>
+      </figure>
+    </article>
+
+    <article class="feature feature-flip">
+      <div class="feature-copy">
+        <h2>The overlay that ends the Downloads-folder detour</h2>
+        <p>Every capture lands in a small glass panel in the corner of your screen, stacked so burst captures
+           don't get lost. Copy to the clipboard, save where you want, or grab the thumbnail and
+           <strong>drag it directly into any app</strong> that accepts an image.</p>
+        <p class="feature-note">The overlay gets out of the way on its own. Captures stay on your machine, in a folder you control.</p>
+      </div>
+      <figure class="feature-visual" data-media="assets/feature-overlay.png" data-media-alt="The quick-access overlay: capture thumbnail with Copy, Save and Edit actions">
+        <div class="vis vis-overlay">
+          <div class="vis-desk vis-desk-b"></div>
+          <div class="hud hud-large" role="img" aria-label="Quick-access overlay panel with a capture thumbnail, a stack badge showing 3 captures, and Copy, Save, Edit buttons">
+            <div class="hud-thumb">
+              <div class="hud-thumb-img hud-thumb-img-b"></div>
+              <span class="hud-badge">3</span>
+            </div>
+            <div class="hud-actions">
+              <span class="hud-btn hud-btn-primary">Copy</span>
+              <span class="hud-btn">Save</span>
+              <span class="hud-btn">Edit</span>
+            </div>
+          </div>
+          <div class="drag-ghost" aria-hidden="true"></div>
+        </div>
+      </figure>
+    </article>
+
+    <article class="feature">
+      <div class="feature-copy">
+        <h2>Annotate without breaking stride</h2>
+        <p>Arrows, boxes, text, highlights, and pixelate for the parts that aren't anyone's business.
+           Crop, undo, redo. Your last tool, colour, and stroke are remembered, so the second
+           annotation starts faster than the first.</p>
+        <p>Exports are <strong>native resolution</strong>, always: what you share is exactly as sharp as what you captured.</p>
+      </div>
+      <figure class="feature-visual" data-media="assets/feature-editor.png" data-media-alt="The annotation editor: toolbar with drawing tools, an arrow and pixelated region on a capture">
+        <div class="vis vis-editor" role="img" aria-label="The annotation editor with a toolbar, a yellow arrow annotation, and a pixelated region on the capture">
+          <div class="ed-toolbar" aria-hidden="true">
+            <span class="ed-tool ed-tool-active"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 14 12 4m0 0v6m0-6H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="ed-tool"><svg viewBox="0 0 16 16" width="14" height="14"><rect x="2.5" y="3.5" width="11" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></span>
+            <span class="ed-tool"><svg viewBox="0 0 16 16" width="14" height="14"><text x="8" y="12" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">T</text></svg></span>
+            <span class="ed-tool"><svg viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="2" width="4" height="4" fill="currentColor" opacity=".9"/><rect x="10" y="2" width="4" height="4" fill="currentColor" opacity=".45"/><rect x="6" y="6" width="4" height="4" fill="currentColor" opacity=".65"/><rect x="2" y="10" width="4" height="4" fill="currentColor" opacity=".4"/><rect x="10" y="10" width="4" height="4" fill="currentColor" opacity=".8"/></svg></span>
+            <i class="ed-sep"></i>
+            <span class="ed-swatch" style="--c:#ff3b30"></span>
+            <span class="ed-swatch ed-swatch-active" style="--c:#ffcc00"></span>
+            <span class="ed-swatch" style="--c:#34c759"></span>
+            <span class="ed-swatch" style="--c:#4f8ef7"></span>
+          </div>
+          <div class="ed-canvas">
+            <div class="ed-shot">
+              <div class="mock-line w-80"></div>
+              <div class="mock-line w-60"></div>
+              <div class="ed-pixelate" aria-hidden="true"></div>
+              <div class="mock-line w-70"></div>
+              <svg class="ed-arrow" viewBox="0 0 200 110" aria-hidden="true">
+                <path d="M14 96 C 60 88, 120 70, 168 30" fill="none" stroke="#ffcc00" stroke-width="5" stroke-linecap="round" pathLength="100" class="arrow-path"/>
+                <path d="M150 28 168 30 162 47" fill="none" stroke="#ffcc00" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="100" class="arrow-head"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </article>
+
+    <article class="feature feature-flip">
+      <div class="feature-copy">
+        <h2>Capture pages taller than your screen</h2>
+        <p>Scrolling capture scrolls the page for you, grabs it in strips, and stitches them into one
+           seamless full-length image. Point it at a chat thread, a long doc, a whole webpage.</p>
+        <p class="feature-note">Scrolling capture is macOS-only for now.</p>
+      </div>
+      <figure class="feature-visual" data-media="assets/feature-scrollcap.png" data-media-alt="Scrolling capture in progress: the recording pill over a long page being stitched">
+        <div class="vis vis-scroll" role="img" aria-label="A long page scrolling behind the recording pill while Screen for me stitches it into one image">
+          <div class="scroll-page" aria-hidden="true">
+            <div class="scroll-page-inner">
+              <div class="mock-line w-85"></div><div class="mock-line w-70"></div><div class="mock-line w-90"></div>
+              <div class="mock-block"></div>
+              <div class="mock-line w-75"></div><div class="mock-line w-55"></div><div class="mock-line w-88"></div>
+              <div class="mock-block mock-block-b"></div>
+              <div class="mock-line w-60"></div><div class="mock-line w-80"></div><div class="mock-line w-45"></div>
+              <div class="mock-line w-85"></div><div class="mock-line w-70"></div>
+            </div>
+          </div>
+          <div class="rec-pill"><i class="rec-dot"></i> Capturing… <b>4 of 9</b></div>
+        </div>
+      </figure>
+    </article>
+
+  </section>
+
+  <!-- ============ EVERYTHING ELSE ============ -->
+  <section class="etc" aria-label="More details">
+    <ul class="etc-list">
+      <li><strong>Lives in the menu bar.</strong> No Dock icon, no window until you need one.</li>
+      <li><strong>Capture history.</strong> Every screenshot kept and browsable until you say otherwise.</li>
+      <li><strong>Self-timer.</strong> Three seconds to open the menu you actually wanted to capture.</li>
+      <li><strong>Speaks your language.</strong> English, Español, Français, Deutsch, Italiano.</li>
+      <li><strong>Light and dark.</strong> Windows follow your system appearance.</li>
+      <li><strong>Small and fast.</strong> Built with Tauri and Rust: a native app, not a browser in a trench coat.</li>
+    </ul>
+  </section>
+
+  <!-- ============ OPEN SOURCE ============ -->
+  <section class="oss" id="open-source">
+    <div class="oss-wire" aria-hidden="true"></div>
+    <h2>Free. Open. Yours.</h2>
+    <p class="oss-lead">Screen for me is MIT-licensed and completely free — no trial, no Pro tier, no
+      “unlock export” button. The entire source code is on GitHub: read it, build it yourself,
+      fix the bug that annoys you, or just open an issue and tell us about it.</p>
+    <p class="oss-clone"><code>git clone https://github.com/jorgegorka/screen-for-me.git</code></p>
+    <div class="oss-cta">
+      <a class="btn btn-primary" href="https://github.com/jorgegorka/screen-for-me">
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>
+        Star it on GitHub
+      </a>
+      <a class="btn btn-ghost" href="https://github.com/jorgegorka/screen-for-me/releases/latest">Download the latest release</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-brand">
+    <img src="assets/icon.png" alt="" width="24" height="24">
+    <span>Screen for me</span>
+  </div>
+  <nav class="footer-links" aria-label="Footer">
+    <a href="https://github.com/jorgegorka/screen-for-me">GitHub</a>
+    <a href="https://github.com/jorgegorka/screen-for-me/releases">Releases</a>
+    <a href="https://github.com/jorgegorka/screen-for-me/issues">Issues</a>
+    <a href="https://github.com/jorgegorka/screen-for-me/blob/master/LICENSE">MIT licence</a>
+  </nav>
+  <nav class="footer-lang" aria-label="Language">
+    <span aria-current="page">EN</span>
+    <a href="es/" lang="es" hreflang="es" aria-label="Español">ES</a>
+    <a href="fr/" lang="fr" hreflang="fr" aria-label="Français">FR</a>
+    <a href="de/" lang="de" hreflang="de" aria-label="Deutsch">DE</a>
+    <a href="it/" lang="it" hreflang="it" aria-label="Italiano">IT</a>
+  </nav>
+  <p class="footer-note">Made by Mario &amp; Jorge Alvarez · Built with Tauri</p>
+</footer>
+
+<script src="site.js" defer></script>
+</body>
+</html>
