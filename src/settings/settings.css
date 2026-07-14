@@ -24,6 +24,28 @@ body {
   hr {
     border-color: #444 !important;
   }
+  .tabs {
+    border-bottom-color: #444;
+  }
+  .tab {
+    color: #999;
+  }
+  .tab:hover {
+    color: #eee;
+  }
+  .tab[aria-selected="true"] {
+    color: #eee;
+  }
+  .shortcut-field,
+  .shortcut-reset {
+    background: #3a3a3c;
+    border-color: #4a4a4c;
+    color: #eee;
+  }
+  .about-version,
+  .about-copyright {
+    color: #999;
+  }
 }
 
 main {
@@ -101,4 +123,123 @@ input[type="range"] {
 .disabled {
   opacity: 0.45;
   pointer-events: none;
+}
+
+/* Tab bar: quiet, native-feeling; the accent appears only on the active
+   indicator and focus ring. */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 28px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.tab {
+  appearance: none;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6e6e70;
+  padding: 6px 14px 8px;
+  cursor: default;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: #1d1d1f;
+}
+
+.tab[aria-selected="true"] {
+  color: #1d1d1f;
+  border-bottom-color: #7c5ce6;
+}
+
+.tab:focus-visible {
+  outline: 2px solid #9172e7;
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+/* Shortcut recorder fields */
+.shortcut-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shortcut-field {
+  appearance: none;
+  font: inherit;
+  min-width: 130px;
+  padding: 4px 10px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #e2e2e4;
+  border-radius: 6px;
+  color: inherit;
+}
+
+.shortcut-field.recording {
+  outline: 2px solid #9172e7;
+  outline-offset: 1px;
+  font-style: italic;
+  color: #6e6e70;
+}
+
+.shortcut-field:focus-visible,
+.shortcut-reset:focus-visible {
+  outline: 2px solid #9172e7;
+  outline-offset: 1px;
+}
+
+.shortcut-reset {
+  appearance: none;
+  font: inherit;
+  padding: 4px 8px;
+  background: #fff;
+  border: 1px solid #e2e2e4;
+  border-radius: 6px;
+  color: inherit;
+}
+
+.shortcut-error {
+  color: #d9342b;
+  font-size: 12px;
+  max-width: 280px;
+}
+
+/* About panel */
+.about {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  padding: 36px 0;
+}
+
+.about-icon {
+  width: 96px;
+  height: 96px;
+}
+
+.about-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.about-version,
+.about-copyright {
+  color: #6e6e70;
+  font-size: 12px;
+}
+
+.about-description {
+  margin-top: 8px;
+  max-width: 320px;
 }

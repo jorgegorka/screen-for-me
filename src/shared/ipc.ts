@@ -15,4 +15,7 @@ export interface Settings {
   auto_close_seconds: number;
   close_after_drag: boolean;
   language: "system" | "en-GB" | "es" | "fr" | "de" | "it";
+  shortcut_area: string;
+  shortcut_window: string;
+  shortcut_fullscreen: string;
 }

@@ -3,9 +3,9 @@ use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager};
 
 use crate::capture::CaptureMode;
-use crate::commands::trigger_capture;
+use crate::commands::{trigger_capture, AppState};
 use crate::i18n::t;
-use crate::shortcuts;
+use crate::shortcuts::ShortcutAction;
 use crate::windows;
 
 /// Build the tray menu with labels in the current language. Item ids are
@@ -24,20 +24,29 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         window_label.push('…');
     }
 
-    let area = MenuItem::with_id(app, "capture_area", &area_label, true, Some(shortcuts::ACCEL_AREA))?;
+    // Accelerator labels mirror the user-configured global shortcuts;
+    // `set_shortcut` refreshes the tray so they stay in sync.
+    let settings = app.state::<AppState>().settings.get();
+    let area = MenuItem::with_id(
+        app,
+        "capture_area",
+        &area_label,
+        true,
+        Some(settings.shortcut(ShortcutAction::Area)),
+    )?;
     let window = MenuItem::with_id(
         app,
         "capture_window",
         &window_label,
         true,
-        Some(shortcuts::ACCEL_WINDOW),
+        Some(settings.shortcut(ShortcutAction::Window)),
     )?;
     let fullscreen = MenuItem::with_id(
         app,
         "capture_fullscreen",
         t("tray.capture_fullscreen"),
         true,
-        Some(shortcuts::ACCEL_FULLSCREEN),
+        Some(settings.shortcut(ShortcutAction::Fullscreen)),
     )?;
     #[cfg(target_os = "macos")]
     let scrolling = MenuItem::with_id(
@@ -53,9 +62,8 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let self_timer =
         Submenu::with_items(app, t("tray.self_timer"), true, &[&timer_3, &timer_5, &timer_10])?;
     let history = MenuItem::with_id(app, "history", t("tray.history"), true, None::<&str>)?;
-    let about = MenuItem::with_id(app, "about", t("tray.about"), true, None::<&str>)?;
     let updates = MenuItem::with_id(app, "updates", t("tray.updates"), true, None::<&str>)?;
-    let settings = MenuItem::with_id(app, "settings", t("tray.settings"), true, Some("CmdOrCtrl+,"))?;
+    let settings_item = MenuItem::with_id(app, "settings", t("tray.settings"), true, Some("CmdOrCtrl+,"))?;
     let quit = MenuItem::with_id(app, "quit", t("tray.quit"), true, Some("CmdOrCtrl+Q"))?;
 
     let sep1 = PredefinedMenuItem::separator(app)?;
@@ -68,7 +76,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     items.push(&scrolling);
     items.push(&self_timer);
     items.extend_from_slice(&[
-        &sep2, &history, &sep3, &about, &updates, &sep4, &settings, &quit,
+        &sep2, &history, &sep3, &updates, &sep4, &settings_item, &quit,
     ]);
     Menu::with_items(app, &items)
 }
@@ -107,7 +115,6 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
                     eprintln!("failed to open history: {err}");
                 }
             }
-            "about" => windows::show_about(app),
             "updates" => windows::check_for_updates(app),
             "settings" => windows::open_settings(app),
             "quit" => app.exit(0),

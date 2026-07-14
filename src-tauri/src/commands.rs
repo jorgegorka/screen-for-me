@@ -197,6 +197,39 @@ pub fn set_settings(
     Ok(saved)
 }
 
+/// Rebind one capture action's global shortcut: validate, swap the OS
+/// registration (rolled back on failure), persist, and refresh the tray so its
+/// accelerator labels match. Returns the saved settings like `set_settings`.
+#[tauri::command]
+pub fn set_shortcut(
+    app: AppHandle,
+    state: State<AppState>,
+    action: crate::shortcuts::ShortcutAction,
+    accelerator: String,
+) -> Result<Settings, String> {
+    let accelerator = accelerator.trim().to_string();
+    let parsed = crate::shortcuts::validate(&accelerator)?;
+    let mut settings = state.settings.get();
+    for other in crate::shortcuts::ACTIONS {
+        if other != action && crate::shortcuts::validate(settings.shortcut(other)) == Ok(parsed) {
+            return Err(crate::i18n::t("settings.shortcut_error_duplicate"));
+        }
+    }
+    let old = settings.shortcut(action).to_string();
+    crate::shortcuts::rebind(&app, action, &old, &accelerator)?;
+    *settings.shortcut_mut(action) = accelerator;
+    let saved = state.settings.set(settings).map_err(|e| e.to_string())?;
+    // Menu APIs must run on the main thread on macOS.
+    let handle = app.clone();
+    let _ = app.run_on_main_thread(move || {
+        if let Err(err) = crate::tray::refresh(&handle) {
+            eprintln!("failed to rebuild tray menu: {err}");
+        }
+    });
+    let _ = app.emit("settings:changed", &saved);
+    Ok(saved)
+}
+
 /// The language tag the webviews should render in ("en-GB", "es", …), with the
 /// "system" setting already resolved against the OS locale.
 #[tauri::command]

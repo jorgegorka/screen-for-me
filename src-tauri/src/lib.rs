@@ -31,7 +31,8 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
-            // Give NSAlert dialogs (About, updater) the app icon even in dev,
+            // Give NSAlert dialogs (updater, permissions) the app icon even in
+            // dev,
             // where the bare binary has no bundle icon to fall back on.
             #[cfg(target_os = "macos")]
             {
@@ -66,7 +67,7 @@ pub fn run() {
             i18n::set_language(i18n::resolve(&language));
 
             tray::setup(app.handle())?;
-            shortcuts::setup(app.handle())?;
+            shortcuts::setup(app.handle());
 
             // Config-declared windows carry the English titles from
             // tauri.conf.json; retitle the visible one for the active language.
@@ -86,6 +87,7 @@ pub fn run() {
             commands::export_png,
             commands::get_settings,
             commands::set_settings,
+            commands::set_shortcut,
             commands::resolved_language,
             commands::get_editor_prefs,
             commands::set_editor_prefs,

@@ -127,19 +127,6 @@ pub fn open_scrollcap(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-pub fn show_about(app: &AppHandle) {
-    let package = app.package_info();
-    let message = crate::i18n::t_with(
-        "about.message",
-        &[("version", &package.version.to_string())],
-    );
-    app.dialog()
-        .message(message)
-        .title(crate::i18n::t("about.title"))
-        .kind(MessageDialogKind::Info)
-        .show(|_| {});
-}
-
 /// Check for updates against the configured endpoint and report the result in
 /// a native dialog. Endpoint/signing are placeholders until a release pipeline
 /// exists, so a failed check reports gracefully rather than erroring silently.

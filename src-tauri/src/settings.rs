@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use crate::shortcuts::{self, ShortcutAction};
+
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum OverlayPosition {
@@ -32,6 +34,11 @@ pub struct Settings {
     pub close_after_drag: bool,
     /// "system" (follow the OS locale) or one of the supported tags.
     pub language: String,
+    /// Global-shortcut accelerator strings, one per capture action; parseable
+    /// by both the global-shortcut plugin and the tray menu (shortcuts.rs).
+    pub shortcut_area: String,
+    pub shortcut_window: String,
+    pub shortcut_fullscreen: String,
 }
 
 impl Default for Settings {
@@ -45,6 +52,9 @@ impl Default for Settings {
             auto_close_seconds: 30,
             close_after_drag: true,
             language: "system".into(),
+            shortcut_area: ShortcutAction::Area.default_accel().into(),
+            shortcut_window: ShortcutAction::Window.default_accel().into(),
+            shortcut_fullscreen: ShortcutAction::Fullscreen.default_accel().into(),
         }
     }
 }
@@ -57,7 +67,38 @@ impl Settings {
         if !LANGUAGES.contains(&self.language.as_str()) {
             self.language = "system".into();
         }
+        // Shortcuts: invalid entries reset to their defaults, and a combo
+        // colliding with an earlier action loses to it (area → window →
+        // fullscreen order keeps the outcome deterministic).
+        let mut seen = Vec::new();
+        for action in shortcuts::ACTIONS {
+            let parsed = shortcuts::validate(self.shortcut(action)).ok();
+            let parsed = match parsed {
+                Some(p) if !seen.contains(&p) => p,
+                _ => {
+                    *self.shortcut_mut(action) = action.default_accel().into();
+                    shortcuts::validate(action.default_accel()).expect("defaults are valid")
+                }
+            };
+            seen.push(parsed);
+        }
         self
+    }
+
+    pub fn shortcut(&self, action: ShortcutAction) -> &str {
+        match action {
+            ShortcutAction::Area => &self.shortcut_area,
+            ShortcutAction::Window => &self.shortcut_window,
+            ShortcutAction::Fullscreen => &self.shortcut_fullscreen,
+        }
+    }
+
+    pub fn shortcut_mut(&mut self, action: ShortcutAction) -> &mut String {
+        match action {
+            ShortcutAction::Area => &mut self.shortcut_area,
+            ShortcutAction::Window => &mut self.shortcut_window,
+            ShortcutAction::Fullscreen => &mut self.shortcut_fullscreen,
+        }
     }
 }
 
@@ -193,6 +234,54 @@ mod tests {
             .sanitized();
             assert_eq!(s.language, *tag);
         }
+    }
+
+    #[test]
+    fn sanitize_resets_invalid_shortcuts() {
+        let s = Settings {
+            shortcut_area: "garbage".into(),
+            shortcut_window: "Shift+8".into(), // no non-Shift modifier
+            ..Default::default()
+        }
+        .sanitized();
+        assert_eq!(s.shortcut_area, ShortcutAction::Area.default_accel());
+        assert_eq!(s.shortcut_window, ShortcutAction::Window.default_accel());
+    }
+
+    #[test]
+    fn sanitize_resets_duplicate_shortcuts_keeping_the_earlier_action() {
+        let s = Settings {
+            shortcut_window: "Alt+Shift+K".into(),
+            shortcut_fullscreen: "Alt+Shift+K".into(),
+            ..Default::default()
+        }
+        .sanitized();
+        assert_eq!(s.shortcut_window, "Alt+Shift+K");
+        assert_eq!(s.shortcut_fullscreen, ShortcutAction::Fullscreen.default_accel());
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn sanitize_resets_reserved_shortcuts() {
+        let s = Settings {
+            shortcut_area: "Cmd+Shift+3".into(),
+            ..Default::default()
+        }
+        .sanitized();
+        assert_eq!(s.shortcut_area, ShortcutAction::Area.default_accel());
+    }
+
+    #[test]
+    fn custom_shortcuts_roundtrip() {
+        let path = temp_path("shortcuts");
+        let store = SettingsStore::load(path.clone());
+        let mut s = Settings::default();
+        s.shortcut_area = "Alt+Shift+1".into();
+        s.shortcut_window = "Ctrl+Alt+W".into();
+        store.set(s.clone()).unwrap();
+        let reloaded = SettingsStore::load(path.clone()).get();
+        assert_eq!(reloaded, s);
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]

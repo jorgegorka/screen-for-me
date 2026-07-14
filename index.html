@@ -8,7 +8,12 @@
     <script type="module" src="/src/settings/main.ts" defer></script>
   </head>
   <body>
-    <main>
+    <nav class="tabs" role="tablist">
+      <button class="tab" id="tab-general" role="tab" aria-selected="true" aria-controls="panel-general" data-i18n="settings.tab_general">General</button>
+      <button class="tab" id="tab-shortcuts" role="tab" aria-selected="false" aria-controls="panel-shortcuts" tabindex="-1" data-i18n="settings.tab_shortcuts">Shortcuts</button>
+      <button class="tab" id="tab-about" role="tab" aria-selected="false" aria-controls="panel-about" tabindex="-1" data-i18n="settings.tab_about">About</button>
+    </nav>
+    <main id="panel-general" role="tabpanel" aria-labelledby="tab-general">
       <section>
         <div class="row">
           <span class="key" data-i18n="settings.general">General:</span>
@@ -92,6 +97,50 @@
           </div>
         </div>
       </section>
+    </main>
+    <main id="panel-shortcuts" role="tabpanel" aria-labelledby="tab-shortcuts" hidden>
+      <section>
+        <p class="hint" data-i18n="settings.shortcut_hint">Click a shortcut, then press the new key combination.</p>
+        <div class="row">
+          <span class="key" data-i18n="settings.shortcut_area">Capture area:</span>
+          <div class="value">
+            <div class="shortcut-controls">
+              <button class="shortcut-field" id="shortcut-area"></button>
+              <button class="shortcut-reset" id="shortcut-area-reset" data-i18n-title="settings.shortcut_reset">↺</button>
+            </div>
+            <p class="shortcut-error" id="shortcut-area-error" hidden></p>
+          </div>
+        </div>
+        <div class="row">
+          <span class="key" data-i18n="settings.shortcut_window">Capture window:</span>
+          <div class="value">
+            <div class="shortcut-controls">
+              <button class="shortcut-field" id="shortcut-window"></button>
+              <button class="shortcut-reset" id="shortcut-window-reset" data-i18n-title="settings.shortcut_reset">↺</button>
+            </div>
+            <p class="shortcut-error" id="shortcut-window-error" hidden></p>
+          </div>
+        </div>
+        <div class="row">
+          <span class="key" data-i18n="settings.shortcut_fullscreen">Capture fullscreen:</span>
+          <div class="value">
+            <div class="shortcut-controls">
+              <button class="shortcut-field" id="shortcut-fullscreen"></button>
+              <button class="shortcut-reset" id="shortcut-fullscreen-reset" data-i18n-title="settings.shortcut_reset">↺</button>
+            </div>
+            <p class="shortcut-error" id="shortcut-fullscreen-error" hidden></p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <main id="panel-about" role="tabpanel" aria-labelledby="tab-about" hidden>
+      <div class="about">
+        <img class="about-icon" id="about-icon" alt="" />
+        <h1 class="about-name" data-i18n="about.title">Screen for me</h1>
+        <p class="about-version" id="about-version"></p>
+        <p class="about-description" data-i18n="about.description">A screenshot app: capture, annotate, and share.</p>
+        <p class="about-copyright" data-i18n="about.copyright">Developed by Mario &amp; Jorge Alvarez</p>
+      </div>
     </main>
   </body>
 </html>
