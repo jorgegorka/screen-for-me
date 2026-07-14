@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="window.scrollcap">Scrolling Capture</title>
+    <link rel="stylesheet" href="/src/scrollcap/scrollcap.css" />
+    <script type="module" src="/src/scrollcap/main.ts" defer></script>
+  </head>
+  <body>
+    <div id="hint" class="hint" data-i18n="scrollcap.hint">Drag to select the area to scroll-capture — Esc to cancel</div>
+    <div id="selection" class="selection hidden"></div>
+    <div id="hud" class="hud hidden">
+      <div class="directions">
+        <button data-direction="up" title="Scroll up" data-i18n-title="scrollcap.scroll_up">↑</button>
+        <button data-direction="down" class="active" title="Scroll down" data-i18n-title="scrollcap.scroll_down">↓</button>
+        <button data-direction="left" title="Scroll left" data-i18n-title="scrollcap.scroll_left">←</button>
+        <button data-direction="right" title="Scroll right" data-i18n-title="scrollcap.scroll_right">→</button>
+      </div>
+      <button id="start" class="primary" data-i18n="scrollcap.start">Start</button>
+      <button id="cancel" data-i18n="scrollcap.cancel">Cancel</button>
+    </div>
+    <div id="pill" class="pill hidden">
+      <span id="progress" data-i18n="scrollcap.capturing">Capturing…</span>
+      <button id="stop" class="primary" data-i18n="scrollcap.stop">Stop</button>
+    </div>
+  </body>
+</html>

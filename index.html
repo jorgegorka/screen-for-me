@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="settings.title">Settings</title>
+    <link rel="stylesheet" href="/src/settings/settings.css" />
+    <script type="module" src="/src/settings/main.ts" defer></script>
+  </head>
+  <body>
+    <main>
+      <section>
+        <div class="row">
+          <span class="key" data-i18n="settings.general">General:</span>
+          <div class="value">
+            <label><input type="checkbox" id="launch-on-start" /> <span data-i18n="settings.launch_on_start">Launch on start</span></label>
+          </div>
+        </div>
+        <div class="row">
+          <label class="key" for="language" data-i18n="settings.language">Language:</label>
+          <div class="value">
+            <select id="language">
+              <option value="system" data-i18n="settings.language_system">System</option>
+              <option value="en-GB">English</option>
+              <option value="es">Español</option>
+              <option value="fr">Français</option>
+              <option value="de">Deutsch</option>
+              <option value="it">Italiano</option>
+            </select>
+          </div>
+        </div>
+      </section>
+      <hr />
+      <section>
+        <div class="row">
+          <label class="key" for="position" data-i18n="settings.position">Position on screen:</label>
+          <div class="value">
+            <select id="position">
+              <option value="left" data-i18n="settings.position_left">Left</option>
+              <option value="center" data-i18n="settings.position_center">Centre</option>
+              <option value="right" data-i18n="settings.position_right">Right</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <span class="key" data-i18n="settings.multi_display">Multi-display:</span>
+          <div class="value">
+            <label><input type="checkbox" id="move-active" /> <span data-i18n="settings.move_active">Move to active screen</span></label>
+            <p class="hint" data-i18n="settings.move_active_hint">Active screen is the screen where your cursor is pointing.</p>
+          </div>
+        </div>
+        <div class="row">
+          <label class="key" for="overlay-size" data-i18n="settings.overlay_size">Overlay size:</label>
+          <div class="value">
+            <input type="range" id="overlay-size" min="0" max="4" step="1" list="size-steps" />
+            <datalist id="size-steps">
+              <option value="0"></option><option value="1"></option><option value="2"></option>
+              <option value="3"></option><option value="4"></option>
+            </datalist>
+          </div>
+        </div>
+      </section>
+      <hr />
+      <section>
+        <div class="row">
+          <span class="key" data-i18n="settings.auto_close">Auto-close:</span>
+          <div class="value">
+            <label><input type="checkbox" id="auto-close" /> <span data-i18n="settings.auto_close_enable">Enable</span></label>
+            <div class="sub">
+              <label for="auto-action" data-i18n="settings.auto_close_action">Action:</label>
+              <select id="auto-action">
+                <option value="close" data-i18n="settings.action_close">Close</option>
+                <option value="save_and_close" data-i18n="settings.action_save_and_close">Save to Desktop and Close</option>
+              </select>
+            </div>
+            <div class="sub">
+              <label for="auto-interval" data-i18n="settings.auto_close_interval">Interval:</label>
+              <select id="auto-interval">
+                <option value="5" data-i18n="settings.interval_5">5 seconds</option>
+                <option value="10" data-i18n="settings.interval_10">10 seconds</option>
+                <option value="30" data-i18n="settings.interval_30">30 seconds</option>
+                <option value="60" data-i18n="settings.interval_60">60 seconds</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <span class="key" data-i18n="settings.drag_drop">Drag &amp; drop:</span>
+          <div class="value">
+            <label><input type="checkbox" id="close-after-drag" /> <span data-i18n="settings.close_after_drag">Close after dragging</span></label>
+            <p class="hint" data-i18n="settings.drag_hint">Hold ⌥ (option) when the drag starts to keep the item on the overlay.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

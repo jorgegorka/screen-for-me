@@ -1,27 +1,26 @@
-# Screenforme
+# Screen for me
 
-A native-rendered Native SDK app: the view lives in `src/app.native`
-(declarative markup) and the logic in `src/main.zig` (`Model`, `Msg`,
-`update`). No WebView, no npm, no build files — the `native` CLI owns
-the build.
+A CleanShot-style screenshot app for macOS and Linux, built with Tauri v2.
 
-## Commands
+- Capture **area / window / fullscreen** from the menu-bar icon or with
+  `Cmd/Ctrl+Shift+7 / 8 / 9`
+- A quick-access panel appears bottom-left after every capture: **copy,
+  save, show in Finder, drag the image straight into other apps**
+- Built-in **annotation editor**: arrows, rectangles, ellipses, lines, pen,
+  highlighter, text, pixelate, crop — with undo/redo and native-resolution
+  export
 
-```sh
-native dev     # build and run the app with hot reload
-native test    # run the app's test suite
-native build   # produce a ReleaseFast binary in zig-out/bin/
-native check   # validate src/*.native markup and app.zon
+## Development
+
+```bash
+npm install
+npm run tauri dev
 ```
 
-## Hot reload
+macOS will ask for **Screen Recording** permission on first capture.
 
-`src/app.native` is watched while `native dev` runs: edit it and the
-window updates within ~2s without losing model state. Parse failures
-keep the last good view.
+## Build
 
-## Owning the build
-
-Need custom build logic? `native eject` writes a build.zig and
-build.zig.zon into the app — from then on the `native` verbs drive
-your files through `zig build` and never regenerate them.
+```bash
+npm run tauri build
+```

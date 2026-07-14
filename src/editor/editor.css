@@ -1,0 +1,141 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, system-ui, sans-serif;
+  background: #1d1d1f;
+  color: #eee;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+  background: #2a2a2c;
+  border-bottom: 1px solid #000;
+  flex-wrap: wrap;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.group.right {
+  margin-left: auto;
+}
+
+#toolbar button {
+  background: #3a3a3c;
+  color: #ddd;
+  border: 1px solid #4a4a4c;
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+#toolbar button:hover {
+  background: #48484a;
+}
+
+#toolbar button.active {
+  background: #4f8ef7;
+  border-color: #4f8ef7;
+  color: white;
+}
+
+#toolbar .right button {
+  background: #4f8ef7;
+  border-color: #4f8ef7;
+  color: white;
+}
+
+#toolbar .right button:hover {
+  background: #6aa2ff;
+}
+
+.crop-confirm button {
+  background: #34c759 !important;
+  border-color: #34c759 !important;
+  color: white;
+}
+
+.crop-confirm #crop-cancel {
+  background: #3a3a3c !important;
+  border-color: #4a4a4c !important;
+}
+
+#colors {
+  display: flex;
+  gap: 4px;
+  margin-right: 6px;
+}
+
+.swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.swatch.active {
+  border-color: white;
+}
+
+#stroke-width {
+  width: 80px;
+}
+
+#canvas-scroll {
+  height: calc(100% - 46px);
+  overflow: auto;
+  display: grid;
+  place-items: center;
+}
+
+#stage-holder {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+}
+
+#error-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #d9342b;
+  color: #fff;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+
+.text-editor {
+  position: absolute;
+  background: transparent;
+  border: 1px dashed #4f8ef7;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.2;
+  z-index: 10;
+  user-select: text;
+  -webkit-user-select: text;
+}
