@@ -16,6 +16,10 @@ use settings::{EditorPrefsStore, SettingsStore};
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
         .plugin(tauri_plugin_drag::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -43,14 +47,11 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            commands::capture_screen,
             commands::list_captures,
-            commands::delete_capture,
             commands::copy_capture,
             commands::save_capture_to,
             commands::reveal_capture,
             commands::open_editor,
-            commands::get_capture,
             commands::read_capture_bytes,
             commands::editor_target,
             commands::export_png,
@@ -71,7 +72,7 @@ pub fn run() {
         // destroyed, so the tray/overlay can re-show them and the editor's
         // webview stays warm between annotations.
         .on_window_event(|window, event| {
-            if matches!(window.label(), "main" | "editor" | "history") {
+            if windows::HIDE_ON_CLOSE.contains(&window.label()) {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
                     let _ = window.hide();
