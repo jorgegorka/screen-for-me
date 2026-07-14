@@ -13,6 +13,7 @@ History: the repo started as a Native SDK (vercel-labs/native, Zig) app and was 
 ```bash
 npm run tauri dev        # run the app (Vite + cargo, hot reload both sides)
 npm run tauri build      # release bundles (.app/.dmg on macOS)
+npm run bundle           # tauri build + rename artifacts to underscores (Screen_for_me_*.dmg)
 npm run build            # tsc + vite build (frontend type-check)
 npm test                 # vitest (pure editor modules)
 cd src-tauri && cargo test   # Rust unit tests (capture validation, history)
