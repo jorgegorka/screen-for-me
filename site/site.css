@@ -136,6 +136,15 @@ kbd {
 .top-nav a:hover { color: var(--text-strong); text-decoration: none; }
 .top-github { display: inline-flex; padding: var(--s-2); margin: calc(var(--s-2) * -1); }
 
+.top-lang {
+  display: flex;
+  gap: var(--s-4);
+  font-size: var(--text-caption);
+  letter-spacing: 0.06em;
+}
+.top-lang a { font-size: var(--text-caption); }
+.top-lang [aria-current="page"] { color: var(--text-strong); font-weight: 600; }
+
 /* ---------- hero ---------- */
 
 .hero {
@@ -906,6 +915,7 @@ kbd {
   .feature-flip .feature-copy { order: 1; }
   .feature-flip .feature-visual { order: 2; }
   .top-nav a:not(.top-github) { display: none; }
+  .top-lang { display: none; }
   .hero-stage { aspect-ratio: 4 / 3.4; }
   .hero-wire rect { rx: 20; }
   .marquee { width: 62%; height: 48%; }

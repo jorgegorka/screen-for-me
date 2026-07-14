@@ -331,27 +331,34 @@ CANONICAL = [
      '<meta property="og:url" content="https://screenforme.app/{lang}/">'),
 ]
 
-FOOTER_LANG_SRC = """  <nav class="footer-lang" aria-label="Language">
-    <span aria-current="page">EN</span>
-    <a href="es/" lang="es" hreflang="es" aria-label="Español">ES</a>
-    <a href="fr/" lang="fr" hreflang="fr" aria-label="Français">FR</a>
-    <a href="de/" lang="de" hreflang="de" aria-label="Deutsch">DE</a>
-    <a href="it/" lang="it" hreflang="it" aria-label="Italiano">IT</a>
-  </nav>"""
+def lang_switch_src(css_class, indent):
+    pad = " " * indent
+    return f"""{pad}<nav class="{css_class}" aria-label="Language">
+{pad}  <span aria-current="page">EN</span>
+{pad}  <a href="es/" lang="es" hreflang="es" aria-label="Español">ES</a>
+{pad}  <a href="fr/" lang="fr" hreflang="fr" aria-label="Français">FR</a>
+{pad}  <a href="de/" lang="de" hreflang="de" aria-label="Deutsch">DE</a>
+{pad}  <a href="it/" lang="it" hreflang="it" aria-label="Italiano">IT</a>
+{pad}</nav>"""
+
+
+FOOTER_LANG_SRC = lang_switch_src("footer-lang", 2)
+TOP_LANG_SRC = lang_switch_src("top-lang", 4)
 
 LANG_NAMES = {"en": "English", "es": "Español", "fr": "Français", "de": "Deutsch", "it": "Italiano"}
 NAV_LABEL = {"es": "Idioma", "fr": "Langue", "de": "Sprache", "it": "Lingua"}
 
 
-def footer_lang_block(lang):
-    lines = [f'  <nav class="footer-lang" aria-label="{NAV_LABEL[lang]}">']
+def lang_switch_block(lang, css_class, indent):
+    pad = " " * indent
+    lines = [f'{pad}<nav class="{css_class}" aria-label="{NAV_LABEL[lang]}">']
     for code in ["en"] + LANGS:
         if code == lang:
-            lines.append(f'    <span aria-current="page">{code.upper()}</span>')
+            lines.append(f'{pad}  <span aria-current="page">{code.upper()}</span>')
         else:
             href = "../" if code == "en" else f"../{code}/"
-            lines.append(f'    <a href="{href}" lang="{code}" hreflang="{code}" aria-label="{LANG_NAMES[code]}">{code.upper()}</a>')
-    lines.append("  </nav>")
+            lines.append(f'{pad}  <a href="{href}" lang="{code}" hreflang="{code}" aria-label="{LANG_NAMES[code]}">{code.upper()}</a>')
+    lines.append(f"{pad}</nav>")
     return "\n".join(lines)
 
 
@@ -381,13 +388,16 @@ for lang in LANGS:
             errors.append(f"[{lang}] canonical {src!r}: expected 1, got {n}")
         html = html.replace(src, dst.format(lang=lang))
     for block_src, block_dst in [
-        (FOOTER_LANG_SRC, footer_lang_block(lang)),
+        (FOOTER_LANG_SRC, lang_switch_block(lang, "footer-lang", 2)),
+        (TOP_LANG_SRC, lang_switch_block(lang, "top-lang", 4)),
     ]:
         pat = flex_pattern(block_src)
         if len(pat.findall(html)) != 1:
             errors.append(f"[{lang}] block not found: {block_src[:60]!r}")
         else:
-            html = pat.sub(lambda m: block_dst, html, count=1)
+            # flex_pattern's leading \s+ eats the newline before the block;
+            # put it back so the generated HTML stays line-per-element.
+            html = pat.sub(lambda m: "\n" + block_dst, html, count=1)
     if not errors:
         out = ROOT / lang / "index.html"
         out.parent.mkdir(exist_ok=True)
