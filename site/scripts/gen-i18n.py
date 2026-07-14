@@ -115,6 +115,11 @@ T = [
         "fr": "<p>Tirez la vignette hors du panneau et déposez-la dans Slack, un e-mail, un document — l'application où vous étiez déjà.</p>",
         "de": "<p>Zieh die Miniatur aus dem Panel und lass sie in Slack, einer E-Mail oder einem Dokument los — der App, in der du ohnehin gerade warst.</p>",
         "it": "<p>Prendi la miniatura dal pannello e lasciala in Slack, un'email, un documento — l'app in cui eri già.</p>"}),
+    ('data-media-video="assets/demo.mp4"', {
+        "es": 'data-media-video="assets/demo-es.mp4"',
+        "fr": 'data-media-video="assets/demo-fr.mp4"',
+        "de": 'data-media-video="assets/demo-de.mp4"',
+        "it": 'data-media-video="assets/demo-it.mp4"'}),
     ('data-media-alt="Screen recording of the full Screen for me capture-to-share loop"', {
         "es": 'data-media-alt="Grabación de pantalla del ciclo completo de captura a compartir de Screen for me"',
         "fr": 'data-media-alt="Enregistrement d\'écran de la boucle capture-partage complète de Screen for me"',

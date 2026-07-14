@@ -25,7 +25,8 @@ swaps the recreation for your real asset on load. No HTML edits needed.
 | File to add                      | Replaces                                        |
 | -------------------------------- | ----------------------------------------------- |
 | `assets/hero.png`                | Hero scene inside the neon frame                |
-| `assets/demo.mp4`                | "The whole loop" video slot                     |
+| `assets/demo.mp4`                | "The whole loop" video slot (English page)      |
+| `assets/demo-{es,fr,de,it}.mp4`  | Same slot on the translated pages               |
 | `assets/demo-poster.png`         | Poster frame for the video (optional)           |
 | `assets/feature-capture.png`     | Area-capture visual (crosshair + marquee)       |
 | `assets/feature-overlay.png`     | Quick-access overlay visual                     |
