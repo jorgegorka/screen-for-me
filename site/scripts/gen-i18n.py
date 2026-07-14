@@ -44,27 +44,22 @@ T = [
         "fr": '<a href="#features">Fonctionnalités</a>',
         "de": '<a href="#features">Funktionen</a>',
         "it": '<a href="#features">Funzionalità</a>'}),
-    ('<a href="#open-source">Open source</a>', {
-        "es": '<a href="#open-source">Código abierto</a>',
-        "fr": '<a href="#open-source">Open source</a>',
-        "de": '<a href="#open-source">Open Source</a>',
-        "it": '<a href="#open-source">Open source</a>'}),
     ('aria-label="Screen for me on GitHub"', {
         "es": 'aria-label="Screen for me en GitHub"',
         "fr": 'aria-label="Screen for me sur GitHub"',
         "de": 'aria-label="Screen for me auf GitHub"',
         "it": 'aria-label="Screen for me su GitHub"'}),
     ("<h1>Capture. Mark it up.<br>Drag it anywhere.</h1>", {
-        "es": "<h1>Captura. Anótala.<br>Arrástrala a cualquier parte.</h1>",
+        "es": "<h1>Captura. Anota.<br>Arrastra a cualquier parte.</h1>",
         "fr": "<h1>Capturez. Annotez.<br>Glissez-la où vous voulez.</h1>",
         "de": "<h1>Aufnehmen. Beschriften.<br>Überallhin ziehen.</h1>",
         "it": "<h1>Cattura. Annota.<br>Trascinala ovunque.</h1>"}),
-    ("""Screen for me is a screenshot app for macOS and Linux built around one idea:
-      the moment between taking a capture and using it should be seconds, not a trip through your Downloads folder.""", {
-        "es": "Screen for me es una aplicación de capturas de pantalla para macOS y Linux construida alrededor de una idea: el momento entre hacer una captura y usarla debería durar segundos, no un viaje por tu carpeta de descargas.",
-        "fr": "Screen for me est une application de capture d'écran pour macOS et Linux construite autour d'une idée : entre la capture et son utilisation, il devrait s'écouler quelques secondes, pas un détour par votre dossier Téléchargements.",
-        "de": "Screen for me ist eine Screenshot-App für macOS und Linux, gebaut um eine Idee: Zwischen Aufnahme und Verwendung sollten Sekunden liegen, kein Umweg über den Downloads-Ordner.",
-        "it": "Screen for me è un'app di screenshot per macOS e Linux costruita attorno a un'idea: tra la cattura e il suo utilizzo dovrebbero passare secondi, non un giro nella cartella Download."}),
+    ("""A screenshot app for macOS and Linux built around one idea: the gap between
+      capturing and sharing should be seconds — never a trip through your Downloads folder.""", {
+        "es": "Una aplicación de capturas de pantalla para macOS y Linux construida alrededor de una idea: entre capturar y compartir deberían pasar segundos, nunca un viaje por tu carpeta de descargas.",
+        "fr": "Une application de capture d'écran pour macOS et Linux construite autour d'une idée : entre la capture et le partage, il devrait s'écouler quelques secondes — jamais un détour par votre dossier Téléchargements.",
+        "de": "Eine Screenshot-App für macOS und Linux, gebaut um eine Idee: Zwischen Aufnahme und Teilen sollten Sekunden liegen — nie ein Umweg über den Downloads-Ordner.",
+        "it": "Un'app di screenshot per macOS e Linux costruita attorno a un'idea: tra la cattura e la condivisione dovrebbero passare secondi, mai un giro nella cartella Download."}),
     ("Download for macOS", {
         "es": "Descargar para macOS", "fr": "Télécharger pour macOS",
         "de": "Für macOS laden", "it": "Scarica per macOS"}),

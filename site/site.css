@@ -145,13 +145,55 @@ kbd {
 .top-lang a { font-size: var(--text-caption); }
 .top-lang [aria-current="page"] { color: var(--text-strong); font-weight: 600; }
 
-/* ---------- hero ---------- */
+/* ---------- hero: Signal Horizon ----------
+   Four depth layers, back to front: night field (stars + haze), the horizon
+   (spectrum line + Signal Glow bloom + faint arcs), the product (demo frame
+   backlit by the horizon), the words floating above. */
 
 .hero {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: clamp(4rem, 9vw, 7rem) clamp(1.25rem, 4vw, 3rem) 0;
+  position: relative;
+  overflow: hidden;
+  padding: clamp(4.5rem, 10vh, 7.5rem) clamp(1.25rem, 4vw, 3rem) 0;
   text-align: center;
+}
+
+/* layer 1: night field */
+.hero-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(60% 45% at 50% 108%, rgba(124, 92, 230, 0.14) 0%, transparent 70%),
+    radial-gradient(1.5px 1.5px at 11% 24%, rgba(255, 255, 255, 0.32) 50%, transparent 51%),
+    radial-gradient(1px 1px at 23% 62%, rgba(255, 255, 255, 0.2) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 34% 14%, rgba(199, 180, 255, 0.3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 47% 44%, rgba(255, 255, 255, 0.16) 50%, transparent 51%),
+    radial-gradient(1px 1px at 58% 9%, rgba(255, 255, 255, 0.26) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 69% 33%, rgba(255, 255, 255, 0.22) 50%, transparent 51%),
+    radial-gradient(1px 1px at 78% 56%, rgba(199, 180, 255, 0.24) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 88% 19%, rgba(255, 255, 255, 0.3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 94% 47%, rgba(255, 255, 255, 0.16) 50%, transparent 51%);
+  animation: fade-in 1600ms var(--ease-out) 200ms both;
+}
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  font-size: var(--text-caption);
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 0.45em 1.1em;
+  position: relative;
+}
+.hero-pill i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-lift);
+  box-shadow: 0 0 8px var(--glow);
 }
 
 .hero h1 {
@@ -159,14 +201,22 @@ kbd {
   font-weight: 700;
   line-height: 1.04;
   letter-spacing: -0.022em;
+  margin-top: var(--s-6);
+  position: relative;
+  background: linear-gradient(180deg, #ffffff 34%, #b4b2c4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #ffffff; /* fallback if clip unsupported */
 }
 
 .hero-sub {
-  max-width: 44rem;
+  max-width: 42rem;
   margin: var(--s-6) auto 0;
   font-size: clamp(1.0625rem, 1.4vw + 0.6rem, 1.25rem);
   line-height: 1.6;
   color: var(--muted);
+  position: relative;
 }
 
 .hero-cta {
@@ -175,25 +225,147 @@ kbd {
   flex-wrap: wrap;
   gap: var(--s-4);
   margin-top: var(--s-8);
+  position: relative;
 }
+.hero-cta .btn-primary { box-shadow: 0 0 24px rgba(145, 114, 231, 0.35); }
 
-.hero-meta {
-  margin-top: var(--s-4);
-  font-size: var(--text-caption);
-  color: var(--muted);
-}
-
-/* entrance: headline block rises once, wire traces itself */
-.hero h1, .hero-sub, .hero-cta, .hero-meta {
+/* entrance: the words rise once */
+.hero-pill, .hero h1, .hero-sub, .hero-cta {
   animation: rise 700ms var(--ease-out) both;
 }
-.hero-sub { animation-delay: 90ms; }
-.hero-cta { animation-delay: 180ms; }
-.hero-meta { animation-delay: 240ms; }
+.hero h1 { animation-delay: 60ms; }
+.hero-sub { animation-delay: 140ms; }
+.hero-cta { animation-delay: 220ms; }
 
 @keyframes rise {
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: none; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* layers 2 + 3: the horizon, and the product rising out of it */
+.hero-launch {
+  position: relative;
+  margin-top: clamp(4rem, 10vh, 6.5rem);
+}
+
+/* .hero-horizon is a zero-height anchor pinned to the demo frame's top edge */
+.hero-horizon {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* everything strictly above the line (arcs) is clipped at line level */
+.horizon-sky {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(96vw, 1240px);
+  height: 380px;
+  overflow: hidden;
+}
+
+.horizon-arc {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 50%);
+  aspect-ratio: 1;
+  border: 1px solid rgba(145, 114, 231, 0.16);
+  border-radius: 50%;
+  animation: fade-in 1200ms var(--ease-out) 900ms both;
+}
+.arc-a { width: min(52vw, 560px); }
+.arc-b {
+  width: min(82vw, 900px);
+  border-color: rgba(145, 114, 231, 0.09);
+  animation-delay: 1050ms;
+}
+
+/* the Signal Glow bloom: single-violet light, spilling above and just below */
+.horizon-bloom {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, -50%);
+  width: min(110vw, 1500px);
+  height: 440px;
+  background:
+    radial-gradient(38% 42% at 50% 50%, rgba(199, 180, 255, 0.30) 0%, transparent 70%),
+    radial-gradient(72% 78% at 50% 50%, rgba(124, 92, 230, 0.20) 0%, transparent 72%);
+  animation: bloom-in 1400ms var(--ease-out) 450ms both;
+}
+
+@keyframes bloom-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.82); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* the spectrum, as always, a thin line — here it is the light source */
+.horizon-line {
+  position: absolute;
+  left: 50%;
+  top: -1px;
+  transform: translateX(-50%);
+  width: min(94vw, 1220px);
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(135, 148, 255, 0.55) 18%,
+    var(--spec-blue) 30%,
+    var(--spec-violet) 43%,
+    #cfc0ff 50%,
+    var(--spec-violet) 57%,
+    var(--spec-magenta) 72%,
+    rgba(238, 49, 56, 0.5) 86%,
+    transparent 100%);
+  filter:
+    drop-shadow(0 0 6px rgba(145, 114, 231, 0.9))
+    drop-shadow(0 0 20px rgba(145, 114, 231, 0.45));
+  animation: ignite 1100ms var(--ease-out) 350ms both;
+}
+
+@keyframes ignite {
+  from { opacity: 0; transform: translateX(-50%) scaleX(0.25); }
+  60%  { opacity: 1; }
+  to   { opacity: 1; transform: translateX(-50%); }
+}
+
+/* layer 3: the product, backlit — its top edge catches the light */
+.demo-frame {
+  position: relative;
+  margin: 0 auto;
+  max-width: 1000px;
+  border: 1px solid rgba(145, 114, 231, 0.28);
+  border-top-color: rgba(199, 180, 255, 0.65);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--ink-2);
+  box-shadow:
+    0 -20px 70px -18px rgba(124, 92, 230, 0.4),
+    0 30px 80px rgba(0, 0, 0, 0.55);
+  animation: rise 800ms var(--ease-out) 500ms both;
+}
+
+/* light spill inside the frame's top */
+.demo-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 90px;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(145, 114, 231, 0.12), transparent);
 }
 
 /* the stage: brand wire framing the product scene */
@@ -468,16 +640,7 @@ kbd {
 .loop-steps p { margin-top: var(--s-2); color: var(--muted); font-size: var(--text-small); }
 
 /* video slot */
-.demo-frame {
-  margin: clamp(3rem, 6vw, 4.5rem) auto 0;
-  max-width: 880px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-  background: var(--ink-2);
-}
-
-.demo-frame video { width: 100%; display: block; }
+.demo-frame video { width: 100%; display: block; position: relative; }
 
 .demo-placeholder {
   aspect-ratio: 16 / 9;
@@ -916,6 +1079,9 @@ kbd {
   .feature-flip .feature-visual { order: 2; }
   .top-nav a:not(.top-github) { display: none; }
   .top-lang { display: none; }
+  .hero-launch { margin-top: clamp(3rem, 8vh, 4.5rem); }
+  .horizon-sky { height: 220px; }
+  .horizon-bloom { height: 300px; }
   .hero-stage { aspect-ratio: 4 / 3.4; }
   .hero-wire rect { rx: 20; }
   .marquee { width: 62%; height: 48%; }
@@ -931,12 +1097,14 @@ kbd {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .hero h1, .hero-sub, .hero-cta, .hero-meta,
+  .hero-pill, .hero h1, .hero-sub, .hero-cta, .hero-field,
+  .demo-frame,
   .hud-overlay, .drag-ghost {
     animation: none;
     opacity: 1;
     transform: none;
   }
+  .horizon-arc, .horizon-bloom, .horizon-line { animation: none; opacity: 1; }
   .drag-ghost { opacity: 0.85; transform: rotate(4deg); }
   .wire-path { animation: none; stroke-dashoffset: 0; }
   .arrow-path, .arrow-head { stroke-dashoffset: 0; }
