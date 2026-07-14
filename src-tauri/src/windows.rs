@@ -127,10 +127,11 @@ pub fn open_scrollcap(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Check for updates against the configured endpoint and report the result in
-/// a native dialog. Endpoint/signing are placeholders until a release pipeline
-/// exists, so a failed check reports gracefully rather than erroring silently.
-pub fn check_for_updates(app: &AppHandle) {
+/// Check for updates against the GitHub Releases manifest. In `silent` mode
+/// (launch/daily auto-check) "up to date" and network errors produce no UI —
+/// only an actual update shows the install prompt. The manual tray item
+/// (`silent = false`) reports every outcome in a dialog.
+pub fn check_for_updates(app: &AppHandle, silent: bool) {
     use tauri_plugin_updater::UpdaterExt;
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
@@ -138,6 +139,10 @@ pub fn check_for_updates(app: &AppHandle) {
         let result = match app.updater() {
             Ok(updater) => updater.check().await,
             Err(err) => {
+                if silent {
+                    eprintln!("update auto-check failed: {err}");
+                    return;
+                }
                 dialog
                     .message(crate::i18n::t_with(
                         "updates.check_failed",
@@ -150,24 +155,21 @@ pub fn check_for_updates(app: &AppHandle) {
             }
         };
         match result {
-            Ok(Some(update)) => {
-                dialog
-                    .message(crate::i18n::t_with(
-                        "updates.available",
-                        &[("version", &update.version)],
-                    ))
-                    .title(crate::i18n::t("updates.available_title"))
-                    .kind(MessageDialogKind::Info)
-                    .show(|_| {});
-            }
+            Ok(Some(update)) => prompt_and_install(app, update),
             Ok(None) => {
-                dialog
-                    .message(crate::i18n::t("updates.latest"))
-                    .title(crate::i18n::t("updates.title"))
-                    .kind(MessageDialogKind::Info)
-                    .show(|_| {});
+                if !silent {
+                    dialog
+                        .message(crate::i18n::t("updates.latest"))
+                        .title(crate::i18n::t("updates.title"))
+                        .kind(MessageDialogKind::Info)
+                        .show(|_| {});
+                }
             }
             Err(err) => {
+                if silent {
+                    eprintln!("update auto-check failed: {err}");
+                    return;
+                }
                 dialog
                     .message(crate::i18n::t_with(
                         "updates.unreachable",
@@ -179,4 +181,41 @@ pub fn check_for_updates(app: &AppHandle) {
             }
         }
     });
+}
+
+/// Offer to install a found update; on confirmation download it, verify the
+/// minisign signature (done by the plugin), swap the .app and relaunch.
+fn prompt_and_install(app: AppHandle, update: tauri_plugin_updater::Update) {
+    use tauri_plugin_dialog::MessageDialogButtons;
+    app.dialog()
+        .message(crate::i18n::t_with(
+            "updates.available",
+            &[("version", &update.version)],
+        ))
+        .title(crate::i18n::t("updates.available_title"))
+        .kind(MessageDialogKind::Info)
+        .buttons(MessageDialogButtons::OkCancelCustom(
+            crate::i18n::t("updates.install"),
+            crate::i18n::t("updates.later"),
+        ))
+        .show(move |install| {
+            if !install {
+                return;
+            }
+            tauri::async_runtime::spawn(async move {
+                match update.download_and_install(|_, _| {}, || {}).await {
+                    Ok(()) => app.restart(),
+                    Err(err) => {
+                        app.dialog()
+                            .message(crate::i18n::t_with(
+                                "updates.install_failed",
+                                &[("err", &err.to_string())],
+                            ))
+                            .title(crate::i18n::t("updates.title"))
+                            .kind(MessageDialogKind::Warning)
+                            .show(|_| {});
+                    }
+                }
+            });
+        });
 }

@@ -115,7 +115,7 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
                     eprintln!("failed to open history: {err}");
                 }
             }
-            "updates" => windows::check_for_updates(app),
+            "updates" => windows::check_for_updates(app, false),
             "settings" => windows::open_settings(app),
             "quit" => app.exit(0),
             _ => {}
