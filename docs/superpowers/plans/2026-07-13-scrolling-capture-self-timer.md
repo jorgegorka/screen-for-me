@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add two CleanShot-style capture modes: Self-Timer (3/5/10 s countdown, then fullscreen capture) and Scrolling Capture (macOS-only auto-scroll of a selected region, frames stitched into one PNG).
+**Goal:** Add two capture modes: Self-Timer (3/5/10 s countdown, then fullscreen capture) and Scrolling Capture (macOS-only auto-scroll of a selected region, frames stitched into one PNG).
 
 **Architecture:** Both features feed the existing pipeline (save to `captures/`, `History::prune`, `capture:new`, quick-access overlay). Self-Timer is a transient countdown window that fires the existing fullscreen path. Scrolling Capture is a transient full-screen selection window + a Rust loop: `screencapture -x -R` region grabs → CGEvent scroll steps → correlation-based stitching with the `image` crate.
 
@@ -19,7 +19,7 @@
 - Scroll events use LINE units (no trackpad inertia); ~350 ms settle between steps.
 - Gates before calling the work done: `npm run build`, `npm test`, `cd src-tauri && cargo test` — all green.
 - Commit after every task with a descriptive message.
-- Tray menu order (matches CleanShot screenshot): Area / Window / Fullscreen / separator / Scrolling Capture / Self-Timer submenu / separator / History / …
+- Tray menu order: Area / Window / Fullscreen / separator / Scrolling Capture / Self-Timer submenu / separator / History / …
 
 ---
 

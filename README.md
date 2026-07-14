@@ -1,6 +1,6 @@
 # Screen for me
 
-A CleanShot-style screenshot app for macOS and Linux, built with Tauri v2.
+A fast, polished screenshot app for macOS and Linux, built with Tauri v2.
 
 - Capture **area / window / fullscreen** from the menu-bar icon or with
   `Cmd/Ctrl+Shift+7 / 8 / 9`

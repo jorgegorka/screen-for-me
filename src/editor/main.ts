@@ -9,7 +9,7 @@ import { initI18n, t } from "../shared/i18n";
 import { normalizeRect } from "../shared/geometry";
 import type { CaptureEntry } from "../shared/ipc";
 import { clampRect, fitScale, imageToScreen, type Rect, type Size } from "./geometry";
-import { nextCounterNumber } from "./counter";
+import { counterTextColor, nextCounterNumber } from "./counter";
 import { UndoStack } from "./history";
 import { pixelateRegion } from "./pixelate";
 import { buildCounter, rebuildLayer, serializeLayer, type ShapeType } from "./shapes";
@@ -118,6 +118,7 @@ async function loadCapture(entry: CaptureEntry) {
   annLayer.destroyChildren();
   transformer.nodes([]);
   undoStack = new UndoStack(serializeLayer(annLayer));
+  syncUndoButtons();
   applyView();
 }
 
@@ -126,6 +127,12 @@ async function loadCapture(entry: CaptureEntry) {
 
 function commit() {
   undoStack.commit(serializeLayer(annLayer));
+  syncUndoButtons();
+}
+
+function syncUndoButtons() {
+  el<HTMLButtonElement>("undo").disabled = !undoStack.canUndo;
+  el<HTMLButtonElement>("redo").disabled = !undoStack.canRedo;
 }
 
 function restore(snapshot: string) {
@@ -138,11 +145,13 @@ function restore(snapshot: string) {
 function undo() {
   const snapshot = undoStack.undo();
   if (snapshot !== null) restore(snapshot);
+  syncUndoButtons();
 }
 
 function redo() {
   const snapshot = undoStack.redo();
   if (snapshot !== null) restore(snapshot);
+  syncUndoButtons();
 }
 
 // ---------------------------------------------------------------------------
@@ -244,7 +253,7 @@ function onPointerDown() {
       y: pos.y,
       width: 1,
       height: 1,
-      stroke: tool === "crop" ? "#4f8ef7" : "#ff9500",
+      stroke: tool === "crop" ? "#9172e7" : "#ff9500",
       strokeWidth: 2 / scale,
       dash: [6 / scale, 4 / scale],
       listening: false,
@@ -351,7 +360,7 @@ function proposeCrop(rect: Rect) {
   pendingCrop = rect;
   marquee = new Konva.Rect({
     ...rect,
-    stroke: "#4f8ef7",
+    stroke: "#9172e7",
     strokeWidth: 2 / scale,
     dash: [6 / scale, 4 / scale],
     listening: false,
@@ -567,6 +576,7 @@ function selectColor(value: string, applyToSelection: boolean) {
       else if (node.name() === "counter") {
         node.setAttr("fill", value);
         (node as Konva.Group).findOne("Circle")?.setAttr("fill", value);
+        (node as Konva.Group).findOne("Text")?.setAttr("fill", counterTextColor(value));
       } else {
         node.setAttr("stroke", value);
         if (node.name() === "arrow") node.setAttr("fill", value);

@@ -23,8 +23,8 @@ body {
   inset: 8px;
   display: flex;
   flex-direction: column;
-  background: rgba(30, 30, 32, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(24, 24, 26, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   padding: 10px;
@@ -52,11 +52,14 @@ body {
   position: absolute;
   top: -4px;
   right: -4px;
-  background: #4f8ef7;
+  background:
+    linear-gradient(#18181a, #18181a) padding-box,
+    linear-gradient(90deg, #8794ff, #9172e7 35%, #d05aa6 65%, #ee3138) border-box;
+  border: 1.5px solid transparent;
   color: white;
   font-size: 11px;
   font-weight: 600;
-  border-radius: 9px;
+  border-radius: 999px;
   padding: 1px 6px;
 }
 
@@ -70,7 +73,7 @@ body {
   background: rgba(255, 255, 255, 0.1);
   color: #eee;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 7px;
+  border-radius: 6px;
   font-size: 12px;
   padding: 5px 0;
   cursor: pointer;
@@ -78,6 +81,12 @@ body {
 
 .actions button:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.actions button:focus-visible,
+.dismiss:focus-visible {
+  outline: 2px solid #9172e7;
+  outline-offset: 2px;
 }
 
 .dismiss {
@@ -89,7 +98,7 @@ body {
   height: 20px;
   border-radius: 50%;
   border: none;
-  background: #555;
+  background: #48484a;
   color: #fff;
   font-size: 11px;
   line-height: 20px;
@@ -97,7 +106,7 @@ body {
 }
 
 .dismiss:hover {
-  background: #777;
+  background: #6e6e70;
 }
 
 .toast {

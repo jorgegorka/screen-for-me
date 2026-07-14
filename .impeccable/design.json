@@ -1,0 +1,391 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-14T09:16:24Z",
+  "title": "Design System: Screen for me",
+  "extensions": {
+    "colorMeta": {
+      "accent-violet": {
+        "role": "primary",
+        "displayName": "Signal Violet",
+        "canonical": "#7c5ce6",
+        "tonalRamp": [
+          "#1b1044",
+          "#2f1e77",
+          "#4530aa",
+          "#5f45cc",
+          "#7c5ce6",
+          "#9172e7",
+          "#b39bf0",
+          "#d5c8f8"
+        ]
+      },
+      "accent-violet-lift": {
+        "role": "primary",
+        "displayName": "Violet Lift",
+        "canonical": "#9172e7"
+      },
+      "accent-glow": {
+        "role": "primary",
+        "displayName": "Signal Glow",
+        "canonical": "rgba(145, 114, 231, 0.5)",
+        "tonalRamp": [
+          "rgba(145, 114, 231, 0.4)",
+          "rgba(145, 114, 231, 0.5)",
+          "rgba(145, 114, 231, 0.6)"
+        ]
+      },
+      "brand-signal-blue": {
+        "role": "brand",
+        "displayName": "Signal Blue",
+        "canonical": "#8794ff"
+      },
+      "brand-violet": {
+        "role": "brand",
+        "displayName": "Neon Violet",
+        "canonical": "#9172e7"
+      },
+      "brand-magenta": {
+        "role": "brand",
+        "displayName": "Magenta Crossing",
+        "canonical": "#d05aa6"
+      },
+      "brand-red": {
+        "role": "brand",
+        "displayName": "Signal Red",
+        "canonical": "#ee3138"
+      },
+      "brand-black": {
+        "role": "brand",
+        "displayName": "Void Black",
+        "canonical": "#000000"
+      },
+      "confirm-green": {
+        "role": "semantic",
+        "displayName": "Confirm Green",
+        "canonical": "#34c759",
+        "tonalRamp": [
+          "#07220f",
+          "#0d3e1c",
+          "#166b30",
+          "#219a45",
+          "#34c759",
+          "#63d580",
+          "#98e4ab",
+          "#cdf2d5"
+        ]
+      },
+      "marquee-orange": {
+        "role": "semantic",
+        "displayName": "Marquee Orange",
+        "canonical": "#ff9500"
+      },
+      "annotation-inks": {
+        "role": "semantic",
+        "displayName": "Annotation Inks",
+        "canonical": "#ff3b30",
+        "tonalRamp": [
+          "#ff3b30",
+          "#ffcc00",
+          "#34c759",
+          "#4f8ef7",
+          "#af52de",
+          "#ffffff",
+          "#000000"
+        ]
+      },
+      "error-red": {
+        "role": "semantic",
+        "displayName": "Error Red",
+        "canonical": "#d9342b",
+        "tonalRamp": [
+          "#2e0705",
+          "#560d0a",
+          "#8a1611",
+          "#b2251d",
+          "#d9342b",
+          "#e46560",
+          "#ef9793",
+          "#f9cac8"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1d1d1f",
+        "tonalRamp": [
+          "#111113",
+          "#1d1d1f",
+          "#2a2a2c",
+          "#3a3a3c",
+          "#48484a",
+          "#6e6e70",
+          "#a5a5a7",
+          "#d9d9db"
+        ]
+      },
+      "surface-dark": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "#2a2a2c"
+      },
+      "control-dark": {
+        "role": "neutral",
+        "displayName": "Control Gray",
+        "canonical": "#3a3a3c"
+      },
+      "control-dark-hover": {
+        "role": "neutral",
+        "displayName": "Control Gray Hover",
+        "canonical": "#48484a"
+      },
+      "border-dark": {
+        "role": "neutral",
+        "displayName": "Dark Hairline",
+        "canonical": "#4a4a4c"
+      },
+      "text-on-dark": {
+        "role": "neutral",
+        "displayName": "Dark-mode Text",
+        "canonical": "#eeeeee"
+      },
+      "fog": {
+        "role": "neutral",
+        "displayName": "Fog",
+        "canonical": "#f5f5f7",
+        "tonalRamp": [
+          "#2a2a2c",
+          "#48484a",
+          "#6e6e70",
+          "#a5a5a7",
+          "#c9c9cb",
+          "#e2e2e4",
+          "#eeeef0",
+          "#f5f5f7"
+        ]
+      },
+      "card-white": {
+        "role": "neutral",
+        "displayName": "Card White",
+        "canonical": "#ffffff"
+      },
+      "border-light": {
+        "role": "neutral",
+        "displayName": "Light Hairline",
+        "canonical": "#e2e2e4"
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "#888888",
+        "tonalRamp": [
+          "#48484a",
+          "#5c5c5e",
+          "#6e6e70",
+          "#888888",
+          "#999999",
+          "#aaaaac",
+          "#c9c9cb",
+          "#e2e2e4"
+        ]
+      },
+      "text-muted-dark": {
+        "role": "neutral",
+        "displayName": "Dark-mode Muted",
+        "canonical": "#999999"
+      },
+      "control-light": {
+        "role": "neutral",
+        "displayName": "Light Control Fill",
+        "canonical": "#fafafa"
+      },
+      "hairline-black": {
+        "role": "neutral",
+        "displayName": "Hairline Black",
+        "canonical": "#000000"
+      },
+      "scrim": {
+        "role": "neutral",
+        "displayName": "Scrim",
+        "canonical": "rgba(0, 0, 0, 0.25)",
+        "tonalRamp": [
+          "rgba(0, 0, 0, 0.12)",
+          "rgba(0, 0, 0, 0.25)",
+          "rgba(0, 0, 0, 0.4)",
+          "rgba(0, 0, 0, 0.45)",
+          "rgba(0, 0, 0, 0.5)",
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      "glass-panel": {
+        "role": "neutral",
+        "displayName": "Glass Panel",
+        "canonical": "rgba(24, 24, 26, 0.92)"
+      },
+      "glass-panel-light": {
+        "role": "neutral",
+        "displayName": "Glass Panel (85%)",
+        "canonical": "rgba(24, 24, 26, 0.85)"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The countdown digit only; tabular-nums."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Window headings. Rare."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default UI text at 13px."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, hints, toasts at 12px."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Card metadata and timestamps at 11px."
+      }
+    },
+    "shadows": [
+      {
+        "name": "hud-float",
+        "value": "0 8px 32px rgba(0, 0, 0, 0.45)",
+        "purpose": "The overlay card and any panel floating over the user's screen."
+      },
+      {
+        "name": "stage-lift",
+        "value": "0 4px 24px rgba(0, 0, 0, 0.6)",
+        "purpose": "The screenshot on the editor canvas \u2014 the one lit object."
+      },
+      {
+        "name": "toast",
+        "value": "0 4px 16px rgba(0, 0, 0, 0.4)",
+        "purpose": "Transient notices like the error bar."
+      },
+      {
+        "name": "thumb",
+        "value": "0 1px 6px rgba(0, 0, 0, 0.5)",
+        "purpose": "The draggable thumbnail inside the overlay."
+      }
+    ],
+    "motion": [
+      {
+        "name": "none-at-rest",
+        "value": "0ms",
+        "purpose": "The current system has no transitions; interactions are instant. Any future transition: ~150ms, state-conveying only, respecting prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Focus Blue action button \u2014 Done/Copy/Save in the editor toolbar.",
+      "html": "<button class=\"ds-btn-primary\">Copy</button>",
+      "css": ".ds-btn-primary { background: #4f8ef7; color: #fff; border: 1px solid #4f8ef7; border-radius: 6px; font: 400 12px -apple-system, system-ui, sans-serif; padding: 5px 10px; cursor: pointer; } .ds-btn-primary:hover { background: #6aa2ff; } .ds-btn-primary:focus-visible { outline: 2px solid #4f8ef7; outline-offset: 2px; }"
+    },
+    {
+      "name": "Toolbar Button",
+      "kind": "button",
+      "refersTo": "button-toolbar",
+      "description": "Dark secondary control used across the editor toolbar; .active turns Focus Blue.",
+      "html": "<button class=\"ds-btn-toolbar\">Arrow</button>",
+      "css": ".ds-btn-toolbar { background: #3a3a3c; color: #ddd; border: 1px solid #4a4a4c; border-radius: 6px; font: 400 12px -apple-system, system-ui, sans-serif; padding: 5px 10px; cursor: pointer; } .ds-btn-toolbar:hover { background: #48484a; } .ds-btn-toolbar:focus-visible { outline: 2px solid #4f8ef7; outline-offset: 2px; }"
+    },
+    {
+      "name": "HUD Button",
+      "kind": "button",
+      "refersTo": "button-hud",
+      "description": "The lightest affordance: 10% white over glass, used inside HUD panels and the overlay.",
+      "html": "<button class=\"ds-btn-hud\">Save</button>",
+      "css": ".ds-btn-hud { background: rgba(255, 255, 255, 0.1); color: #eee; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 6px; font: 400 12px -apple-system, system-ui, sans-serif; padding: 5px 10px; cursor: pointer; } .ds-btn-hud:hover { background: rgba(255, 255, 255, 0.2); } .ds-btn-hud:focus-visible { outline: 2px solid #4f8ef7; outline-offset: 2px; }"
+    },
+    {
+      "name": "Glass HUD Panel",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The signature material: translucent dark glass panel floating over the user's screen.",
+      "html": "<div class=\"ds-glass-panel\"><span>Scrolling capture ready</span><button class=\"ds-glass-panel-btn\">Start</button></div>",
+      "css": ".ds-glass-panel { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 10px; background: rgba(24, 24, 26, 0.92); color: #fff; font: 13px -apple-system, system-ui, sans-serif; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45); } .ds-glass-panel-btn { background: rgba(255, 255, 255, 0.1); color: #fff; border: none; border-radius: 6px; font: inherit; padding: 6px 10px; cursor: pointer; } .ds-glass-panel-btn:hover { background: rgba(255, 255, 255, 0.2); }"
+    },
+    {
+      "name": "History Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Light-mode capture card in the History window: white surface, hairline border, dense actions.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-thumb\"></div><div class=\"ds-card-meta\">Today, 14:32 \u00b7 1440\u00d7900</div><div class=\"ds-card-actions\"><button>Copy</button><button>Edit</button></div></div>",
+      "css": ".ds-card { background: #fff; border: 1px solid #e2e2e4; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; width: 220px; font-family: -apple-system, system-ui, sans-serif; } .ds-card-thumb { aspect-ratio: 16 / 10; background: repeating-conic-gradient(#e8e8ea 0% 25%, #f4f4f6 0% 50%) 50% / 20px 20px; } .ds-card-meta { font-size: 11px; color: #888; padding: 6px 10px 0; } .ds-card-actions { display: flex; gap: 4px; padding: 8px 10px 10px; } .ds-card-actions button { flex: 1; font: 400 11px -apple-system, system-ui, sans-serif; padding: 5px 0; border: 1px solid #d0d0d2; border-radius: 6px; background: #fafafa; cursor: pointer; } .ds-card-actions button:hover { background: #eee; }"
+    },
+    {
+      "name": "Color Swatch",
+      "kind": "chip",
+      "refersTo": "button-toolbar",
+      "description": "Editor color-picker swatch; the active swatch gets a white ring.",
+      "html": "<span class=\"ds-swatch\" style=\"background:#d9342b\"></span><span class=\"ds-swatch ds-swatch-active\" style=\"background:#4f8ef7\"></span>",
+      "css": ".ds-swatch { display: inline-block; width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; margin-right: 4px; } .ds-swatch-active { border-color: #fff; }"
+    },
+    {
+      "name": "Error Toast",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Fixed bottom-center error bar; the only red surface in the app.",
+      "html": "<div class=\"ds-error-toast\">Export failed \u2014 the capture file is missing.</div>",
+      "css": ".ds-error-toast { display: inline-block; background: #d9342b; color: #fff; font: 400 13px -apple-system, system-ui, sans-serif; padding: 8px 16px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Glass HUD",
+    "overview": "Every surface in Screen for me is a lightweight heads-up display floating over the user's own work. Transient panels are translucent dark glass (#18181A at 85\u201392%); windowed surfaces are quiet macOS-native gray with the system font everywhere. The design's job is to keep the capture-to-share loop fast; nothing on screen may draw attention to itself instead of the screenshot. The system explicitly rejects Electron-app heaviness, feature-bloat pro-tool chrome, and startup-SaaS styling.",
+    "keyCharacteristics": [
+      "Translucent dark glass panels for transient HUD surfaces; opaque native grays for windows",
+      "One accent blue (#4f8ef7), used only for primary actions and active state",
+      "System font stack at compact sizes (11\u201313px UI); no display or brand fonts",
+      "Flat within windows; soft large shadows only where a panel floats over the screen",
+      "Settings and History respect the OS light/dark preference; HUDs and the editor are always dark"
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "Focus Blue is the only decorative-adjacent color and it appears exclusively on primary actions, active tools, and selection state \u2014 never on labels, borders-at-rest, or backgrounds.",
+        "section": "colors"
+      },
+      {
+        "name": "The Glass Rule",
+        "body": "Transient surfaces (things that float over the user's screen) are translucent dark glass. Windowed surfaces are opaque native gray. Never mix the two materials on one surface.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Any number that changes in place (countdown, dimensions readout) uses font-variant-numeric: tabular-nums so it never jitters.",
+        "section": "typography"
+      },
+      {
+        "name": "The Floats-Only Rule",
+        "body": "If an element doesn't float over another surface, it gets no shadow. Sibling separation is borders and background steps, never depth.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use Focus Blue (#4f8ef7) for exactly one thing per surface: the primary action or the active state.",
+      "Do keep UI text at 11\u201313px in the system font; density is native, not cramped.",
+      "Do build transient surfaces from the glass material (#18181A at 85\u201392%) and windows from opaque native grays.",
+      "Do respect prefers-color-scheme on windowed surfaces (settings, history) and keep HUDs/editor always dark.",
+      "Do convey structure with hairline borders and background steps; reserve shadows for floating panels.",
+      "Do keep interactions instant; any future transition stays in the 150ms range, conveys state, and respects prefers-reduced-motion."
+    ],
+    "donts": [
+      "Don't introduce Electron-app heaviness: oversized paddings, web-styled controls, or window chrome that doesn't feel native.",
+      "Don't grow feature-bloat pro-tool chrome: no icon-crowded toolbars, ribbons, or option overload.",
+      "Don't add startup-SaaS styling: no gradients, badges, onboarding tours, or marketing polish inside the utility.",
+      "Don't use a second blue. #4a9eff is legacy; migrate to #4f8ef7 on contact.",
+      "Don't restyle native form controls or scrollbars.",
+      "Don't use red or green for anything but errors and confirmations respectively.",
+      "Don't add decorative motion, load choreography, or hover effects beyond a background-step change."
+    ]
+  }
+}

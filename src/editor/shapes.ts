@@ -1,5 +1,7 @@
 import Konva from "konva";
 
+import { counterTextColor } from "./counter";
+
 export type ShapeType =
   | "arrow"
   | "rect"
@@ -55,7 +57,7 @@ export interface CounterConfig {
 }
 
 /**
- * Numbered badge: a group of circle + white number, with its semantic state
+ * Numbered badge: a group of circle + contrasting number, with its semantic state
  * (radius/fill/number) baked into attrs on the group so the flat serializer
  * can round-trip it (same trick as pixelate's `src`).
  */
@@ -69,7 +71,7 @@ export function buildCounter(config: CounterConfig): Konva.Group {
   group.add(
     new Konva.Text({
       text: String(number),
-      fill: "#ffffff",
+      fill: counterTextColor(fill),
       fontStyle: "bold",
       fontSize: radius * 1.2,
       fontFamily: "-apple-system, system-ui, sans-serif",

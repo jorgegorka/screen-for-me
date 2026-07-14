@@ -28,9 +28,11 @@ body {
 
 .selection {
   position: fixed;
-  border: 1px solid #4a9eff;
+  border: 1px solid #9172e7;
   /* Punches a "hole": everything outside the rect gets the extra dim. */
-  box-shadow: 0 0 0 100000px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 0 0 100000px rgba(0, 0, 0, 0.25),
+    0 0 12px rgba(145, 114, 231, 0.6);
 }
 
 .hud,
@@ -62,12 +64,23 @@ body {
   cursor: pointer;
 }
 
+.hud button:focus-visible,
+.pill button:focus-visible {
+  outline: 2px solid #9172e7;
+  outline-offset: 2px;
+}
+
 .directions button.active {
-  background: #4a9eff;
+  background: #7c5ce6;
+  box-shadow: 0 0 10px rgba(145, 114, 231, 0.5);
 }
 
 button.primary {
-  background: #4a9eff;
+  background: #7c5ce6;
+}
+
+button.primary:hover {
+  background: #9172e7;
 }
 
 /* Pill mode: Rust has shrunk the window to just the pill. */
@@ -81,4 +94,24 @@ body.running .pill {
   inset: 0;
   border-radius: 12px;
   justify-content: space-between;
+}
+
+/* Recording state: the brand spectrum traces the pill's edge, echoing the app
+   icon. Drawn as a masked overlay ring so the glass keeps its translucency. */
+body.running .pill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 1px;
+  background: linear-gradient(90deg, #8794ff, #9172e7 35%, #d05aa6 65%, #ee3138);
+  -webkit-mask:
+    linear-gradient(#000, #000) content-box,
+    linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000, #000) content-box,
+    linear-gradient(#000, #000);
+  mask-composite: exclude;
+  pointer-events: none;
 }

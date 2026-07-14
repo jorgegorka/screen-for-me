@@ -21,6 +21,25 @@ body {
   cursor: pointer;
 }
 
+/* Brand-spectrum ring: the countdown disc traced by the icon's signal. */
+.disc::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 180deg,
+    #8794ff,
+    #9172e7 30%,
+    #d05aa6 55%,
+    #ee3138 80%,
+    #8794ff
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  pointer-events: none;
+}
+
 #count {
   font: 600 72px -apple-system, system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
@@ -32,5 +51,5 @@ body {
   width: 100%;
   text-align: center;
   font: 12px -apple-system, system-ui, sans-serif;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.7);
 }

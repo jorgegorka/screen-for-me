@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Screen for me** — a CleanShot-style desktop screenshot app built with **Tauri v2** (Rust backend, TypeScript + Vite frontend, Konva canvas editor). v1 scope: area/window/fullscreen capture, a bottom-left quick-access overlay, an in-app annotation editor, drag-out, copy/save. **No video capture.** Targets: macOS (primary) and Linux; Windows later.
+**Screen for me** — a desktop screenshot app built with **Tauri v2** (Rust backend, TypeScript + Vite frontend, Konva canvas editor). v1 scope: area/window/fullscreen capture, a bottom-left quick-access overlay, an in-app annotation editor, drag-out, copy/save. **No video capture.** Targets: macOS (primary) and Linux; Windows later.
 
 History: the repo started as a Native SDK (vercel-labs/native, Zig) app and was rewritten on Tauri because that SDK lacked screen capture, mouse-coordinate events, global hotkeys, and drag-out (see `docs/` plan history in git).
 
@@ -61,3 +61,7 @@ Capture flow: shortcut/tray → `commands::trigger_capture` (spawn_blocking) →
 ## Updates
 
 The tray's "Check for Updates…" uses `tauri-plugin-updater` (config under `plugins.updater` in tauri.conf.json). **The endpoint (`releases.screenforme.example`) and signing key are placeholders** — until a real release pipeline exists, a check fails gracefully with a "couldn't reach the update server" dialog. To make it real: (1) host update manifests at a real `endpoints` URL (Tauri static-JSON or dynamic format); (2) replace `plugins.updater.pubkey` with the public key whose **private** key you sign releases with (`npm run tauri signer generate`); (3) build with `TAURI_SIGNING_PRIVATE_KEY`/`_PASSWORD` set and `createUpdaterArtifacts: true` (already on). The dev keypair generated during scaffolding lives outside the repo (session scratchpad) and is throwaway — generate a real one for production and never commit the private key.
+
+## Design Context
+
+`PRODUCT.md` (strategic) and `DESIGN.md` (visual system) at the repo root guide all UI work — read them before designing or restyling anything. Register: product ("invisible, native, fast"; a future landing page is brand-register per-task). Positioning: the fastest capture-to-share loop. Key rules: one accent violet #7c5ce6 (Signal Violet, from the brand mark; hover/outlines #9172e7 Violet Lift; legacy blues #4f8ef7/#4a9eff migrate on contact — #4f8ef7 survives only as an annotation ink), the brand spectrum (blue→violet→magenta→red) only as a thin neon line at three sanctioned moments (overlay badge, countdown ring, scrollcap recording pill — DESIGN.md Spectrum Rule), translucent dark glass for transient HUDs vs. opaque native grays for windows, shadows only on floating panels (plus the Signal Glow halo on active states), no decorative motion. Anti-references: Electron heaviness, feature-bloat pro tools, startup-SaaS styling.

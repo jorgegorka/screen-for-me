@@ -76,7 +76,7 @@ main {
 
 .meta {
   font-size: 11px;
-  color: #888;
+  color: #6e6e70;
   padding: 6px 10px 0;
 }
 
@@ -90,7 +90,7 @@ main {
   flex: 1;
   font-size: 11px;
   padding: 5px 0;
-  border: 1px solid #d0d0d2;
+  border: 1px solid #e2e2e4;
   border-radius: 6px;
   background: #fafafa;
   cursor: pointer;
@@ -98,6 +98,11 @@ main {
 
 .actions button:hover {
   background: #eee;
+}
+
+.actions button:focus-visible {
+  outline: 2px solid #9172e7;
+  outline-offset: 2px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -117,7 +122,7 @@ main {
 .empty {
   padding: 40px 20px;
   text-align: center;
-  color: #888;
+  color: #6e6e70;
 }
 
 .hidden {

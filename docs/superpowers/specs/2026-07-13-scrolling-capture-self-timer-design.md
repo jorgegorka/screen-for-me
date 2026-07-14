@@ -3,7 +3,7 @@
 **Date:** 2026-07-13
 **Status:** Approved
 
-Two new capture modes for Screen for me, modeled on CleanShot: **Scrolling Capture**
+Two new capture modes for Screen for me: **Scrolling Capture**
 (auto-scroll a selected region and stitch the frames into one tall/wide image) and
 **Self-Timer** (capture the full screen after a chosen delay).
 

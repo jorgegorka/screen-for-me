@@ -53,20 +53,37 @@ body {
   background: #48484a;
 }
 
+#toolbar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+#toolbar button:disabled:hover {
+  background: #3a3a3c;
+}
+
+#toolbar button:focus-visible,
+#toolbar .swatch:focus-visible,
+#stroke-width:focus-visible {
+  outline: 2px solid #9172e7;
+  outline-offset: 2px;
+}
+
 #toolbar button.active {
-  background: #4f8ef7;
-  border-color: #4f8ef7;
+  background: #7c5ce6;
+  border-color: #7c5ce6;
   color: white;
+  box-shadow: 0 0 10px rgba(145, 114, 231, 0.5);
 }
 
 #toolbar .right button {
-  background: #4f8ef7;
-  border-color: #4f8ef7;
+  background: #7c5ce6;
+  border-color: #7c5ce6;
   color: white;
 }
 
 #toolbar .right button:hover {
-  background: #6aa2ff;
+  background: #9172e7;
 }
 
 .crop-confirm button {
@@ -130,7 +147,7 @@ body {
 .text-editor {
   position: absolute;
   background: transparent;
-  border: 1px dashed #4f8ef7;
+  border: 1px dashed #9172e7;
   outline: none;
   resize: none;
   overflow: hidden;
