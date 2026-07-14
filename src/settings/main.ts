@@ -1,19 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
+import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 
-export interface Settings {
-  position: "left" | "center" | "right";
-  move_to_active_screen: boolean;
-  overlay_size: number;
-  auto_close_enabled: boolean;
-  auto_close_action: "close" | "save_and_close";
-  auto_close_seconds: number;
-  close_after_drag: boolean;
-}
+import { el } from "../shared/dom";
+import type { Settings } from "../shared/ipc";
 
 /** Slider stop index ↔ overlay size multiplier. */
 const SIZE_STEPS = [0.75, 1.0, 1.25, 1.5, 2.0];
-
-const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 function sizeToStep(size: number): number {
   let best = 1;
@@ -53,12 +45,36 @@ function syncAutoCloseState() {
   }
 }
 
-window.addEventListener("DOMContentLoaded", async () => {
-  fillForm(await invoke<Settings>("get_settings"));
-  document.querySelectorAll<HTMLElement>("select, input").forEach((control) => {
-    control.addEventListener("change", async () => {
-      syncAutoCloseState();
-      fillForm(await invoke<Settings>("set_settings", { settings: readForm() }));
-    });
+/** Launch-on-start reflects the real OS login-item state, not settings.json. */
+async function initAutostart() {
+  const box = el<HTMLInputElement>("launch-on-start");
+  try {
+    box.checked = await isEnabled();
+  } catch (err) {
+    console.error("autostart state unavailable", err);
+    box.disabled = true;
+    return;
+  }
+  box.addEventListener("change", async () => {
+    try {
+      if (box.checked) await enable();
+      else await disable();
+    } catch (err) {
+      console.error("failed to toggle autostart", err);
+      box.checked = !box.checked;
+    }
   });
+}
+
+window.addEventListener("DOMContentLoaded", async () => {
+  void initAutostart();
+  fillForm(await invoke<Settings>("get_settings"));
+  document
+    .querySelectorAll<HTMLElement>("select, input:not(#launch-on-start)")
+    .forEach((control) => {
+      control.addEventListener("change", async () => {
+        syncAutoCloseState();
+        fillForm(await invoke<Settings>("set_settings", { settings: readForm() }));
+      });
+    });
 });
