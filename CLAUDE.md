@@ -61,7 +61,24 @@ Capture flow: shortcut/tray → `commands::trigger_capture` (spawn_blocking) →
 
 ## Updates
 
-The tray's "Check for Updates…" uses `tauri-plugin-updater` (config under `plugins.updater` in tauri.conf.json). **The endpoint (`releases.screenforme.example`) and signing key are placeholders** — until a real release pipeline exists, a check fails gracefully with a "couldn't reach the update server" dialog. To make it real: (1) host update manifests at a real `endpoints` URL (Tauri static-JSON or dynamic format); (2) replace `plugins.updater.pubkey` with the public key whose **private** key you sign releases with (`npm run tauri signer generate`); (3) build with `TAURI_SIGNING_PRIVATE_KEY`/`_PASSWORD` set and `createUpdaterArtifacts: true` (already on). The dev keypair generated during scaffolding lives outside the repo (session scratchpad) and is throwaway — generate a real one for production and never commit the private key.
+Releases are published to GitHub Releases on `jorgegorka/screen-for-me`; the
+updater endpoint is `https://github.com/jorgegorka/screen-for-me/releases/latest/download/latest.json`
+(`plugins.updater` in tauri.conf.json). `npm run release` does everything:
+verifies version consistency (package.json / tauri.conf.json / Cargo.toml) and
+that the `v<version>` release doesn't exist, builds a Developer ID-signed and
+notarized bundle, emits minisign-signed updater artifacts
+(`createUpdaterArtifacts`), generates `latest.json`
+(`scripts/latest-json.mjs`, unit-tested), and uploads the .dmg, .app.tar.gz
+and manifest with `gh`. Secrets live outside the repo in
+`~/.screenforme-release.env` (chmod 600): `TAURI_SIGNING_PRIVATE_KEY` (path to
+`~/.tauri/screenforme.key`), its `_PASSWORD`, and `APPLE_SIGNING_IDENTITY` /
+`APPLE_ID` / `APPLE_PASSWORD` (app-specific) / `APPLE_TEAM_ID` for
+notarization. Never commit the private key; the pubkey in tauri.conf.json must
+match it or every update check fails signature verification. In-app:
+`windows.rs::check_for_updates(app, silent)` — the tray item is the loud path,
+and lib.rs auto-checks silently 10 s after launch then daily (release builds
+only). Bumping a version means updating package.json, tauri.conf.json **and**
+src-tauri/Cargo.toml together (`npm run release` refuses on mismatch).
 
 ## Design Context
 
