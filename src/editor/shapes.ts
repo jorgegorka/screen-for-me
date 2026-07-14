@@ -1,5 +1,6 @@
 import Konva from "konva";
 
+import { polygonBounds, taperedArrowPoints } from "./arrow";
 import { counterTextColor } from "./counter";
 
 export type ShapeType =
@@ -22,7 +23,7 @@ const COMMON = ["x", "y", "rotation", "scaleX", "scaleY", "opacity"];
 
 /** Whitelist of attrs that survive undo snapshots, per shape type. */
 const ATTRS: Record<ShapeType, string[]> = {
-  arrow: [...COMMON, "points", "stroke", "fill", "strokeWidth", "pointerLength", "pointerWidth"],
+  arrow: [...COMMON, "points", "fill", "strokeWidth"],
   rect: [...COMMON, "width", "height", "stroke", "strokeWidth", "cornerRadius"],
   ellipse: [...COMMON, "radiusX", "radiusY", "stroke", "strokeWidth"],
   line: [...COMMON, "points", "stroke", "strokeWidth", "lineCap"],
@@ -87,6 +88,37 @@ export function buildCounter(config: CounterConfig): Konva.Group {
   return group;
 }
 
+/**
+ * Solid tapered arrow (thin tail, wide head). A custom Shape so the taper can
+ * be drawn as one filled polygon; Konva.Arrow only supports constant-width
+ * shafts. Geometry lives in arrow.ts; `points` holds the two endpoints.
+ */
+export function buildArrow(attrs: Konva.ShapeConfig): Konva.Shape {
+  const shape = new Konva.Shape({
+    ...attrs,
+    name: "arrow",
+    sceneFunc(ctx, node) {
+      const pts = node.getAttr("points") as number[] | undefined;
+      if (!pts || pts.length < 4) return;
+      const poly = taperedArrowPoints(pts[0], pts[1], pts[2], pts[3], node.strokeWidth());
+      if (poly.length === 0) return;
+      ctx.beginPath();
+      ctx.moveTo(poly[0], poly[1]);
+      for (let i = 2; i < poly.length; i += 2) ctx.lineTo(poly[i], poly[i + 1]);
+      ctx.closePath();
+      ctx.fillStrokeShape(node);
+    },
+  });
+  shape.getSelfRect = () => {
+    const pts = shape.getAttr("points") as number[] | undefined;
+    if (!pts || pts.length < 4) return { x: 0, y: 0, width: 0, height: 0 };
+    return polygonBounds(
+      taperedArrowPoints(pts[0], pts[1], pts[2], pts[3], shape.strokeWidth()),
+    );
+  };
+  return shape;
+}
+
 function specToNode(
   spec: ShapeSpec,
   onImageReady: () => void,
@@ -94,7 +126,7 @@ function specToNode(
   const attrs = { ...spec.attrs, name: spec.type };
   switch (spec.type) {
     case "arrow":
-      return new Konva.Arrow(attrs as Konva.ArrowConfig);
+      return buildArrow(attrs as Konva.ShapeConfig);
     case "rect":
       return new Konva.Rect(attrs);
     case "ellipse":
