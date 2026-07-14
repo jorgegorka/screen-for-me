@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-07-14
+
 ### Changed
 
 - Editor arrows are now solid and tapered (thin tail widening into the
@@ -40,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Launch-on-start setting backed by OS login-item state.
 - Capture history with pruning.
 
-[Unreleased]: https://github.com/jorgegorka/screen-for-me/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/jorgegorka/screen-for-me/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/jorgegorka/screen-for-me/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/jorgegorka/screen-for-me/releases/tag/v1.0.0
