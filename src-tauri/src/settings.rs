@@ -32,6 +32,8 @@ pub struct Settings {
     pub auto_close_action: AutoCloseAction,
     pub auto_close_seconds: u32,
     pub close_after_drag: bool,
+    /// Put every new capture on the system clipboard, ready to Cmd+V.
+    pub copy_to_clipboard: bool,
     /// "system" (follow the OS locale) or one of the supported tags.
     pub language: String,
     /// Global-shortcut accelerator strings, one per capture action; parseable
@@ -51,6 +53,7 @@ impl Default for Settings {
             auto_close_action: AutoCloseAction::Close,
             auto_close_seconds: 30,
             close_after_drag: true,
+            copy_to_clipboard: true,
             language: "system".into(),
             shortcut_area: ShortcutAction::Area.default_accel().into(),
             shortcut_window: ShortcutAction::Window.default_accel().into(),
@@ -292,6 +295,18 @@ mod tests {
         let s = SettingsStore::load(path.clone()).get();
         assert_eq!(s.position, OverlayPosition::Center);
         assert!(s.move_to_active_screen, "missing fields take defaults");
+        assert!(s.copy_to_clipboard, "settings files predating the field get ON");
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn copy_to_clipboard_off_roundtrips() {
+        let path = temp_path("clipboard-off");
+        let store = SettingsStore::load(path.clone());
+        let mut s = Settings::default();
+        s.copy_to_clipboard = false;
+        store.set(s).unwrap();
+        assert!(!SettingsStore::load(path.clone()).get().copy_to_clipboard);
         let _ = std::fs::remove_file(&path);
     }
 }

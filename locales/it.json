@@ -62,6 +62,8 @@
   "settings.interval_10": "10 secondi",
   "settings.interval_30": "30 secondi",
   "settings.interval_60": "60 secondi",
+  "settings.clipboard": "Appunti:",
+  "settings.copy_to_clipboard": "Copia le nuove catture negli appunti",
   "settings.drag_drop": "Trascinamento:",
   "settings.close_after_drag": "Chiudi dopo il trascinamento",
   "settings.drag_hint": "Tieni premuto ⌥ (opzione) all'inizio del trascinamento per mantenere l'elemento nel pannello.",

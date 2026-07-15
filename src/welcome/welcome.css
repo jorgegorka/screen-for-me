@@ -13,34 +13,6 @@ body {
   -webkit-user-select: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #2a2a2c;
-    color: #eee;
-  }
-  .hint {
-    color: #999;
-  }
-  .card {
-    background: #2a2a2c;
-    border-color: #4a4a4c;
-  }
-  kbd {
-    background: #3a3a3c;
-    border-color: #4a4a4c;
-  }
-  button {
-    background: #3a3a3c;
-    border-color: #4a4a4c;
-    color: #eee;
-  }
-  button.primary {
-    background: #7c5ce6;
-    border-color: #7c5ce6;
-    color: #fff;
-  }
-}
-
 main {
   padding: 24px 28px 28px;
   display: flex;
@@ -158,4 +130,35 @@ button:focus-visible {
 
 .status.error {
   color: #d9342b;
+}
+
+/* Dark mode — must stay at the end of the file: these overrides have the same
+   specificity as the light rules above, so they only win by source order. */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #2a2a2c;
+    color: #eee;
+  }
+  .intro,
+  .hint {
+    color: #999;
+  }
+  .card {
+    background: #2a2a2c;
+    border-color: #4a4a4c;
+  }
+  kbd {
+    background: #3a3a3c;
+    border-color: #4a4a4c;
+  }
+  button {
+    background: #3a3a3c;
+    border-color: #4a4a4c;
+    color: #eee;
+  }
+  button.primary {
+    background: #7c5ce6;
+    border-color: #7c5ce6;
+    color: #fff;
+  }
 }

@@ -62,6 +62,8 @@
   "settings.interval_10": "10 Sekunden",
   "settings.interval_30": "30 Sekunden",
   "settings.interval_60": "60 Sekunden",
+  "settings.clipboard": "Zwischenablage:",
+  "settings.copy_to_clipboard": "Neue Aufnahmen in die Zwischenablage kopieren",
   "settings.drag_drop": "Drag & Drop:",
   "settings.close_after_drag": "Nach dem Ziehen schließen",
   "settings.drag_hint": "Halten Sie ⌥ (Wahltaste) beim Start des Ziehens gedrückt, um das Element im Panel zu behalten.",

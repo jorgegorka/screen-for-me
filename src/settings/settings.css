@@ -13,41 +13,6 @@ body {
   -webkit-user-select: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #2a2a2c;
-    color: #eee;
-  }
-  .hint {
-    color: #999 !important;
-  }
-  hr {
-    border-color: #444 !important;
-  }
-  .tabs {
-    border-bottom-color: #444;
-  }
-  .tab {
-    color: #999;
-  }
-  .tab:hover {
-    color: #eee;
-  }
-  .tab[aria-selected="true"] {
-    color: #eee;
-  }
-  .shortcut-field,
-  .shortcut-reset {
-    background: #3a3a3c;
-    border-color: #4a4a4c;
-    color: #eee;
-  }
-  .about-version,
-  .about-copyright {
-    color: #999;
-  }
-}
-
 main {
   padding: 24px 28px;
   display: flex;
@@ -269,4 +234,44 @@ input[type="range"] {
 .about-description {
   margin-top: 8px;
   max-width: 320px;
+}
+
+/* Dark mode — must stay at the end of the file: these overrides have the same
+   specificity as the light rules above, so they only win by source order. */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #2a2a2c;
+    color: #eee;
+  }
+  .hint {
+    color: #999;
+  }
+  hr {
+    border-color: #444;
+  }
+  .tabs {
+    border-bottom-color: #444;
+  }
+  .tab {
+    color: #999;
+  }
+  .tab:hover {
+    color: #eee;
+  }
+  .tab[aria-selected="true"] {
+    color: #eee;
+  }
+  .shortcut-field,
+  .shortcut-reset {
+    background: #3a3a3c;
+    border-color: #4a4a4c;
+    color: #eee;
+  }
+  .shortcut-field.recording {
+    color: #999;
+  }
+  .about-version,
+  .about-copyright {
+    color: #999;
+  }
 }

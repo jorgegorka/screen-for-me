@@ -62,6 +62,8 @@
   "settings.interval_10": "10 seconds",
   "settings.interval_30": "30 seconds",
   "settings.interval_60": "60 seconds",
+  "settings.clipboard": "Clipboard:",
+  "settings.copy_to_clipboard": "Copy new captures to the clipboard",
   "settings.drag_drop": "Drag & drop:",
   "settings.close_after_drag": "Close after dragging",
   "settings.drag_hint": "Hold ⌥ (option) when the drag starts to keep the item on the overlay.",

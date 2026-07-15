@@ -62,6 +62,8 @@
   "settings.interval_10": "10 segundos",
   "settings.interval_30": "30 segundos",
   "settings.interval_60": "60 segundos",
+  "settings.clipboard": "Portapapeles:",
+  "settings.copy_to_clipboard": "Copiar las nuevas capturas al portapapeles",
   "settings.drag_drop": "Arrastrar y soltar:",
   "settings.close_after_drag": "Cerrar después de arrastrar",
   "settings.drag_hint": "Mantén ⌥ (opción) al empezar a arrastrar para conservar el elemento en el panel.",

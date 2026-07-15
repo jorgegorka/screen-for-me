@@ -62,6 +62,8 @@
   "settings.interval_10": "10 secondes",
   "settings.interval_30": "30 secondes",
   "settings.interval_60": "60 secondes",
+  "settings.clipboard": "Presse-papiers :",
+  "settings.copy_to_clipboard": "Copier les nouvelles captures dans le presse-papiers",
   "settings.drag_drop": "Glisser-déposer :",
   "settings.close_after_drag": "Fermer après le glissement",
   "settings.drag_hint": "Maintenez ⌥ (option) au début du glissement pour conserver l'élément sur le panneau.",

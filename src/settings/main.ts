@@ -46,6 +46,7 @@ function readForm(): Settings {
     auto_close_action: el<HTMLSelectElement>("auto-action").value as Settings["auto_close_action"],
     auto_close_seconds: Number(el<HTMLSelectElement>("auto-interval").value),
     close_after_drag: el<HTMLInputElement>("close-after-drag").checked,
+    copy_to_clipboard: el<HTMLInputElement>("copy-to-clipboard").checked,
     language: el<HTMLSelectElement>("language").value as Settings["language"],
     shortcut_area: current?.shortcut_area ?? DEFAULT_ACCELS.area,
     shortcut_window: current?.shortcut_window ?? DEFAULT_ACCELS.window,
@@ -62,6 +63,7 @@ function fillForm(s: Settings) {
   el<HTMLSelectElement>("auto-action").value = s.auto_close_action;
   el<HTMLSelectElement>("auto-interval").value = String(s.auto_close_seconds);
   el<HTMLInputElement>("close-after-drag").checked = s.close_after_drag;
+  el<HTMLInputElement>("copy-to-clipboard").checked = s.copy_to_clipboard;
   el<HTMLSelectElement>("language").value = s.language;
   syncAutoCloseState();
   renderShortcuts();

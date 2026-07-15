@@ -12,32 +12,12 @@ body {
   -webkit-user-select: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #1d1d1f;
-    color: #eee;
-  }
-  .card {
-    background: #2a2a2c !important;
-    border-color: #3a3a3c !important;
-  }
-  .empty {
-    color: #888;
-  }
-}
-
 header {
   padding: 16px 20px;
   position: sticky;
   top: 0;
   backdrop-filter: blur(10px);
   background: rgba(245, 245, 247, 0.8);
-}
-
-@media (prefers-color-scheme: dark) {
-  header {
-    background: rgba(29, 29, 31, 0.8);
-  }
 }
 
 h1 {
@@ -105,7 +85,30 @@ main {
   outline-offset: 2px;
 }
 
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6e6e70;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Dark mode — must stay at the end of the file: these overrides have the same
+   specificity as the light rules above, so they only win by source order. */
 @media (prefers-color-scheme: dark) {
+  body {
+    background: #1d1d1f;
+    color: #eee;
+  }
+  header {
+    background: rgba(29, 29, 31, 0.8);
+  }
+  .card {
+    background: #2a2a2c;
+    border-color: #3a3a3c;
+  }
   .actions button {
     background: #3a3a3c;
     border-color: #4a4a4c;
@@ -117,14 +120,7 @@ main {
   .meta {
     color: #999;
   }
-}
-
-.empty {
-  padding: 40px 20px;
-  text-align: center;
-  color: #6e6e70;
-}
-
-.hidden {
-  display: none !important;
+  .empty {
+    color: #888;
+  }
 }

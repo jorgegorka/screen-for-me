@@ -80,6 +80,16 @@ fn publish_capture(app: &AppHandle, path: &std::path::Path) {
         .unwrap_or_default()
         .to_string();
     if let Some(entry) = state.history.resolve(&id) {
+        // Many users capture and immediately Cmd+V; a clipboard failure must
+        // never stop the capture from being announced.
+        if state.settings.get().copy_to_clipboard {
+            let copied = std::fs::read(&entry.path)
+                .map_err(|e| e.to_string())
+                .and_then(|bytes| copy_png_to_clipboard(app, &bytes));
+            if let Err(err) = copied {
+                eprintln!("failed to copy capture to clipboard: {err}");
+            }
+        }
         let _ = app.emit("capture:new", &entry);
         show_overlay(app);
     }

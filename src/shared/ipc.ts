@@ -14,6 +14,7 @@ export interface Settings {
   auto_close_action: "close" | "save_and_close";
   auto_close_seconds: number;
   close_after_drag: boolean;
+  copy_to_clipboard: boolean;
   language: "system" | "en-GB" | "es" | "fr" | "de" | "it";
   shortcut_area: string;
   shortcut_window: string;

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-07-15
+
+### Added
+
+- "Copy new captures to the clipboard" setting (General tab, on by default):
+  every capture is placed on the system clipboard, ready to paste.
+
+### Fixed
+
+- Dark mode: the Settings shortcut fields, reset buttons, and "Open System
+  Settings" button no longer render white with near-white text, and the
+  selected tab label is no longer dark-on-dark. The same stylesheet ordering
+  bug also washed out the Welcome window's buttons, cards, and key caps, and
+  the History window's empty-state message — the dark-mode overrides appeared
+  before the light rules they were meant to override, so the light rules won.
+
 ## [1.2.3] - 2026-07-15
 
 ### Fixed
@@ -79,7 +95,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Launch-on-start setting backed by OS login-item state.
 - Capture history with pruning.
 
-[Unreleased]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.3...HEAD
+[Unreleased]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.4...HEAD
+[1.2.4]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.0...v1.2.1
