@@ -6,7 +6,10 @@ import {
   formatAccelerator,
   hasRequiredModifier,
   isMacosScreenshotAccel,
+  isMacosScreenshotAccelFor,
+  macosScreenshotKeyOf,
   DEFAULT_ACCELS,
+  MACOS_SCREENSHOT_KEYS,
 } from "./accelerator";
 
 const mods = (overrides: Partial<Parameters<typeof comboToAccelerator>[0]> = {}) => ({
@@ -69,6 +72,53 @@ describe("isMacosScreenshotAccel", () => {
     expect(isMacosScreenshotAccel("Cmd+3")).toBe(false);
     expect(isMacosScreenshotAccel("Ctrl+Shift+3")).toBe(false);
     expect(isMacosScreenshotAccel("Cmd+Alt+Shift+3")).toBe(false);
+  });
+});
+
+describe("isMacosScreenshotAccelFor", () => {
+  it("accepts the expected combo per action (TARGETS in onboarding.rs)", () => {
+    expect(isMacosScreenshotAccelFor("Cmd+Shift+3", "fullscreen")).toBe(true);
+    expect(isMacosScreenshotAccelFor("Cmd+Shift+4", "area")).toBe(true);
+    expect(isMacosScreenshotAccelFor("Cmd+Shift+5", "window")).toBe(true);
+  });
+
+  it("rejects a permuted assignment", () => {
+    expect(isMacosScreenshotAccelFor("Cmd+Shift+4", "fullscreen")).toBe(false);
+    expect(isMacosScreenshotAccelFor("Cmd+Shift+3", "area")).toBe(false);
+    expect(isMacosScreenshotAccelFor("Cmd+Shift+3", "window")).toBe(false);
+  });
+
+  it("accepts token variants for the right digit only", () => {
+    expect(isMacosScreenshotAccelFor("Command+Shift+Digit3", "fullscreen")).toBe(true);
+    expect(isMacosScreenshotAccelFor("Shift+Cmd+4", "area")).toBe(true);
+    expect(isMacosScreenshotAccelFor("CmdOrCtrl+Shift+5", "window")).toBe(true);
+    expect(isMacosScreenshotAccelFor("Command+Shift+Digit4", "fullscreen")).toBe(false);
+  });
+
+  it("rejects non-screenshot combos and extra modifiers", () => {
+    expect(isMacosScreenshotAccelFor("Cmd+Shift+7", "area")).toBe(false);
+    expect(isMacosScreenshotAccelFor("Ctrl+Shift+4", "area")).toBe(false);
+    expect(isMacosScreenshotAccelFor("Cmd+Alt+Shift+4", "area")).toBe(false);
+  });
+
+  it("covers every action in the expected-mapping constant", () => {
+    expect(MACOS_SCREENSHOT_KEYS).toEqual({ fullscreen: "3", area: "4", window: "5" });
+  });
+});
+
+describe("macosScreenshotKeyOf", () => {
+  it("returns the digit of a Cmd+Shift+3/4/5 combo in any spelling", () => {
+    expect(macosScreenshotKeyOf("Cmd+Shift+3")).toBe("3");
+    expect(macosScreenshotKeyOf("Shift+Cmd+4")).toBe("4");
+    expect(macosScreenshotKeyOf("CmdOrCtrl+Shift+5")).toBe("5");
+    expect(macosScreenshotKeyOf("Command+Shift+Digit3")).toBe("3");
+  });
+
+  it("returns null for non-screenshot combos", () => {
+    expect(macosScreenshotKeyOf("Cmd+Shift+7")).toBe(null);
+    expect(macosScreenshotKeyOf("Cmd+3")).toBe(null);
+    expect(macosScreenshotKeyOf("Ctrl+Shift+4")).toBe(null);
+    expect(macosScreenshotKeyOf("Cmd+Alt+Shift+5")).toBe(null);
   });
 });
 

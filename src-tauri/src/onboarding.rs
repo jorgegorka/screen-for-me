@@ -29,13 +29,15 @@ pub fn open_system_shortcut_settings(app: AppHandle) -> Result<(), String> {
     }
 }
 
-/// Best-effort: is macOS itself still handling any of ⇧⌘3/4/5? Registering
+/// Best-effort: which of ⇧⌘3/4/5 is macOS itself still handling? Registering
 /// those combos succeeds even while the system owns them (the keypress just
 /// never reaches the app), so this is the only honest signal for the UI.
-/// Reads the user's symbolic-hotkeys defaults; any failure reports `false`
-/// (never nag on a parse problem). Always `false` off macOS.
+/// Returns the still-owned key digits ("3"/"4"/"5") in one call — each check
+/// shells out to `defaults export`, so callers get all three at once. Any
+/// failure reports empty (never nag on a parse problem). Always empty off
+/// macOS.
 #[tauri::command]
-pub fn macos_screenshot_hotkeys_enabled() -> bool {
+pub fn macos_screenshot_hotkeys_owned() -> Vec<String> {
     #[cfg(target_os = "macos")]
     {
         match std::process::Command::new("defaults")
@@ -43,13 +45,13 @@ pub fn macos_screenshot_hotkeys_enabled() -> bool {
             .output()
         {
             Ok(out) if out.status.success() => {
-                parse_symbolic_hotkeys(&String::from_utf8_lossy(&out.stdout))
+                owned_screenshot_keys(&String::from_utf8_lossy(&out.stdout))
             }
-            _ => false,
+            _ => Vec::new(),
         }
     }
     #[cfg(not(target_os = "macos"))]
-    false
+    Vec::new()
 }
 
 /// Assign the classic macOS combos in one go, mapped to system muscle memory:
@@ -61,6 +63,8 @@ pub fn apply_macos_screenshot_shortcuts(
     app: AppHandle,
     state: State<AppState>,
 ) -> Result<Settings, String> {
+    // Must stay in sync with MACOS_SCREENSHOT_KEYS in src/shared/accelerator.ts
+    // (the Welcome card's success check) and the welcome.assign_success copy.
     const TARGETS: [(ShortcutAction, &str); 3] = [
         (ShortcutAction::Fullscreen, "Cmd+Shift+3"),
         (ShortcutAction::Area, "Cmd+Shift+4"),
@@ -87,19 +91,25 @@ pub fn apply_macos_screenshot_shortcuts(
     Ok(saved)
 }
 
-/// AppleSymbolicHotKeys ids for the bare ⇧⌘3/4/5 actions: 28 = save screen,
-/// 30 = save selection, 184 = screenshot options. The clipboard variants
-/// (29/31) use ⌃⇧⌘ and don't collide with the bare combos.
+/// Key digit ↔ AppleSymbolicHotKeys id for the bare ⇧⌘3/4/5 actions:
+/// 28 = save screen (⌘⇧3), 30 = save selection (⌘⇧4), 184 = screenshot
+/// options (⌘⇧5). The clipboard variants (29/31) use ⌃⇧⌘ and don't collide
+/// with the bare combos. Must stay in sync with MACOS_SCREENSHOT_KEYS in
+/// src/shared/accelerator.ts.
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-const SCREENSHOT_HOTKEY_IDS: [u32; 3] = [28, 30, 184];
+const SCREENSHOT_KEY_IDS: [(&str, u32); 3] = [("3", 28), ("4", 30), ("5", 184)];
 
-/// True when any bare screenshot hotkey is still enabled in the exported
-/// `com.apple.symbolichotkeys` plist. A missing entry means the system
-/// default applies, i.e. enabled. The plist format is undocumented, so this
-/// stays a minimal text scan rather than a full parser.
+/// The key digits whose bare screenshot hotkey is still enabled in the
+/// exported `com.apple.symbolichotkeys` plist. A missing entry means the
+/// system default applies, i.e. enabled. The plist format is undocumented,
+/// so this stays a minimal text scan rather than a full parser.
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-fn parse_symbolic_hotkeys(xml: &str) -> bool {
-    SCREENSHOT_HOTKEY_IDS.iter().any(|id| entry_enabled(xml, *id))
+fn owned_screenshot_keys(xml: &str) -> Vec<String> {
+    SCREENSHOT_KEY_IDS
+        .iter()
+        .filter(|(_, id)| entry_enabled(xml, *id))
+        .map(|(key, _)| (*key).to_string())
+        .collect()
 }
 
 /// Find `<key>{id}</key>`, take its following balanced `<dict>` block, and
@@ -181,23 +191,31 @@ mod tests {
     }
 
     #[test]
-    fn all_disabled_reports_not_enabled() {
+    fn all_disabled_reports_nothing_owned() {
         let xml = plist(&[entry(28, false), entry(30, false), entry(184, false)]);
-        assert!(!parse_symbolic_hotkeys(&xml));
+        assert!(owned_screenshot_keys(&xml).is_empty());
     }
 
     #[test]
-    fn any_enabled_entry_reports_enabled() {
+    fn only_the_enabled_entry_key_is_owned() {
+        // id 30 (⌘⇧4) still enabled → only "4" owned.
         let xml = plist(&[entry(28, false), entry(30, true), entry(184, false)]);
-        assert!(parse_symbolic_hotkeys(&xml));
+        assert_eq!(owned_screenshot_keys(&xml), vec!["4"]);
     }
 
     #[test]
-    fn missing_entries_count_as_enabled() {
+    fn only_the_freed_key_is_not_owned() {
+        // Only id 28 (⌘⇧3) disabled → "3" free, "4"/"5" still owned.
+        let xml = plist(&[entry(28, false), entry(30, true), entry(184, true)]);
+        assert_eq!(owned_screenshot_keys(&xml), vec!["4", "5"]);
+    }
+
+    #[test]
+    fn missing_entries_count_as_owned() {
         // A fresh system may have no explicit entry for a hotkey: the default
-        // (enabled) applies.
+        // (enabled) applies — 30/184 missing → "4"/"5" owned.
         let xml = plist(&[entry(28, false)]);
-        assert!(parse_symbolic_hotkeys(&xml));
+        assert_eq!(owned_screenshot_keys(&xml), vec!["4", "5"]);
     }
 
     #[test]
@@ -210,12 +228,15 @@ mod tests {
             entry(31, true),
             entry(184, false),
         ]);
-        assert!(!parse_symbolic_hotkeys(&xml));
+        assert!(owned_screenshot_keys(&xml).is_empty());
     }
 
     #[test]
-    fn garbage_without_entries_counts_as_enabled() {
+    fn garbage_without_entries_counts_as_all_owned() {
         // No screenshot entries at all → system defaults apply.
-        assert!(parse_symbolic_hotkeys("<plist><dict></dict></plist>"));
+        assert_eq!(
+            owned_screenshot_keys("<plist><dict></dict></plist>"),
+            vec!["3", "4", "5"]
+        );
     }
 }

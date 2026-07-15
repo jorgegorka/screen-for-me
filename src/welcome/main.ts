@@ -7,7 +7,7 @@ import { initI18n, t } from "../shared/i18n";
 import type { Settings } from "../shared/ipc";
 import {
   formatAccelerator,
-  isMacosScreenshotAccel,
+  isMacosScreenshotAccelFor,
   type Platform,
   type ShortcutAction,
 } from "../shared/accelerator";
@@ -49,15 +49,19 @@ function showStatus(status: MacosStatus) {
  * the success line once they're freed AND assigned here. Re-run on focus so
  * returning from System Settings updates the card. */
 async function refreshMacosStatus() {
-  const owns = await invoke<boolean>("macos_screenshot_hotkeys_enabled");
-  if (owns) {
+  // The card assigns/frees all three combos at once, so "any key still
+  // system-owned" is the right aggregate here.
+  const owned = await invoke<string[]>("macos_screenshot_hotkeys_owned");
+  if (owned.length > 0) {
     showStatus("owns");
     return;
   }
+  // Check each action against its expected combo — the success line names
+  // the exact mapping, so a permuted assignment must not count as done.
   const assigned =
     current !== null &&
     ACTIONS.every((action) =>
-      isMacosScreenshotAccel(current![`shortcut_${action}` as const] as string),
+      isMacosScreenshotAccelFor(current![`shortcut_${action}` as const] as string, action),
     );
   showStatus(assigned ? "success" : "hidden");
 }

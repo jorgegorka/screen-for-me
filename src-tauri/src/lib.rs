@@ -62,6 +62,7 @@ pub fn run() {
                 scroll_stop: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
                 scroll_running: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
                 overlay_follow_epoch: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
+                overlay_drag_active: std::sync::atomic::AtomicBool::new(false),
             });
 
             // Resolve the UI language before anything user-visible is built.
@@ -122,10 +123,11 @@ pub fn run() {
             commands::get_editor_prefs,
             commands::set_editor_prefs,
             commands::save_capture_to_desktop,
+            commands::set_overlay_drag_active,
             windows::open_history,
             windows::open_welcome,
             onboarding::open_system_shortcut_settings,
-            onboarding::macos_screenshot_hotkeys_enabled,
+            onboarding::macos_screenshot_hotkeys_owned,
             onboarding::apply_macos_screenshot_shortcuts,
             commands::timer_duration,
             commands::timed_capture_fire,

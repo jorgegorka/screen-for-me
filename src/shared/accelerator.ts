@@ -78,20 +78,53 @@ export function hasRequiredModifier(mods: ComboModifiers): boolean {
   return mods.ctrl || mods.alt || mods.meta;
 }
 
-/** Whether a stored accelerator is one of macOS's own screenshot shortcuts
- * (Cmd+Shift+3/4/5). Assigning these is allowed, but while the system still
- * handles them the keypress never reaches the app — callers use this to show
- * a warning, mirroring `is_macos_screenshot_combo` in shortcuts.rs. */
-export function isMacosScreenshotAccel(accel: string): boolean {
+export type MacosScreenshotDigit = "3" | "4" | "5";
+
+const MACOS_SCREENSHOT_DIGITS: readonly MacosScreenshotDigit[] = ["3", "4", "5"];
+
+/** The action each macOS screenshot combo maps to when the Welcome flow
+ * assigns them (⇧⌘3 → fullscreen, ⇧⌘4 → area, ⇧⌘5 → window). Must stay in
+ * sync with `TARGETS` in src-tauri/src/onboarding.rs. */
+export const MACOS_SCREENSHOT_KEYS: Record<ShortcutAction, MacosScreenshotDigit> = {
+  fullscreen: "3",
+  area: "4",
+  window: "5",
+};
+
+/** Cmd+Shift with exactly the given digit(s) and no other modifier. */
+function isCmdShiftDigit(accel: string, digits: readonly MacosScreenshotDigit[]): boolean {
   const tokens = accel.split("+").map((token) => token.trim());
   const key = tokens.pop() ?? "";
-  if (!["3", "4", "5", "Digit3", "Digit4", "Digit5"].includes(key)) return false;
+  if (!digits.some((digit) => key === digit || key === `Digit${digit}`)) return false;
   const present = { ctrl: false, alt: false, shift: false, cmd: false };
   for (const token of tokens) {
     const modifier = normalizeModifier(token, "mac");
     if (modifier) present[modifier as keyof typeof present] = true;
   }
   return present.cmd && present.shift && !present.ctrl && !present.alt;
+}
+
+/** Whether a stored accelerator is one of macOS's own screenshot shortcuts
+ * (Cmd+Shift+3/4/5). Assigning these is allowed, but while the system still
+ * handles them the keypress never reaches the app — callers use this to show
+ * a warning, mirroring `is_macos_screenshot_combo` in shortcuts.rs. */
+export function isMacosScreenshotAccel(accel: string): boolean {
+  return isCmdShiftDigit(accel, MACOS_SCREENSHOT_DIGITS);
+}
+
+/** The screenshot key digit of a stored accelerator: "3"/"4"/"5" when it is
+ * exactly Cmd+Shift+ that digit, null otherwise. Callers match this against
+ * the per-key system-ownership state (`macos_screenshot_hotkeys_owned`) so a
+ * warning only fires for the digit the system actually still handles. */
+export function macosScreenshotKeyOf(accel: string): MacosScreenshotDigit | null {
+  return MACOS_SCREENSHOT_DIGITS.find((digit) => isCmdShiftDigit(accel, [digit])) ?? null;
+}
+
+/** Whether a stored accelerator is the macOS screenshot combo *expected* for
+ * the given action (per MACOS_SCREENSHOT_KEYS) — membership alone isn't
+ * enough where the UI describes the exact mapping. */
+export function isMacosScreenshotAccelFor(accel: string, action: ShortcutAction): boolean {
+  return isCmdShiftDigit(accel, [MACOS_SCREENSHOT_KEYS[action]]);
 }
 
 const MAC_MODIFIER_SYMBOLS: Record<string, string> = {

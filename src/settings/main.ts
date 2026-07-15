@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
+import { listen } from "@tauri-apps/api/event";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 
 import iconUrl from "../../src-tauri/icons/128x128@2x.png";
@@ -10,7 +11,7 @@ import {
   comboToAccelerator,
   formatAccelerator,
   hasRequiredModifier,
-  isMacosScreenshotAccel,
+  macosScreenshotKeyOf,
   DEFAULT_ACCELS,
   type ComboModifiers,
   type Platform,
@@ -165,12 +166,10 @@ async function applyShortcut(action: ShortcutAction, accelerator: string) {
     fillForm(await invoke<Settings>("set_shortcut", { action, accelerator }));
     clearShortcutErrors();
     // Registering ⌘⇧3/4/5 succeeds even while macOS still handles them (the
-    // keypress never reaches the app), so warn inline when that's the case.
-    if (
-      PLATFORM === "mac" &&
-      isMacosScreenshotAccel(accelerator) &&
-      (await invoke<boolean>("macos_screenshot_hotkeys_enabled"))
-    ) {
+    // keypress never reaches the app), so warn inline — but only when the
+    // system still owns *this* combo's key, not any of the three.
+    const key = PLATFORM === "mac" ? macosScreenshotKeyOf(accelerator) : null;
+    if (key && (await invoke<string[]>("macos_screenshot_hotkeys_owned")).includes(key)) {
       showShortcutError(action, t("settings.shortcut_warning_system"));
     }
   } catch (err) {
@@ -179,12 +178,14 @@ async function applyShortcut(action: ShortcutAction, accelerator: string) {
   }
 }
 
-/** Section-level hint: any bound combo is a macOS screenshot shortcut that
- * the system still owns, so it can't fire here yet. */
+/** Section-level hint: some bound combo is a macOS screenshot shortcut whose
+ * *specific* key the system still owns, so it can't fire here yet. */
 async function refreshSystemOwnsHint() {
   if (PLATFORM !== "mac" || !current) return;
-  const bound = ACTIONS.some((action) => isMacosScreenshotAccel(accelOf(current!, action)));
-  const owns = bound && (await invoke<boolean>("macos_screenshot_hotkeys_enabled"));
+  const boundKeys = ACTIONS.map((action) => macosScreenshotKeyOf(accelOf(current!, action)));
+  const anyBound = boundKeys.some((key) => key !== null);
+  const owned = anyBound ? await invoke<string[]>("macos_screenshot_hotkeys_owned") : [];
+  const owns = boundKeys.some((key) => key !== null && owned.includes(key));
   el<HTMLParagraphElement>("system-owns-hint").hidden = !owns;
 }
 
@@ -308,6 +309,17 @@ window.addEventListener("DOMContentLoaded", async () => {
   void initAutostart();
   void initAbout();
   fillForm(await invoke<Settings>("get_settings"));
+  // Settings can change outside this form (the Welcome window's assign
+  // button rebinds shortcuts) and this webview lives for the whole app run,
+  // so keep `current` fresh or `readForm` echoes stale shortcuts back through
+  // `set_settings`. Only the fields the General form doesn't own are synced —
+  // a full re-fill could reset controls mid-interaction (this window's own
+  // saves also fire the event).
+  void listen<Settings>("settings:changed", (event) => {
+    current = event.payload;
+    renderShortcuts();
+    void refreshSystemOwnsHint();
+  });
   document
     .querySelectorAll<HTMLElement>("#panel-general select, #panel-general input:not(#launch-on-start)")
     .forEach((control) => {

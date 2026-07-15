@@ -27,6 +27,11 @@ pub struct AppState {
     /// `show_overlay` bumps it and spawns a fresh loop, and any older loop
     /// exits on its next tick when it sees a newer epoch.
     pub overlay_follow_epoch: std::sync::Arc<std::sync::atomic::AtomicU64>,
+    /// True while a native drag-out from the overlay is in flight
+    /// (`set_overlay_drag_active`). The follow-the-cursor loop pauses on it so
+    /// the source panel is never re-placed mid-drag — the portable counterpart
+    /// to `left_mouse_button_down`, which only reads real state on macOS.
+    pub overlay_drag_active: std::sync::atomic::AtomicBool,
 }
 
 /// Entry point shared by tray items and global shortcuts.
@@ -161,7 +166,13 @@ fn show_overlay(app: &AppHandle) {
     let Some(overlay) = app.get_webview_window("overlay") else {
         return;
     };
-    let settings = app.state::<AppState>().settings.get();
+    let state = app.state::<AppState>();
+    // A fresh show is never mid-drag; clear any flag left behind by a drag
+    // whose end callback never made it back from the webview.
+    state
+        .overlay_drag_active
+        .store(false, std::sync::atomic::Ordering::SeqCst);
+    let settings = state.settings.get();
 
     let active_monitor = if settings.move_to_active_screen {
         cursor_point(app).and_then(|(x, y)| app.monitor_from_point(x, y).ok().flatten())
@@ -224,8 +235,10 @@ fn follow_active_monitor(app: &AppHandle) {
             if !overlay.is_visible().unwrap_or(false) {
                 return;
             }
-            let settings = app.state::<AppState>().settings.get();
-            if !settings.move_to_active_screen || left_mouse_button_down() {
+            let state = app.state::<AppState>();
+            let settings = state.settings.get();
+            let dragging = state.overlay_drag_active.load(Ordering::SeqCst);
+            if !settings.move_to_active_screen || left_mouse_button_down() || dragging {
                 pending = None;
                 continue;
             }
@@ -253,6 +266,17 @@ fn follow_active_monitor(app: &AppHandle) {
             }
         }
     });
+}
+
+/// Mark a native drag-out from the overlay as started/ended so
+/// `follow_active_monitor` pauses while it's in flight. Needed on platforms
+/// without a global mouse-button probe (everything but macOS), harmless as an
+/// extra guard elsewhere.
+#[tauri::command]
+pub fn set_overlay_drag_active(state: State<AppState>, active: bool) {
+    state
+        .overlay_drag_active
+        .store(active, std::sync::atomic::Ordering::SeqCst);
 }
 
 #[tauri::command]

@@ -107,10 +107,17 @@ window.addEventListener("DOMContentLoaded", () => {
       if (Math.hypot(move.clientX - down.clientX, move.clientY - down.clientY) < 5) return;
       cancel();
       const keepOpen = move.altKey; // ⌥ at drag start keeps the overlay
-      void startDrag({ item: [entry.path], icon: entry.path }).then(() => {
-        if (settings.close_after_drag && !keepOpen) void appWindow.hide();
-        else armAutoHide();
-      });
+      // Pause the backend's follow-the-cursor loop for the duration so it
+      // can't relocate this window mid-drag: the plugin's result callback
+      // fires on both drop and cancel, and the settled promise is a fallback.
+      const dragEnded = () => void invoke("set_overlay_drag_active", { active: false });
+      void invoke("set_overlay_drag_active", { active: true });
+      void startDrag({ item: [entry.path], icon: entry.path }, dragEnded)
+        .then(() => {
+          if (settings.close_after_drag && !keepOpen) void appWindow.hide();
+          else armAutoHide();
+        })
+        .finally(dragEnded);
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", cancel);
