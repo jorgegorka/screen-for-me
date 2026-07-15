@@ -1,7 +1,5 @@
 # <img src="src-tauri/icons/128x128.png" alt="Screen for me icon" width="32" align="center" /> Screen for me
 
-**Version 1.1.0**
-
 A fast, polished screenshot app for macOS and Linux, built with Tauri v2.
 
 ## Features
@@ -21,7 +19,7 @@ A fast, polished screenshot app for macOS and Linux, built with Tauri v2.
   your system language by default)
 - **Launch on start** option backed by the OS login-item state
 
-## What's new in 1.1.0
+## What's new in 1.2.2
 
 - Settings for customising the capture shortcuts
 - Numbered counter annotation tool
@@ -43,3 +41,12 @@ macOS will ask for **Screen Recording** permission on first capture, and
 ```bash
 npm run tauri build
 ```
+
+## Contributors
+
+- [Mario Alvarez](https://github.com/marioalna)
+- [Jorge Alvarez](https://github.com/jorgegorka)
+
+## License
+
+Screen for me is available under the [MIT License](https://opensource.org/licenses/MIT).
