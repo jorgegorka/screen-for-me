@@ -21,8 +21,10 @@ pub const ACTIONS: [ShortcutAction; 3] = [
 ];
 
 impl ShortcutAction {
-    /// macOS reserves Cmd+Shift+3/4/5 for the system tools, so defaults use
-    /// 7/8/9. Mirrored in DEFAULT_ACCELS in src/shared/accelerator.ts.
+    /// Defaults use 7/8/9 so they work out of the box while macOS's own
+    /// screenshot tools hold Cmd+Shift+3/4/5 (users can rebind to those once
+    /// they free them in System Settings — see onboarding.rs). Mirrored in
+    /// DEFAULT_ACCELS in src/shared/accelerator.ts.
     pub fn default_accel(self) -> &'static str {
         match self {
             ShortcutAction::Area => "CmdOrCtrl+Shift+7",
@@ -55,13 +57,16 @@ pub fn validate(accel: &str) -> Result<Shortcut, String> {
     {
         return Err(crate::i18n::t("settings.shortcut_error_modifier"));
     }
-    #[cfg(target_os = "macos")]
-    if shortcut.mods == Modifiers::SUPER | Modifiers::SHIFT
-        && [Code::Digit3, Code::Digit4, Code::Digit5].contains(&shortcut.key)
-    {
-        return Err(crate::i18n::t("settings.shortcut_error_reserved"));
-    }
     Ok(shortcut)
+}
+
+/// Whether a combo is one of macOS's own screenshot shortcuts (Cmd+Shift+3/4/5).
+/// Registering these succeeds even while the system still handles them (the
+/// keypress is swallowed before it reaches the app), so callers use this to
+/// decide when to check system ownership and warn — never to reject.
+pub fn is_macos_screenshot_combo(shortcut: &Shortcut) -> bool {
+    shortcut.mods == Modifiers::SUPER | Modifiers::SHIFT
+        && [Code::Digit3, Code::Digit4, Code::Digit5].contains(&shortcut.key)
 }
 
 fn register(app: &AppHandle, action: ShortcutAction, accel: &str) -> Result<(), String> {
@@ -112,6 +117,38 @@ pub fn rebind(
     Ok(())
 }
 
+/// Swap every listed action to a new combo in one go (`(action, old, new)`).
+/// All old combos are unregistered first so the new set can freely reshuffle
+/// keys between actions. Atomic: on any failed registration the new combos
+/// are dropped, every old combo is re-registered, and Err is returned.
+pub fn rebind_all(
+    app: &AppHandle,
+    changes: &[(ShortcutAction, String, String)],
+) -> Result<(), String> {
+    for (_, old, _) in changes {
+        if let Ok(shortcut) = old.parse::<Shortcut>() {
+            let _ = app.global_shortcut().unregister(shortcut);
+        }
+    }
+    for (i, (action, _, new)) in changes.iter().enumerate() {
+        if let Err(err) = register(app, *action, new) {
+            eprintln!("failed to register {new} for {action:?}: {err}");
+            for (_, _, done_new) in &changes[..i] {
+                if let Ok(shortcut) = done_new.parse::<Shortcut>() {
+                    let _ = app.global_shortcut().unregister(shortcut);
+                }
+            }
+            for (action, old, _) in changes {
+                if let Err(err) = register(app, *action, old) {
+                    eprintln!("failed to restore {old} for {action:?}: {err}");
+                }
+            }
+            return Err(crate::i18n::t("welcome.assign_failed"));
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -144,14 +181,16 @@ mod tests {
         }
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
-    fn macos_screenshot_combos_are_reserved() {
-        for accel in ["Cmd+Shift+3", "CmdOrCtrl+Shift+4", "Cmd+Shift+5"] {
-            assert!(validate(accel).is_err(), "{accel} is reserved by macOS");
+    fn macos_screenshot_combos_validate() {
+        for accel in ["Cmd+Shift+3", "Cmd+Shift+4", "Cmd+Shift+5"] {
+            let shortcut = validate(accel).expect("screenshot combos are assignable");
+            assert!(is_macos_screenshot_combo(&shortcut), "{accel}");
         }
-        // Adding another modifier makes them fair game again.
-        assert!(validate("Cmd+Alt+Shift+3").is_ok());
+        let extra_mod = validate("Cmd+Alt+Shift+3").unwrap();
+        assert!(!is_macos_screenshot_combo(&extra_mod));
+        let no_shift = validate("Cmd+3").unwrap();
+        assert!(!is_macos_screenshot_combo(&no_shift));
     }
 
     #[test]

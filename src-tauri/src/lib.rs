@@ -2,6 +2,7 @@ mod capture;
 mod commands;
 mod history;
 mod i18n;
+mod onboarding;
 mod settings;
 mod shortcuts;
 mod tray;
@@ -60,6 +61,7 @@ pub fn run() {
                 last_capture_mode: std::sync::Mutex::new(crate::capture::CaptureMode::Fullscreen),
                 scroll_stop: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
                 scroll_running: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+                overlay_follow_epoch: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
             });
 
             // Resolve the UI language before anything user-visible is built.
@@ -68,6 +70,17 @@ pub fn run() {
 
             tray::setup(app.handle())?;
             shortcuts::setup(app.handle());
+
+            // First launch: show the Welcome window once. The marker is
+            // written immediately (not on close) so the window stays one-shot
+            // even if the app crashes while it's open.
+            let welcome_marker = data_dir.join("welcome_seen");
+            if !welcome_marker.exists() {
+                let _ = std::fs::write(&welcome_marker, b"");
+                if let Err(err) = windows::open_welcome(app.handle().clone()) {
+                    eprintln!("failed to open welcome window: {err}");
+                }
+            }
 
             // Config-declared windows carry the English titles from
             // tauri.conf.json; retitle the visible one for the active language.
@@ -110,6 +123,10 @@ pub fn run() {
             commands::set_editor_prefs,
             commands::save_capture_to_desktop,
             windows::open_history,
+            windows::open_welcome,
+            onboarding::open_system_shortcut_settings,
+            onboarding::macos_screenshot_hotkeys_enabled,
+            onboarding::apply_macos_screenshot_shortcuts,
             commands::timer_duration,
             commands::timed_capture_fire,
             commands::run_scrolling_capture,

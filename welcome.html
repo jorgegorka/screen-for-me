@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="welcome.title">Welcome to Screen for me</title>
+    <link rel="stylesheet" href="/src/welcome/welcome.css" />
+    <script type="module" src="/src/welcome/main.ts" defer></script>
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <img class="hero-icon" id="welcome-icon" alt="" />
+        <h1 data-i18n="welcome.title">Welcome to Screen for me</h1>
+        <p class="intro" data-i18n="welcome.intro">Capture from the menu bar icon or with these global shortcuts.</p>
+      </header>
+
+      <section class="card">
+        <div class="shortcut-row">
+          <span data-i18n="settings.shortcut_area">Capture area:</span>
+          <kbd id="accel-area"></kbd>
+        </div>
+        <div class="shortcut-row">
+          <span data-i18n="settings.shortcut_window">Capture window:</span>
+          <kbd id="accel-window"></kbd>
+        </div>
+        <div class="shortcut-row">
+          <span data-i18n="settings.shortcut_fullscreen">Capture fullscreen:</span>
+          <kbd id="accel-fullscreen"></kbd>
+        </div>
+        <p class="hint" data-i18n="welcome.change_hint">Change them any time in Settings → Shortcuts.</p>
+      </section>
+
+      <section class="card" id="macos-card" hidden>
+        <h2 data-i18n="welcome.macos_title">Prefer the classic macOS shortcuts?</h2>
+        <p class="hint" data-i18n="welcome.macos_intro">You can use ⌘⇧3, ⌘⇧4 and ⌘⇧5 with Screen for me once macOS releases them.</p>
+        <div class="step">
+          <h3 data-i18n="welcome.step1_title">Step 1 — Free the shortcuts</h3>
+          <p class="hint" data-i18n="welcome.step1_body">In System Settings, open Keyboard → Keyboard Shortcuts… → Screenshots and untick the ⌘⇧3, ⌘⇧4 and ⌘⇧5 items.</p>
+          <button id="open-system-settings" data-i18n="welcome.step1_button">Open System Settings</button>
+        </div>
+        <div class="step">
+          <h3 data-i18n="welcome.step2_title">Step 2 — Assign them here</h3>
+          <button class="primary" id="assign-macos" data-i18n="welcome.step2_button">Use ⌘⇧3 · ⌘⇧4 · ⌘⇧5</button>
+        </div>
+        <p class="status" id="macos-status" hidden></p>
+      </section>
+    </main>
+  </body>
+</html>

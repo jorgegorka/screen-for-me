@@ -10,7 +10,7 @@ import {
   comboToAccelerator,
   formatAccelerator,
   hasRequiredModifier,
-  isReservedCombo,
+  isMacosScreenshotAccel,
   DEFAULT_ACCELS,
   type ComboModifiers,
   type Platform,
@@ -64,6 +64,7 @@ function fillForm(s: Settings) {
   el<HTMLSelectElement>("language").value = s.language;
   syncAutoCloseState();
   renderShortcuts();
+  void refreshSystemOwnsHint();
 }
 
 function syncAutoCloseState() {
@@ -138,6 +139,15 @@ function renderShortcuts() {
 
 let recording: ShortcutAction | null = null;
 
+/** End the active recording (if any) and restore that field's label. */
+function stopRecording() {
+  if (!recording) return;
+  const field = el<HTMLButtonElement>(`shortcut-${recording}`);
+  recording = null;
+  field.classList.remove("recording");
+  renderShortcuts();
+}
+
 function showShortcutError(action: ShortcutAction, message: string) {
   const line = el<HTMLParagraphElement>(`shortcut-${action}-error`);
   line.textContent = message;
@@ -154,32 +164,68 @@ async function applyShortcut(action: ShortcutAction, accelerator: string) {
   try {
     fillForm(await invoke<Settings>("set_shortcut", { action, accelerator }));
     clearShortcutErrors();
+    // Registering ⌘⇧3/4/5 succeeds even while macOS still handles them (the
+    // keypress never reaches the app), so warn inline when that's the case.
+    if (
+      PLATFORM === "mac" &&
+      isMacosScreenshotAccel(accelerator) &&
+      (await invoke<boolean>("macos_screenshot_hotkeys_enabled"))
+    ) {
+      showShortcutError(action, t("settings.shortcut_warning_system"));
+    }
   } catch (err) {
     showShortcutError(action, String(err));
     renderShortcuts();
   }
 }
 
+/** Section-level hint: any bound combo is a macOS screenshot shortcut that
+ * the system still owns, so it can't fire here yet. */
+async function refreshSystemOwnsHint() {
+  if (PLATFORM !== "mac" || !current) return;
+  const bound = ACTIONS.some((action) => isMacosScreenshotAccel(accelOf(current!, action)));
+  const owns = bound && (await invoke<boolean>("macos_screenshot_hotkeys_enabled"));
+  el<HTMLParagraphElement>("system-owns-hint").hidden = !owns;
+}
+
+function initSystemShortcutsHelp() {
+  if (PLATFORM !== "mac") return;
+  el<HTMLElement>("system-shortcuts").hidden = false;
+  el<HTMLButtonElement>("open-system-shortcuts").addEventListener("click", () => {
+    void invoke("open_system_shortcut_settings").catch((err) => {
+      console.error("failed to open System Settings", err);
+    });
+  });
+}
+
 function initShortcuts() {
+  // WKWebView doesn't reliably focus <button>s on click, so a blur listener
+  // alone never fires and a field could stay in "Press shortcut…" forever:
+  // any press outside the active field ends the recording (mousedown runs
+  // before another field's click handler starts its own).
+  document.addEventListener("mousedown", (event) => {
+    if (!recording) return;
+    const field = el<HTMLButtonElement>(`shortcut-${recording}`);
+    if (event.target instanceof Node && !field.contains(event.target)) stopRecording();
+  });
+
   for (const action of ACTIONS) {
     const field = el<HTMLButtonElement>(`shortcut-${action}`);
 
-    const stopRecording = () => {
-      if (recording !== action) return;
-      recording = null;
-      field.classList.remove("recording");
-      renderShortcuts();
-    };
-
     field.addEventListener("click", () => {
       if (recording === action) return;
+      stopRecording();
       recording = action;
       clearShortcutErrors();
       field.classList.add("recording");
       field.textContent = t("settings.shortcut_press");
+      // Deterministic keyboard capture + a real blur when focus moves on.
+      field.focus();
     });
 
-    field.addEventListener("blur", stopRecording);
+    field.addEventListener("blur", () => {
+      if (recording === action) stopRecording();
+    });
 
     field.addEventListener("keydown", (event) => {
       if (recording !== action) return;
@@ -204,11 +250,6 @@ function initShortcuts() {
       if (!hasRequiredModifier(mods)) {
         stopRecording();
         showShortcutError(action, t("settings.shortcut_error_modifier"));
-        return;
-      }
-      if (isReservedCombo(mods, event.code, PLATFORM)) {
-        stopRecording();
-        showShortcutError(action, t("settings.shortcut_error_reserved"));
         return;
       }
       stopRecording();
@@ -263,6 +304,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   await initI18n();
   initTabs();
   initShortcuts();
+  initSystemShortcutsHelp();
   void initAutostart();
   void initAbout();
   fillForm(await invoke<Settings>("get_settings"));

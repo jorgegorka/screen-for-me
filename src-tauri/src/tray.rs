@@ -63,6 +63,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         Submenu::with_items(app, t("tray.self_timer"), true, &[&timer_3, &timer_5, &timer_10])?;
     let history = MenuItem::with_id(app, "history", t("tray.history"), true, None::<&str>)?;
     let updates = MenuItem::with_id(app, "updates", t("tray.updates"), true, None::<&str>)?;
+    let welcome = MenuItem::with_id(app, "welcome", t("tray.welcome"), true, None::<&str>)?;
     let settings_item = MenuItem::with_id(app, "settings", t("tray.settings"), true, Some("CmdOrCtrl+,"))?;
     let quit = MenuItem::with_id(app, "quit", t("tray.quit"), true, Some("CmdOrCtrl+Q"))?;
 
@@ -76,7 +77,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     items.push(&scrolling);
     items.push(&self_timer);
     items.extend_from_slice(&[
-        &sep2, &history, &sep3, &updates, &sep4, &settings_item, &quit,
+        &sep2, &history, &sep3, &welcome, &updates, &sep4, &settings_item, &quit,
     ]);
     Menu::with_items(app, &items)
 }
@@ -113,6 +114,11 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
             "history" => {
                 if let Err(err) = windows::open_history(app.clone()) {
                     eprintln!("failed to open history: {err}");
+                }
+            }
+            "welcome" => {
+                if let Err(err) = windows::open_welcome(app.clone()) {
+                    eprintln!("failed to open welcome window: {err}");
                 }
             }
             "updates" => windows::check_for_updates(app, false),

@@ -5,6 +5,21 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 /// `on_window_event`; `timer` and `scrollcap` are transient and excluded.
 pub const HIDE_ON_CLOSE: &[&str] = &["main", "editor", "history"];
 
+/// Show a window and bring it in front of other apps' windows. An Accessory
+/// app is never the active application, so `set_focus` alone can leave a
+/// window opening *behind* whatever the user is working in — activate the app
+/// first to force it forward.
+pub fn bring_to_front(window: &tauri::WebviewWindow) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    if let Some(mtm) = objc2_foundation::MainThreadMarker::new() {
+        #[allow(deprecated)]
+        objc2_app_kit::NSApplication::sharedApplication(mtm).activateIgnoringOtherApps(true);
+    }
+    window.show().map_err(|e| e.to_string())?;
+    window.set_focus().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 /// Show a window that hides (rather than destroys) on close, creating it once.
 /// `on_reuse` runs against an already-existing (warm) window before it is
 /// shown; a fresh window skips it.
@@ -19,15 +34,16 @@ pub fn show_or_create(
 ) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(label) {
         on_reuse(&window)?;
-        window.show().map_err(|e| e.to_string())?;
-        window.set_focus().map_err(|e| e.to_string())?;
+        bring_to_front(&window)?;
     } else {
-        tauri::WebviewWindowBuilder::new(app, label, tauri::WebviewUrl::App(url.into()))
-            .title(title)
-            .inner_size(size.0, size.1)
-            .min_inner_size(min_size.0, min_size.1)
-            .build()
-            .map_err(|e| e.to_string())?;
+        let window =
+            tauri::WebviewWindowBuilder::new(app, label, tauri::WebviewUrl::App(url.into()))
+                .title(title)
+                .inner_size(size.0, size.1)
+                .min_inner_size(min_size.0, min_size.1)
+                .build()
+                .map_err(|e| e.to_string())?;
+        bring_to_front(&window)?;
     }
     Ok(())
 }
@@ -45,10 +61,31 @@ pub fn open_history(app: AppHandle) -> Result<(), String> {
     )
 }
 
+/// Welcome window (shortcut onboarding): shown once on first launch and
+/// reopenable from the tray. Deliberately NOT in HIDE_ON_CLOSE — closing
+/// destroys it, it's rarely needed twice.
+#[tauri::command]
+pub fn open_welcome(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("welcome") {
+        return bring_to_front(&window);
+    }
+    let window = tauri::WebviewWindowBuilder::new(
+        &app,
+        "welcome",
+        tauri::WebviewUrl::App("welcome.html".into()),
+    )
+    .title(crate::i18n::t("window.welcome"))
+    .inner_size(520.0, 620.0)
+    .resizable(false)
+    .maximizable(false)
+    .build()
+    .map_err(|e| e.to_string())?;
+    bring_to_front(&window)
+}
+
 pub fn open_settings(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.set_focus();
+        let _ = bring_to_front(&window);
     }
 }
 

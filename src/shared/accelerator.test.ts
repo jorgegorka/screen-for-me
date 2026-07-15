@@ -5,7 +5,7 @@ import {
   comboToAccelerator,
   formatAccelerator,
   hasRequiredModifier,
-  isReservedCombo,
+  isMacosScreenshotAccel,
   DEFAULT_ACCELS,
 } from "./accelerator";
 
@@ -56,14 +56,19 @@ describe("hasRequiredModifier", () => {
   });
 });
 
-describe("isReservedCombo", () => {
-  it("flags Cmd+Shift+3/4/5 on macOS only", () => {
-    const cmdShift = mods({ meta: true, shift: true });
-    expect(isReservedCombo(cmdShift, "Digit3", "mac")).toBe(true);
-    expect(isReservedCombo(cmdShift, "Digit5", "mac")).toBe(true);
-    expect(isReservedCombo(cmdShift, "Digit7", "mac")).toBe(false);
-    expect(isReservedCombo(cmdShift, "Digit3", "other")).toBe(false);
-    expect(isReservedCombo(mods({ meta: true, shift: true, alt: true }), "Digit3", "mac")).toBe(false);
+describe("isMacosScreenshotAccel", () => {
+  it("flags Cmd+Shift+3/4/5 in any spelling", () => {
+    expect(isMacosScreenshotAccel("Cmd+Shift+3")).toBe(true);
+    expect(isMacosScreenshotAccel("Shift+Cmd+4")).toBe(true);
+    expect(isMacosScreenshotAccel("CmdOrCtrl+Shift+5")).toBe(true);
+    expect(isMacosScreenshotAccel("Command+Shift+Digit3")).toBe(true);
+  });
+
+  it("ignores other combos", () => {
+    expect(isMacosScreenshotAccel("Cmd+Shift+7")).toBe(false);
+    expect(isMacosScreenshotAccel("Cmd+3")).toBe(false);
+    expect(isMacosScreenshotAccel("Ctrl+Shift+3")).toBe(false);
+    expect(isMacosScreenshotAccel("Cmd+Alt+Shift+3")).toBe(false);
   });
 });
 

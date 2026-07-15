@@ -260,15 +260,16 @@ mod tests {
         assert_eq!(s.shortcut_fullscreen, ShortcutAction::Fullscreen.default_accel());
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
-    fn sanitize_resets_reserved_shortcuts() {
+    fn sanitize_preserves_macos_screenshot_shortcuts() {
+        // Cmd+Shift+3/4/5 are assignable (the user may have freed them in
+        // System Settings); ownership is checked at assign time, not here.
         let s = Settings {
             shortcut_area: "Cmd+Shift+3".into(),
             ..Default::default()
         }
         .sanitized();
-        assert_eq!(s.shortcut_area, ShortcutAction::Area.default_accel());
+        assert_eq!(s.shortcut_area, "Cmd+Shift+3");
     }
 
     #[test]

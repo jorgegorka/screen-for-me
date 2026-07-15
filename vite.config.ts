@@ -14,6 +14,7 @@ export default defineConfig(async () => ({
         history: "history.html",
         timer: "timer.html",
         scrollcap: "scrollcap.html",
+        welcome: "welcome.html",
       },
     },
   },

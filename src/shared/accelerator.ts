@@ -78,16 +78,20 @@ export function hasRequiredModifier(mods: ComboModifiers): boolean {
   return mods.ctrl || mods.alt || mods.meta;
 }
 
-/** macOS reserves Cmd+Shift+3/4/5 for the system screenshot tools. */
-export function isReservedCombo(mods: ComboModifiers, code: string, platform: Platform): boolean {
-  return (
-    platform === "mac" &&
-    mods.meta &&
-    mods.shift &&
-    !mods.ctrl &&
-    !mods.alt &&
-    ["Digit3", "Digit4", "Digit5"].includes(code)
-  );
+/** Whether a stored accelerator is one of macOS's own screenshot shortcuts
+ * (Cmd+Shift+3/4/5). Assigning these is allowed, but while the system still
+ * handles them the keypress never reaches the app — callers use this to show
+ * a warning, mirroring `is_macos_screenshot_combo` in shortcuts.rs. */
+export function isMacosScreenshotAccel(accel: string): boolean {
+  const tokens = accel.split("+").map((token) => token.trim());
+  const key = tokens.pop() ?? "";
+  if (!["3", "4", "5", "Digit3", "Digit4", "Digit5"].includes(key)) return false;
+  const present = { ctrl: false, alt: false, shift: false, cmd: false };
+  for (const token of tokens) {
+    const modifier = normalizeModifier(token, "mac");
+    if (modifier) present[modifier as keyof typeof present] = true;
+  }
+  return present.cmd && present.shift && !present.ctrl && !present.alt;
 }
 
 const MAC_MODIFIER_SYMBOLS: Record<string, string> = {

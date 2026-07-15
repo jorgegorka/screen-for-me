@@ -23,6 +23,10 @@ pub struct AppState {
     /// True while a scrolling capture run is in flight; guards against a
     /// second run racing the pill window, stop flag, and tmp frame file.
     pub scroll_running: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    /// Generation counter for the overlay's follow-the-cursor loop: each
+    /// `show_overlay` bumps it and spawns a fresh loop, and any older loop
+    /// exits on its next tick when it sees a newer epoch.
+    pub overlay_follow_epoch: std::sync::Arc<std::sync::atomic::AtomicU64>,
 }
 
 /// Entry point shared by tray items and global shortcuts.
@@ -119,6 +123,38 @@ pub(crate) fn monitor_logical_bounds(
     )
 }
 
+/// Bottom-corner origin for the overlay inside a monitor's logical bounds.
+fn overlay_origin(
+    position: OverlayPosition,
+    (mon_x, mon_y): (f64, f64),
+    (mon_w, mon_h): (f64, f64),
+    (width, height): (f64, f64),
+) -> (f64, f64) {
+    const MARGIN: f64 = 16.0;
+    let x = match position {
+        OverlayPosition::Left => mon_x + MARGIN,
+        OverlayPosition::Center => mon_x + (mon_w - width) / 2.0,
+        OverlayPosition::Right => mon_x + mon_w - width - MARGIN,
+    };
+    (x, mon_y + mon_h - height - MARGIN)
+}
+
+/// Size the overlay per settings and place it at the configured corner of
+/// `monitor`.
+fn place_overlay(overlay: &tauri::WebviewWindow, monitor: &tauri::Monitor, settings: &Settings) {
+    let width = OVERLAY_BASE_WIDTH * settings.overlay_size;
+    let height = OVERLAY_BASE_HEIGHT * settings.overlay_size;
+    let _ = overlay.set_size(tauri::LogicalSize::new(width, height));
+    let (mon_pos, mon_size) = monitor_logical_bounds(monitor);
+    let (x, y) = overlay_origin(
+        settings.position,
+        (mon_pos.x, mon_pos.y),
+        (mon_size.width, mon_size.height),
+        (width, height),
+    );
+    let _ = overlay.set_position(tauri::LogicalPosition::new(x, y));
+}
+
 /// Show the quick-access overlay at the configured corner of the active
 /// monitor (the one under the cursor) or the primary one.
 fn show_overlay(app: &AppHandle) {
@@ -126,9 +162,6 @@ fn show_overlay(app: &AppHandle) {
         return;
     };
     let settings = app.state::<AppState>().settings.get();
-    let width = OVERLAY_BASE_WIDTH * settings.overlay_size;
-    let height = OVERLAY_BASE_HEIGHT * settings.overlay_size;
-    let _ = overlay.set_size(tauri::LogicalSize::new(width, height));
 
     let active_monitor = if settings.move_to_active_screen {
         cursor_point(app).and_then(|(x, y)| app.monitor_from_point(x, y).ok().flatten())
@@ -137,18 +170,89 @@ fn show_overlay(app: &AppHandle) {
     };
     let monitor = active_monitor.or_else(|| overlay.primary_monitor().ok().flatten());
 
-    if let Some(monitor) = monitor {
-        const MARGIN: f64 = 16.0;
-        let (mon_pos, mon_size) = monitor_logical_bounds(&monitor);
-        let x = match settings.position {
-            OverlayPosition::Left => mon_pos.x + MARGIN,
-            OverlayPosition::Center => mon_pos.x + (mon_size.width - width) / 2.0,
-            OverlayPosition::Right => mon_pos.x + mon_size.width - width - MARGIN,
-        };
-        let y = mon_pos.y + mon_size.height - height - MARGIN;
-        let _ = overlay.set_position(tauri::LogicalPosition::new(x, y));
+    match monitor {
+        Some(monitor) => place_overlay(&overlay, &monitor, &settings),
+        None => {
+            let width = OVERLAY_BASE_WIDTH * settings.overlay_size;
+            let height = OVERLAY_BASE_HEIGHT * settings.overlay_size;
+            let _ = overlay.set_size(tauri::LogicalSize::new(width, height));
+        }
     }
     let _ = overlay.show();
+    follow_active_monitor(app);
+}
+
+/// Whether the left mouse button is currently held anywhere on screen. Used
+/// to pause overlay following so a drag-out (or any drag) never yanks the
+/// panel across screens mid-gesture.
+#[cfg(target_os = "macos")]
+fn left_mouse_button_down() -> bool {
+    #[link(name = "CoreGraphics", kind = "framework")]
+    extern "C" {
+        // CGEventSourceButtonState(kCGEventSourceStateCombinedSessionState = 0,
+        //                          kCGMouseButtonLeft = 0)
+        fn CGEventSourceButtonState(state_id: i32, button: u32) -> bool;
+    }
+    unsafe { CGEventSourceButtonState(0, 0) }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn left_mouse_button_down() -> bool {
+    false
+}
+
+/// While the overlay stays visible, keep it on the monitor under the cursor:
+/// poll every 400 ms and re-place the panel once the cursor has settled on a
+/// different monitor for two consecutive ticks (so merely passing through a
+/// screen doesn't bounce it). Respects the `move_to_active_screen` setting
+/// live and pauses while the mouse button is down.
+fn follow_active_monitor(app: &AppHandle) {
+    use std::sync::atomic::Ordering;
+    let epochs = app.state::<AppState>().overlay_follow_epoch.clone();
+    let epoch = epochs.fetch_add(1, Ordering::SeqCst) + 1;
+    let app = app.clone();
+    std::thread::spawn(move || {
+        let mut pending: Option<(i32, i32)> = None;
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(400));
+            if epochs.load(Ordering::SeqCst) != epoch {
+                return;
+            }
+            let Some(overlay) = app.get_webview_window("overlay") else {
+                return;
+            };
+            if !overlay.is_visible().unwrap_or(false) {
+                return;
+            }
+            let settings = app.state::<AppState>().settings.get();
+            if !settings.move_to_active_screen || left_mouse_button_down() {
+                pending = None;
+                continue;
+            }
+            let Some(target) = cursor_point(&app)
+                .and_then(|(x, y)| app.monitor_from_point(x, y).ok().flatten())
+            else {
+                pending = None;
+                continue;
+            };
+            let on_target = overlay
+                .current_monitor()
+                .ok()
+                .flatten()
+                .is_some_and(|m| m.position() == target.position());
+            if on_target {
+                pending = None;
+                continue;
+            }
+            let key = (target.position().x, target.position().y);
+            if pending == Some(key) {
+                place_overlay(&overlay, &target, &settings);
+                pending = None;
+            } else {
+                pending = Some(key);
+            }
+        }
+    });
 }
 
 #[tauri::command]
@@ -186,6 +290,7 @@ pub fn set_settings(
                 ("main", "window.settings"),
                 ("history", "window.history"),
                 ("editor", "window.editor"),
+                ("welcome", "window.welcome"),
             ] {
                 if let Some(window) = handle.get_webview_window(label) {
                     let _ = window.set_title(&crate::i18n::t(key));
@@ -581,4 +686,29 @@ fn resolve(history: &History, id: &str) -> Result<CaptureEntry, String> {
     history
         .resolve(id)
         .ok_or_else(|| format!("unknown capture: {id}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn overlay_origin_respects_monitor_offset() {
+        // A secondary monitor to the right of a 1440p primary: the overlay
+        // must land inside *its* bounds, not the primary's.
+        let mon = ((2560.0, 100.0), (1920.0, 1080.0));
+        let size = (300.0, 264.0);
+        assert_eq!(
+            overlay_origin(OverlayPosition::Left, mon.0, mon.1, size),
+            (2576.0, 900.0)
+        );
+        assert_eq!(
+            overlay_origin(OverlayPosition::Right, mon.0, mon.1, size),
+            (2560.0 + 1920.0 - 300.0 - 16.0, 900.0)
+        );
+        assert_eq!(
+            overlay_origin(OverlayPosition::Center, mon.0, mon.1, size),
+            (2560.0 + (1920.0 - 300.0) / 2.0, 900.0)
+        );
+    }
 }

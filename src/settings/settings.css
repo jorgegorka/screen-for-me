@@ -218,6 +218,27 @@ input[type="range"] {
   max-width: 280px;
 }
 
+/* macOS system-shortcuts explainer (Shortcuts tab) */
+#system-shortcuts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+#system-shortcuts[hidden] {
+  display: none;
+}
+
+.system-shortcuts-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#system-shortcuts .hint {
+  max-width: none;
+}
+
 /* About panel */
 .about {
   display: flex;
