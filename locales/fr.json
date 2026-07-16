@@ -155,10 +155,8 @@
 
   "history.title": "Historique des captures",
   "history.empty": "Aucune capture pour l'instant. Utilisez l'icône de la barre des menus ou les raccourcis de capture.",
-  "history.annotate": "Annoter",
   "history.copy": "Copier",
-  "history.save": "Enregistrer",
-  "history.reveal": "Finder",
+  "history.restore": "Restaurer",
 
   "scrollcap.hint": "Faites glisser pour sélectionner la zone à capturer avec défilement — Échap pour annuler",
   "scrollcap.scroll_up": "Faire défiler vers le haut",

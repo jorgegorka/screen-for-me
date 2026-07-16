@@ -155,10 +155,8 @@
 
   "history.title": "Cronologia catture",
   "history.empty": "Ancora nessuna cattura. Usa l'icona nella barra dei menu o le scorciatoie di cattura.",
-  "history.annotate": "Annota",
   "history.copy": "Copia",
-  "history.save": "Salva",
-  "history.reveal": "Finder",
+  "history.restore": "Ripristina",
 
   "scrollcap.hint": "Trascina per selezionare l'area da catturare con scorrimento — Esc per annullare",
   "scrollcap.scroll_up": "Scorri verso l'alto",
