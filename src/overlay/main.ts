@@ -154,12 +154,24 @@ function removePanel(id: string) {
   void syncStack();
 }
 
+// Chains syncStack() calls so only one reconciliation + set_overlay_panels
+// round trip is outstanding at a time. Without this, two quick calls (e.g.
+// two restores) can have their invoke() responses resolve out of order: a
+// stale, smaller `max` from an earlier call would then trim/drop a panel
+// that a later call already added to the live `stack`.
+let syncing: Promise<void> = Promise.resolve();
+
+function syncStack(): Promise<void> {
+  syncing = syncing.then(runSync).catch(() => {});
+  return syncing;
+}
+
 /**
  * Reconcile the DOM with `stack` and hand the panel count to the backend
  * (the single owner of the window's size). The returned count is clamped to
  * what fits the monitor; drop the bottom-most panels beyond it.
  */
-async function syncStack() {
+async function runSync() {
   for (const id of [...panels.keys()]) {
     if (!stack.some((e) => e.id === id)) dropPanel(id);
   }
