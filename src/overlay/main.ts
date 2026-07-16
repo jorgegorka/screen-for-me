@@ -177,8 +177,9 @@ async function runSync() {
   }
   if (stack.length === 0) {
     await appWindow.hide();
-    // Reset the backend's size for the next single-panel show.
-    void invoke("set_overlay_panels", { count: 1 }).catch(() => {});
+    // Reset the backend's size for the next single-panel show; awaited so the
+    // reset can't land after a newer sync's count and clobber it.
+    await invoke("set_overlay_panels", { count: 1 }).catch(() => {});
     return;
   }
   for (const entry of stack) {
