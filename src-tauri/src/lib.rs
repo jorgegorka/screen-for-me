@@ -111,6 +111,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::list_captures,
             commands::copy_capture,
+            commands::restore_capture,
             commands::save_capture_to,
             commands::reveal_capture,
             commands::open_editor,

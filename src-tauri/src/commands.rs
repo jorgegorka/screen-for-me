@@ -568,6 +568,17 @@ pub fn copy_capture(app: AppHandle, state: State<AppState>, id: String) -> Resul
     copy_png_to_clipboard(&app, &bytes)
 }
 
+/// Re-open the overlay with a capture from history: emits `capture:restore`
+/// (the overlay pushes it on top of its stack, or moves it up if already
+/// shown) and shows the window. No clipboard side effects.
+#[tauri::command]
+pub fn restore_capture(app: AppHandle, state: State<AppState>, id: String) -> Result<(), String> {
+    let entry = resolve(&state.history, &id)?;
+    let _ = app.emit("capture:restore", &entry);
+    show_overlay(&app);
+    Ok(())
+}
+
 #[tauri::command]
 pub fn save_capture_to(state: State<AppState>, id: String, dest: String) -> Result<(), String> {
     let entry = resolve(&state.history, &id)?;
