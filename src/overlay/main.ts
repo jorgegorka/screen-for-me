@@ -222,8 +222,12 @@ window.addEventListener("DOMContentLoaded", () => {
     for (const panel of panels.values()) armAutoHide(panel);
   });
 
-  // If the window was shown before the page finished loading, catch up.
-  void invoke<CaptureEntry[]>("list_captures").then((captures) => {
+  // If the window was shown before the page finished loading (a capture can
+  // beat the listener registration), catch up. Only when actually visible —
+  // seeding a hidden window would stack a stale panel under the next capture.
+  void (async () => {
+    if (!(await appWindow.isVisible())) return;
+    const captures = await invoke<CaptureEntry[]>("list_captures");
     if (captures.length > 0 && stack.length === 0) showCapture(captures[0]);
-  });
+  })();
 });
