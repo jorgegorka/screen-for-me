@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-21
+
+### Added
+
+- The quick-access overlay now stacks multiple captures: each capture gets its
+  own panel (newest on top) with the full set of actions, its own auto-close
+  timer, and drag-out. The stack grows upward from the configured corner and
+  is clamped to what fits the screen.
+- Restore in Capture history: a new button on each history card reopens that
+  capture in the quick-access overlay (on top of the stack if it's already
+  showing), with no clipboard side effects.
+
+### Changed
+
+- Capture history cards now offer Copy and Restore. Annotate, Save and Finder
+  moved out of the history cards — Restore the capture and use the overlay
+  panel's actions instead.
+
+### Fixed
+
+- The first capture after launching the app no longer brings back the previous
+  session's last capture as a second overlay panel.
+
 ## [1.2.4] - 2026-07-15
 
 ### Added

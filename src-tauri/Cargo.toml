@@ -1,6 +1,6 @@
 [package]
 name = "screenforme"
-version = "1.2.4"
+version = "1.3.0"
 description = "A screenshot app: capture area, window, or fullscreen; annotate; share."
 authors = ["Jorge Alvarez"]
 edition = "2021"
