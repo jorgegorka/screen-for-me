@@ -99,6 +99,17 @@ for (const f of [dmg, tarball, `${tarball}.sig`]) {
   if (!existsSync(f)) fail(`expected artifact missing: ${f}`);
 }
 
+// --- notarize the DMG -------------------------------------------------------
+// Tauri notarizes and staples the .app but leaves the DMG merely signed
+// (bit both 1.2.2 and 1.3.0); notarize + staple it here so Gatekeeper
+// accepts the download offline. $-vars expand in the shell so the secrets
+// never appear in the logged command.
+run(
+  `xcrun notarytool submit "${dmg}" --apple-id "$APPLE_ID" ` +
+    `--password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait`,
+);
+run(`xcrun stapler staple "${dmg}"`);
+
 // --- verify signing/notarization actually took -----------------------------
 run(`codesign --verify --deep --strict "${appPath}"`);
 run(`spctl -a -vv "${appPath}"`);
