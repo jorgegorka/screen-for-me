@@ -1,8 +1,6 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 
-import { savePngAs } from "../shared/dialogs";
 import { el } from "../shared/dom";
 import { initI18n, t } from "../shared/i18n";
 import type { CaptureEntry } from "../shared/ipc";
@@ -41,16 +39,8 @@ function card(entry: CaptureEntry): HTMLElement {
   const actions = document.createElement("div");
   actions.className = "actions";
   actions.append(
-    actionButton("history.annotate", async () => {
-      await invoke("open_editor", { id: entry.id });
-      await getCurrentWindow().hide();
-    }),
     actionButton("history.copy", () => void invoke("copy_capture", { id: entry.id })),
-    actionButton("history.save", async () => {
-      const dest = await savePngAs(entry.id);
-      if (dest) await invoke("save_capture_to", { id: entry.id, dest });
-    }),
-    actionButton("history.reveal", () => void invoke("reveal_capture", { id: entry.id })),
+    actionButton("history.restore", () => void invoke("restore_capture", { id: entry.id })),
   );
 
   node.append(thumb, meta, actions);

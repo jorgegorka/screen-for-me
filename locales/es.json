@@ -155,10 +155,8 @@
 
   "history.title": "Historial de capturas",
   "history.empty": "Todavía no hay capturas. Usa el icono de la barra de menús o los atajos de captura.",
-  "history.annotate": "Anotar",
   "history.copy": "Copiar",
-  "history.save": "Guardar",
-  "history.reveal": "Finder",
+  "history.restore": "Restaurar",
 
   "scrollcap.hint": "Arrastra para seleccionar la zona de la captura con desplazamiento — Esc para cancelar",
   "scrollcap.scroll_up": "Desplazar hacia arriba",

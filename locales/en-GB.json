@@ -155,10 +155,8 @@
 
   "history.title": "Capture History",
   "history.empty": "No captures yet. Use the tray icon or capture shortcuts.",
-  "history.annotate": "Annotate",
   "history.copy": "Copy",
-  "history.save": "Save",
-  "history.reveal": "Finder",
+  "history.restore": "Restore",
 
   "scrollcap.hint": "Drag to select the area to scroll-capture — Esc to cancel",
   "scrollcap.scroll_up": "Scroll up",

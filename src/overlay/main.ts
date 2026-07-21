@@ -5,8 +5,9 @@ import { startDrag } from "@crabnebula/tauri-plugin-drag";
 
 import { savePngAs } from "../shared/dialogs";
 import { el } from "../shared/dom";
-import { initI18n, t } from "../shared/i18n";
+import { applyTranslations, initI18n, t } from "../shared/i18n";
 import type { CaptureEntry, Settings } from "../shared/ipc";
+import { pushTop, removeEntry, trimStack } from "./stack";
 
 /** The overlay only cares about the auto-close/drag subset of Settings. */
 type OverlaySettings = Pick<
@@ -14,9 +15,19 @@ type OverlaySettings = Pick<
   "auto_close_enabled" | "auto_close_action" | "auto_close_seconds" | "close_after_drag"
 >;
 
-let current: CaptureEntry | null = null;
-let hideTimer: number | undefined;
-let hovering = false;
+/** One stacked card: its entry, DOM node, and its own auto-close timer. */
+interface Panel {
+  entry: CaptureEntry;
+  node: HTMLElement;
+  hovering: boolean;
+  hideTimer?: number;
+}
+
+// Ordered newest-first (index 0 = top card). Lives in this webview: the
+// window hides instead of closing, so the stack survives hide/show —
+// including the temporary hide while a capture is in progress.
+let stack: CaptureEntry[] = [];
+const panels = new Map<string, Panel>();
 let settings: OverlaySettings = {
   auto_close_enabled: false,
   auto_close_action: "close",
@@ -26,79 +37,65 @@ let settings: OverlaySettings = {
 
 const appWindow = getCurrentWindow();
 
-function armAutoHide() {
-  window.clearTimeout(hideTimer);
+function armAutoHide(panel: Panel) {
+  window.clearTimeout(panel.hideTimer);
   if (!settings.auto_close_enabled) return;
-  hideTimer = window.setTimeout(() => {
-    if (hovering) {
-      armAutoHide();
+  panel.hideTimer = window.setTimeout(() => {
+    if (panel.hovering) {
+      armAutoHide(panel);
       return;
     }
     void (async () => {
-      if (settings.auto_close_action === "save_and_close" && current) {
-        await invoke("save_capture_to_desktop", { id: current.id }).catch(() => {});
+      if (settings.auto_close_action === "save_and_close") {
+        await invoke("save_capture_to_desktop", { id: panel.entry.id }).catch(() => {});
       }
-      await appWindow.hide();
+      removePanel(panel.entry.id);
     })();
   }, settings.auto_close_seconds * 1000);
 }
 
-function toast(message: string) {
-  const node = el<HTMLDivElement>("toast");
+function toast(panel: Panel, message: string) {
+  const node = panel.node.querySelector<HTMLDivElement>(".toast")!;
   node.textContent = message;
   node.classList.remove("hidden");
   window.setTimeout(() => node.classList.add("hidden"), 1500);
 }
 
-async function refreshBadge() {
-  const captures = await invoke<CaptureEntry[]>("list_captures");
-  const badge = el<HTMLSpanElement>("stack-badge");
-  if (captures.length > 1) {
-    badge.textContent = `+${captures.length - 1}`;
-    badge.classList.remove("hidden");
-  } else {
-    badge.classList.add("hidden");
-  }
-}
-
-function showCapture(entry: CaptureEntry) {
-  current = entry;
-  // cache-bust: the same window re-shows different files
-  el<HTMLImageElement>("thumb").src =
-    `${convertFileSrc(entry.path)}?t=${entry.created_ms}`;
-  el<HTMLDivElement>("overlay-card").classList.remove("hidden");
-  void refreshBadge();
-  armAutoHide();
-}
-
-async function run(action: () => Promise<void>, doneMessage?: string) {
-  if (!current) return;
+async function run(panel: Panel, action: () => Promise<void>, doneMessage?: string) {
   try {
     await action();
-    if (doneMessage) toast(doneMessage);
+    if (doneMessage) toast(panel, doneMessage);
   } catch (err) {
-    toast(String(err));
+    toast(panel, String(err));
   }
-  armAutoHide();
+  armAutoHide(panel);
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  void initI18n();
-  const card = el<HTMLDivElement>("overlay-card");
-  card.addEventListener("mouseenter", () => (hovering = true));
-  card.addEventListener("mouseleave", () => {
-    hovering = false;
-    armAutoHide();
+function buildPanel(entry: CaptureEntry): Panel {
+  const template = el<HTMLTemplateElement>("panel-template");
+  const node = (template.content.cloneNode(true) as DocumentFragment)
+    .firstElementChild as HTMLElement;
+  applyTranslations(node);
+  const panel: Panel = { entry, node, hovering: false };
+
+  node.addEventListener("mouseenter", () => (panel.hovering = true));
+  node.addEventListener("mouseleave", () => {
+    panel.hovering = false;
+    armAutoHide(panel);
   });
 
-  el<HTMLButtonElement>("dismiss").onclick = () => void appWindow.hide();
+  const query = <T extends HTMLElement>(selector: string) =>
+    node.querySelector<T>(selector)!;
+
+  // cache-bust: a restore can re-show a file the webview saw before
+  const thumb = query<HTMLImageElement>(".thumb");
+  thumb.src = `${convertFileSrc(entry.path)}?t=${entry.created_ms}`;
+
+  query<HTMLButtonElement>(".dismiss").onclick = () => removePanel(entry.id);
 
   // Drag the capture out to other apps: native drag starts once the pointer
   // moves a few pixels with the button held on the thumbnail.
-  const thumb = el<HTMLImageElement>("thumb");
   thumb.addEventListener("mousedown", (down) => {
-    if (!current) return;
-    const entry = current;
     const cancel = () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", cancel);
@@ -106,7 +103,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const onMove = (move: MouseEvent) => {
       if (Math.hypot(move.clientX - down.clientX, move.clientY - down.clientY) < 5) return;
       cancel();
-      const keepOpen = move.altKey; // ⌥ at drag start keeps the overlay
+      const keepOpen = move.altKey; // ⌥ at drag start keeps the panel
       // Pause the backend's follow-the-cursor loop for the duration so it
       // can't relocate this window mid-drag: the plugin's result callback
       // fires on both drop and cancel, and the settled promise is a fallback.
@@ -114,8 +111,8 @@ window.addEventListener("DOMContentLoaded", () => {
       void invoke("set_overlay_drag_active", { active: true });
       void startDrag({ item: [entry.path], icon: entry.path }, dragEnded)
         .then(() => {
-          if (settings.close_after_drag && !keepOpen) void appWindow.hide();
-          else armAutoHide();
+          if (settings.close_after_drag && !keepOpen) removePanel(entry.id);
+          else armAutoHide(panel);
         })
         .finally(dragEnded);
     };
@@ -123,39 +120,114 @@ window.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("mouseup", cancel);
   });
 
-  el<HTMLButtonElement>("copy").onclick = () =>
-    run(() => invoke("copy_capture", { id: current!.id }), t("overlay.toast_copied"));
+  query<HTMLButtonElement>(".copy").onclick = () =>
+    run(panel, () => invoke("copy_capture", { id: entry.id }), t("overlay.toast_copied"));
 
-  el<HTMLButtonElement>("save").onclick = () =>
-    run(async () => {
-      const dest = await savePngAs(current!.id);
+  query<HTMLButtonElement>(".save").onclick = () =>
+    run(panel, async () => {
+      const dest = await savePngAs(entry.id);
       if (dest) {
-        await invoke("save_capture_to", { id: current!.id, dest });
-        toast(t("overlay.toast_saved"));
+        await invoke("save_capture_to", { id: entry.id, dest });
+        toast(panel, t("overlay.toast_saved"));
       }
     });
 
-  el<HTMLButtonElement>("reveal").onclick = () =>
-    run(() => invoke("reveal_capture", { id: current!.id }));
+  query<HTMLButtonElement>(".reveal").onclick = () =>
+    run(panel, () => invoke("reveal_capture", { id: entry.id }));
 
-  el<HTMLButtonElement>("annotate").onclick = () =>
-    run(() => invoke("open_editor", { id: current!.id }));
+  query<HTMLButtonElement>(".annotate").onclick = () =>
+    run(panel, () => invoke("open_editor", { id: entry.id }));
 
-  void listen<CaptureEntry>("capture:new", (event) => {
-    showCapture(event.payload);
-  });
+  return panel;
+}
+
+function dropPanel(id: string) {
+  const panel = panels.get(id);
+  if (!panel) return;
+  window.clearTimeout(panel.hideTimer);
+  panel.node.remove();
+  panels.delete(id);
+}
+
+function removePanel(id: string) {
+  stack = removeEntry(stack, id);
+  void syncStack();
+}
+
+// Chains syncStack() calls so only one reconciliation + set_overlay_panels
+// round trip is outstanding at a time. Without this, two quick calls (e.g.
+// two restores) can have their invoke() responses resolve out of order: a
+// stale, smaller `max` from an earlier call would then trim/drop a panel
+// that a later call already added to the live `stack`.
+let syncing: Promise<void> = Promise.resolve();
+
+function syncStack(): Promise<void> {
+  syncing = syncing.then(runSync).catch(() => {});
+  return syncing;
+}
+
+/**
+ * Reconcile the DOM with `stack` and hand the panel count to the backend
+ * (the single owner of the window's size). The returned count is clamped to
+ * what fits the monitor; drop the bottom-most panels beyond it.
+ */
+async function runSync() {
+  for (const id of [...panels.keys()]) {
+    if (!stack.some((e) => e.id === id)) dropPanel(id);
+  }
+  if (stack.length === 0) {
+    await appWindow.hide();
+    // Reset the backend's size for the next single-panel show; awaited so the
+    // reset can't land after a newer sync's count and clobber it.
+    await invoke("set_overlay_panels", { count: 1 }).catch(() => {});
+    return;
+  }
+  for (const entry of stack) {
+    if (!panels.has(entry.id)) {
+      const panel = buildPanel(entry);
+      panels.set(entry.id, panel);
+      armAutoHide(panel);
+    }
+  }
+  // append() moves existing nodes, so this both inserts and re-orders.
+  el<HTMLDivElement>("stack").append(...stack.map((e) => panels.get(e.id)!.node));
+  const max = await invoke<number>("set_overlay_panels", { count: stack.length }).catch(
+    () => stack.length,
+  );
+  if (stack.length > max) {
+    const dropped = stack.slice(max);
+    stack = trimStack(stack, max);
+    for (const entry of dropped) dropPanel(entry.id);
+  }
+}
+
+/** A new capture or a restore lands on top; a restore of an open panel moves it up. */
+function showCapture(entry: CaptureEntry) {
+  stack = pushTop(stack, entry);
+  void syncStack();
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  void initI18n();
+
+  void listen<CaptureEntry>("capture:new", (event) => showCapture(event.payload));
+  void listen<CaptureEntry>("capture:restore", (event) => showCapture(event.payload));
 
   void invoke<Settings>("get_settings").then((s) => {
     settings = s;
-    armAutoHide();
+    for (const panel of panels.values()) armAutoHide(panel);
   });
   void listen<Settings>("settings:changed", (event) => {
     settings = event.payload;
-    armAutoHide();
+    for (const panel of panels.values()) armAutoHide(panel);
   });
 
-  // If the window was shown before the page finished loading, catch up.
-  void invoke<CaptureEntry[]>("list_captures").then((captures) => {
-    if (captures.length > 0) showCapture(captures[0]);
-  });
+  // If the window was shown before the page finished loading (a capture can
+  // beat the listener registration), catch up. Only when actually visible —
+  // seeding a hidden window would stack a stale panel under the next capture.
+  void (async () => {
+    if (!(await appWindow.isVisible())) return;
+    const captures = await invoke<CaptureEntry[]>("list_captures");
+    if (captures.length > 0 && stack.length === 0) showCapture(captures[0]);
+  })();
 });

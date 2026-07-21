@@ -155,10 +155,8 @@
 
   "history.title": "Aufnahmeverlauf",
   "history.empty": "Noch keine Aufnahmen. Verwenden Sie das Menüleisten-Symbol oder die Aufnahme-Kurzbefehle.",
-  "history.annotate": "Kommentieren",
   "history.copy": "Kopieren",
-  "history.save": "Sichern",
-  "history.reveal": "Finder",
+  "history.restore": "Wiederherstellen",
 
   "scrollcap.hint": "Ziehen Sie, um den Bereich für die scrollende Aufnahme auszuwählen — Esc zum Abbrechen",
   "scrollcap.scroll_up": "Nach oben scrollen",

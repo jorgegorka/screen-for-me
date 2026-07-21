@@ -63,6 +63,7 @@ pub fn run() {
                 scroll_running: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
                 overlay_follow_epoch: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
                 overlay_drag_active: std::sync::atomic::AtomicBool::new(false),
+                overlay_panels: std::sync::atomic::AtomicUsize::new(1),
             });
 
             // Resolve the UI language before anything user-visible is built.
@@ -110,6 +111,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::list_captures,
             commands::copy_capture,
+            commands::restore_capture,
             commands::save_capture_to,
             commands::reveal_capture,
             commands::open_editor,
@@ -124,6 +126,7 @@ pub fn run() {
             commands::set_editor_prefs,
             commands::save_capture_to_desktop,
             commands::set_overlay_drag_active,
+            commands::set_overlay_panels,
             windows::open_history,
             windows::open_welcome,
             onboarding::open_system_shortcut_settings,

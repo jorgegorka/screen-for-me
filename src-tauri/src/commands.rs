@@ -32,6 +32,10 @@ pub struct AppState {
     /// the source panel is never re-placed mid-drag — the portable counterpart
     /// to `left_mouse_button_down`, which only reads real state on macOS.
     pub overlay_drag_active: std::sync::atomic::AtomicBool,
+    /// Number of panels the overlay webview is currently stacking; owned
+    /// here so `show_overlay` and the follow loop size the window without a
+    /// round-trip to the webview. Updated by `set_overlay_panels`.
+    pub overlay_panels: std::sync::atomic::AtomicUsize,
 }
 
 /// Entry point shared by tray items and global shortcuts.
@@ -154,13 +158,29 @@ fn overlay_origin(
     (x, mon_y + mon_h - height - MARGIN)
 }
 
-/// Size the overlay per settings and place it at the configured corner of
-/// `monitor`.
-fn place_overlay(overlay: &tauri::WebviewWindow, monitor: &tauri::Monitor, settings: &Settings) {
+/// How many stacked panels the window may hold on a monitor: the full stack
+/// must fit the monitor's logical height minus the top/bottom margins.
+/// Always at least 1 so a lone panel still shows on tiny screens.
+fn clamp_panels(requested: usize, panel_height: f64, monitor_height: f64) -> usize {
+    const MARGIN: f64 = 16.0;
+    let fit = ((monitor_height - 2.0 * MARGIN) / panel_height).floor() as usize;
+    requested.clamp(1, fit.max(1))
+}
+
+/// Size the overlay for `panels` stacked cards per settings and place it at
+/// the configured corner of `monitor`, bottom-anchored so the stack grows
+/// upward.
+fn place_overlay(
+    overlay: &tauri::WebviewWindow,
+    monitor: &tauri::Monitor,
+    settings: &Settings,
+    panels: usize,
+) {
     let width = OVERLAY_BASE_WIDTH * settings.overlay_size;
-    let height = OVERLAY_BASE_HEIGHT * settings.overlay_size;
-    let _ = overlay.set_size(tauri::LogicalSize::new(width, height));
+    let panel_height = OVERLAY_BASE_HEIGHT * settings.overlay_size;
     let (mon_pos, mon_size) = monitor_logical_bounds(monitor);
+    let height = panel_height * clamp_panels(panels, panel_height, mon_size.height) as f64;
+    let _ = overlay.set_size(tauri::LogicalSize::new(width, height));
     let (x, y) = overlay_origin(
         settings.position,
         (mon_pos.x, mon_pos.y),
@@ -191,11 +211,14 @@ fn show_overlay(app: &AppHandle) {
     };
     let monitor = active_monitor.or_else(|| overlay.primary_monitor().ok().flatten());
 
+    let panels = state
+        .overlay_panels
+        .load(std::sync::atomic::Ordering::SeqCst);
     match monitor {
-        Some(monitor) => place_overlay(&overlay, &monitor, &settings),
+        Some(monitor) => place_overlay(&overlay, &monitor, &settings, panels),
         None => {
             let width = OVERLAY_BASE_WIDTH * settings.overlay_size;
-            let height = OVERLAY_BASE_HEIGHT * settings.overlay_size;
+            let height = OVERLAY_BASE_HEIGHT * settings.overlay_size * panels.max(1) as f64;
             let _ = overlay.set_size(tauri::LogicalSize::new(width, height));
         }
     }
@@ -269,7 +292,12 @@ fn follow_active_monitor(app: &AppHandle) {
             }
             let key = (target.position().x, target.position().y);
             if pending == Some(key) {
-                place_overlay(&overlay, &target, &settings);
+                place_overlay(
+                    &overlay,
+                    &target,
+                    &settings,
+                    state.overlay_panels.load(Ordering::SeqCst),
+                );
                 pending = None;
             } else {
                 pending = Some(key);
@@ -287,6 +315,39 @@ pub fn set_overlay_drag_active(state: State<AppState>, active: bool) {
     state
         .overlay_drag_active
         .store(active, std::sync::atomic::Ordering::SeqCst);
+}
+
+/// The overlay webview reports its stack size here. The backend stays the
+/// single owner of the window's geometry: it clamps the count to what fits
+/// the monitor, resizes/re-places the bottom-anchored window, and returns
+/// the clamped count — the webview trims its stack to that value.
+#[tauri::command]
+pub fn set_overlay_panels(app: AppHandle, state: State<AppState>, count: usize) -> usize {
+    use std::sync::atomic::Ordering;
+    let settings = state.settings.get();
+    let Some(overlay) = app.get_webview_window("overlay") else {
+        let count = count.max(1);
+        state.overlay_panels.store(count, Ordering::SeqCst);
+        return count;
+    };
+    let monitor = overlay
+        .current_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| overlay.primary_monitor().ok().flatten());
+    let clamped = match &monitor {
+        Some(monitor) => {
+            let (_, mon_size) = monitor_logical_bounds(monitor);
+            let panel_height = OVERLAY_BASE_HEIGHT * settings.overlay_size;
+            clamp_panels(count, panel_height, mon_size.height)
+        }
+        None => count.max(1),
+    };
+    state.overlay_panels.store(clamped, Ordering::SeqCst);
+    if let Some(monitor) = monitor {
+        place_overlay(&overlay, &monitor, &settings, clamped);
+    }
+    clamped
 }
 
 #[tauri::command]
@@ -505,6 +566,17 @@ pub fn copy_capture(app: AppHandle, state: State<AppState>, id: String) -> Resul
     let entry = resolve(&state.history, &id)?;
     let bytes = std::fs::read(&entry.path).map_err(|e| e.to_string())?;
     copy_png_to_clipboard(&app, &bytes)
+}
+
+/// Re-open the overlay with a capture from history: emits `capture:restore`
+/// (the overlay pushes it on top of its stack, or moves it up if already
+/// shown) and shows the window. No clipboard side effects.
+#[tauri::command]
+pub fn restore_capture(app: AppHandle, state: State<AppState>, id: String) -> Result<(), String> {
+    let entry = resolve(&state.history, &id)?;
+    let _ = app.emit("capture:restore", &entry);
+    show_overlay(&app);
+    Ok(())
 }
 
 #[tauri::command]
@@ -744,5 +816,21 @@ mod tests {
             overlay_origin(OverlayPosition::Center, mon.0, mon.1, size),
             (2560.0 + (1920.0 - 300.0) / 2.0, 900.0)
         );
+    }
+
+    #[test]
+    fn clamp_panels_fits_monitor_height() {
+        // 1080-high monitor, 264-high panels: (1080 - 32) / 264 = 3.96 → 3.
+        assert_eq!(clamp_panels(1, 264.0, 1080.0), 1);
+        assert_eq!(clamp_panels(3, 264.0, 1080.0), 3);
+        assert_eq!(clamp_panels(9, 264.0, 1080.0), 3);
+    }
+
+    #[test]
+    fn clamp_panels_never_returns_zero() {
+        // A stack request of 0 (or a monitor too short for even one panel)
+        // still sizes the window for one panel.
+        assert_eq!(clamp_panels(0, 264.0, 1080.0), 1);
+        assert_eq!(clamp_panels(5, 264.0, 100.0), 1);
     }
 }
