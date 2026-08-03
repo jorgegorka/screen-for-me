@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-08-03
+
+### Changed
+
+- The Capture history window now closes itself after Copy or Restore. On a
+  failed action (e.g. the capture file no longer exists) it stays open.
+
+### Fixed
+
+- The downloaded .dmg is now notarized and stapled, so Gatekeeper opens it
+  without a warning even when offline. (Previous releases only notarized the
+  .app inside it.)
+
 ## [1.3.0] - 2026-07-21
 
 ### Added
@@ -118,7 +131,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Launch-on-start setting backed by OS login-item state.
 - Capture history with pruning.
 
-[Unreleased]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.4...HEAD
+[Unreleased]: https://github.com/jorgegorka/screen-for-me/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/jorgegorka/screen-for-me/compare/v1.3.0...v1.3.1
+[1.3.0]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.4...v1.3.0
 [1.2.4]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.1...v1.2.2
