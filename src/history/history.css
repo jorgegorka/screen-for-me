@@ -42,6 +42,9 @@ main {
 
 .thumb {
   aspect-ratio: 16 / 10;
+  /* Flex item min-height:auto would let a portrait image's intrinsic height
+     override the aspect-ratio box, stretching the whole card. */
+  min-height: 0;
   background: repeating-conic-gradient(#e8e8ea 0% 25%, #f4f4f6 0% 50%) 50% / 20px 20px;
   display: flex;
   align-items: center;
