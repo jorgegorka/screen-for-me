@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Build, sign, notarize and publish a release to GitHub Releases.
 //
-//   npm run release              full pipeline
-//   npm run release -- --dry-run validate env + versions, print the plan, exit
+//   npm run release                 full pipeline
+//   npm run release -- --dry-run    validate env + versions, print the plan, exit
+//   npm run release -- --no-publish build/sign/notarize + latest.json, skip the
+//                                   GitHub upload (publish manually with gh)
 //
 // Secrets come from the shell environment; see REQUIRED below.
 import { execSync } from "node:child_process";
@@ -14,6 +16,7 @@ const ROOT = new URL("..", import.meta.url).pathname;
 const BUNDLE = join(ROOT, "src-tauri/target/release/bundle");
 const REPO = "jorgegorka/screen-for-me";
 const dryRun = process.argv.includes("--dry-run");
+const noPublish = process.argv.includes("--no-publish");
 
 function fail(msg) {
   console.error(`release: ${msg}`);
@@ -125,6 +128,15 @@ const manifest = buildLatestJson({
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
 // --- publish -------------------------------------------------------------
+if (noPublish) {
+  console.log(`\nbuilt ${tag} without publishing. Upload with:`);
+  console.log(
+    `  gh release create ${tag} -R ${REPO} --title "${version}" --generate-notes \\\n` +
+      `    "${dmg}" "${tarball}" "${manifestPath}"`,
+  );
+  process.exit(0);
+}
+
 // Create as a draft first and only flip it public after every asset has
 // uploaded successfully — drafts are invisible to the releases/latest/download
 // endpoint, so a failure mid-upload leaves an unpublished draft instead of a
