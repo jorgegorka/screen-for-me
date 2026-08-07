@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.3] - 2026-08-07
+
+### Fixed
+
+- "Install & Restart" now actually relaunches the app after an update. When
+  the app had been started by its launch-at-login agent, macOS tore down the
+  freshly spawned replacement process together with the exiting old one, so
+  the update installed but the app never came back. The updater now hands the
+  relaunch to LaunchServices from a detached helper that waits for the old
+  process to exit. (Updating *to* this version still shows the old behaviour
+  once — if the app doesn't reappear after this update, just open it again.)
+
 ## [1.3.2] - 2026-08-06
 
 ### Fixed
@@ -140,7 +152,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Launch-on-start setting backed by OS login-item state.
 - Capture history with pruning.
 
-[Unreleased]: https://github.com/jorgegorka/screen-for-me/compare/v1.3.2...HEAD
+[Unreleased]: https://github.com/jorgegorka/screen-for-me/compare/v1.3.3...HEAD
+[1.3.3]: https://github.com/jorgegorka/screen-for-me/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/jorgegorka/screen-for-me/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/jorgegorka/screen-for-me/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/jorgegorka/screen-for-me/compare/v1.2.4...v1.3.0
