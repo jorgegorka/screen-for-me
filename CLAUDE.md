@@ -77,7 +77,13 @@ key; the pubkey in tauri.conf.json must
 match it or every update check fails signature verification. In-app:
 `windows.rs::check_for_updates(app, silent)` — the tray item is the loud path,
 and lib.rs auto-checks silently 10 s after launch then daily (release builds
-only). Bumping a version means updating package.json, tauri.conf.json **and**
+only). After install, never call `AppHandle::restart()` on macOS: it spawns
+the new binary in this process's group, and when the app was autostarted via
+its LaunchAgent, launchd kills that group on exit — Gatekeeper's first-exec
+scan of the swapped bundle gets interrupted and the relaunch dies
+("ASP: Security policy would not allow process"). Use
+`windows.rs::relaunch_and_exit` (own-process-group `sh` waits for this pid to
+die, then `open`s the bundle via LaunchServices). Bumping a version means updating package.json, tauri.conf.json **and**
 src-tauri/Cargo.toml together (`npm run release` refuses on mismatch).
 
 ## Design Context

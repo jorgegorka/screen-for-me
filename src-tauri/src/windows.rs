@@ -241,7 +241,7 @@ fn prompt_and_install(app: AppHandle, update: tauri_plugin_updater::Update) {
             }
             tauri::async_runtime::spawn(async move {
                 match update.download_and_install(|_, _| {}, || {}).await {
-                    Ok(()) => app.restart(),
+                    Ok(()) => relaunch_and_exit(&app),
                     Err(err) => {
                         app.dialog()
                             .message(crate::i18n::t_with(
@@ -255,4 +255,105 @@ fn prompt_and_install(app: AppHandle, update: tauri_plugin_updater::Update) {
                 }
             });
         });
+}
+
+/// Relaunch the app after an update, then exit the current process.
+///
+/// `AppHandle::restart` spawns the new binary as a direct child, which lands
+/// in this process's process group. When the app was started by its autostart
+/// LaunchAgent, launchd tears that whole process group down as soon as the
+/// old process exits — the SIGTERM arrives while the kernel is still parked
+/// in Gatekeeper's first-exec scan of the just-swapped bundle, macOS denies
+/// the exec ("ASP: Security policy would not allow process") and the app
+/// never comes back. Instead, spawn a shell in its *own* process group that
+/// waits for this process to die and relaunches the bundle through
+/// LaunchServices (`open`), which is immune to the group teardown and lets
+/// Gatekeeper assess the new bundle normally.
+#[cfg(target_os = "macos")]
+fn relaunch_and_exit(app: &AppHandle) {
+    use std::os::unix::process::CommandExt;
+
+    let bundle = std::env::current_exe().ok().and_then(|e| bundle_root(&e));
+    let Some(bundle) = bundle else {
+        // Bare binary (dev build): no bundle to `open`, no LaunchAgent either.
+        app.restart();
+    };
+
+    // Bundle path rides in as $0 so it needs no shell quoting. Bounded wait
+    // (~30 s): if the old process somehow never dies, skip the relaunch
+    // rather than start a second instance next to it.
+    let script = format!(
+        "n=0; while /bin/kill -0 {pid} 2>/dev/null && [ $n -lt 150 ]; do /bin/sleep 0.2; n=$((n+1)); done; \
+         /bin/kill -0 {pid} 2>/dev/null || exec /usr/bin/open \"$0\"",
+        pid = std::process::id()
+    );
+    let spawned = std::process::Command::new("/bin/sh")
+        .arg("-c")
+        .arg(script)
+        .arg(bundle)
+        .process_group(0)
+        .spawn();
+    match spawned {
+        Ok(_) => app.exit(0),
+        Err(_) => app.restart(),
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn relaunch_and_exit(app: &AppHandle) {
+    app.restart();
+}
+
+/// `…/Foo.app/Contents/MacOS/binary` → `…/Foo.app`, or `None` when the
+/// executable doesn't live in an app bundle (dev builds).
+#[cfg(any(target_os = "macos", test))]
+fn bundle_root(exe: &std::path::Path) -> Option<std::path::PathBuf> {
+    let macos_dir = exe.parent()?;
+    if macos_dir.file_name()? != "MacOS" {
+        return None;
+    }
+    let contents = macos_dir.parent()?;
+    if contents.file_name()? != "Contents" {
+        return None;
+    }
+    let root = contents.parent()?;
+    if root.extension()? != "app" {
+        return None;
+    }
+    Some(root.to_path_buf())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::bundle_root;
+    use std::path::{Path, PathBuf};
+
+    #[test]
+    fn bundle_root_resolves_app_bundle() {
+        assert_eq!(
+            bundle_root(Path::new(
+                "/Applications/Screen for me.app/Contents/MacOS/screenforme"
+            )),
+            Some(PathBuf::from("/Applications/Screen for me.app"))
+        );
+    }
+
+    #[test]
+    fn bundle_root_rejects_bare_binary() {
+        assert_eq!(
+            bundle_root(Path::new(
+                "/Users/x/repo/src-tauri/target/debug/screenforme"
+            )),
+            None
+        );
+    }
+
+    #[test]
+    fn bundle_root_rejects_wrong_layout() {
+        assert_eq!(bundle_root(Path::new("/opt/MacOS/screenforme")), None);
+        assert_eq!(
+            bundle_root(Path::new("/Applications/Foo/Contents/MacOS/bin")),
+            None
+        );
+    }
 }
