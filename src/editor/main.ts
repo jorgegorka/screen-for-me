@@ -444,6 +444,19 @@ function onPointerUp() {
   commit();
 }
 
+/**
+ * Abandon the shape being drawn by the current pointer drag, if any.
+ * The pointer may still be down, but with no draft left the remaining
+ * move/up events are no-ops, so nothing is added or committed.
+ */
+function cancelDraft(): boolean {
+  if (!draft) return false;
+  draft.destroy();
+  draft = null;
+  annLayer.batchDraw();
+  return true;
+}
+
 function isDegenerate(node: Konva.Shape): boolean {
   const box = node.getClientRect({ relativeTo: annLayer as unknown as Konva.Container });
   return box.width < 3 && box.height < 3;
@@ -815,6 +828,9 @@ function bindKeyboard() {
       return;
     }
     if (event.key === "Escape") {
+      // A shape being drawn right now is discarded first; the selection and a
+      // pending crop are left alone so one Escape undoes one thing.
+      if (cancelDraft()) return;
       cancelCrop();
       transformer.nodes([]);
       uiLayer.batchDraw();
