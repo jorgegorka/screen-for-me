@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.4] - 2026-08-17
+
+### Added
+
+- Pressing Escape in the editor while drawing a shape now discards that shape.
+  Escape still does one thing at a time: an in-progress shape is discarded
+  first; a pending crop or the current selection is only cleared by the next
+  press.
+
 ## [1.3.3] - 2026-08-07
 
 ### Fixed
