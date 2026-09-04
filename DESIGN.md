@@ -132,7 +132,7 @@ A macOS-native gray ramp with a single violet voice drawn from the brand mark; c
 ### Named Rules
 **The One Voice Rule.** Signal Violet is the only decorative-adjacent color and it appears exclusively on primary actions, active tools, and selection state — never on labels, borders-at-rest, or backgrounds.
 
-**The Spectrum Rule.** The full brand gradient (Signal Blue → Neon Violet → Magenta Crossing → Signal Red) appears at exactly three moments, always as a thin neon line on dark glass, never as a fill: the overlay stack badge border, the countdown disc ring, and the scrolling-capture pill border while recording. Adding a fourth requires removing one.
+**The Spectrum Rule.** The full brand gradient (Signal Blue → Neon Violet → Magenta Crossing → Signal Red) appears at exactly three moments, always as a thin neon line on dark glass, never as a fill: the countdown disc ring, the scrolling-capture pill border while recording, and the screen-recording pill border while recording. Adding a fourth requires removing one. (The recording pill also carries a solid Signal Red dot — a semantic status colour, not a decorative one.)
 
 **The Glass Rule.** Transient surfaces (things that float over the user's screen) are translucent dark glass. Windowed surfaces are opaque native gray. Never mix the two materials on one surface.
 

@@ -6,11 +6,14 @@
   "window.scrollcap": "Scrolling Capture",
   "window.overlay": "Capture",
   "window.welcome": "Screen for me — Welcome",
+  "window.recorder": "Record Screen",
 
   "tray.capture_area": "Capture Area",
   "tray.capture_window": "Capture Window",
   "tray.capture_fullscreen": "Capture Fullscreen",
   "tray.capture_scrolling": "Scrolling Capture",
+  "tray.record_screen": "Record Screen",
+  "tray.stop_recording": "Stop Recording",
   "tray.self_timer": "Self-Timer",
   "tray.timer_3": "3 seconds",
   "tray.timer_5": "5 seconds",
@@ -38,6 +41,8 @@
 
   "perm.accessibility_title": "Accessibility Permission Needed",
   "perm.accessibility_body": "Scrolling Capture needs Accessibility access to scroll the page for you.\n\nEnable \"Screen for me\" in System Settings → Privacy & Security → Accessibility, then try again.",
+  "perm.screen_recording_title": "Screen Recording Permission Needed",
+  "perm.screen_recording_body": "Screen recording needs Screen Recording access.\n\nEnable \"Screen for me\" in System Settings → Privacy & Security → Screen & System Audio Recording, then try again.",
 
   "settings.title": "Settings",
   "settings.general": "General:",
@@ -74,6 +79,7 @@
   "settings.shortcut_area": "Capture area:",
   "settings.shortcut_window": "Capture window:",
   "settings.shortcut_fullscreen": "Capture fullscreen:",
+  "settings.shortcut_record": "Record screen:",
   "settings.shortcut_press": "Press shortcut…",
   "settings.shortcut_reset": "Reset to default",
   "settings.shortcut_error_invalid": "That key can't be used in a shortcut.",
@@ -101,6 +107,7 @@
 
   "overlay.dismiss": "Dismiss",
   "overlay.latest_capture": "Latest capture",
+  "overlay.latest_recording": "Latest recording",
   "overlay.copy": "Copy",
   "overlay.copy_tooltip": "Copy to clipboard",
   "overlay.save": "Save",
@@ -108,6 +115,8 @@
   "overlay.annotate": "Annotate",
   "overlay.reveal": "Finder",
   "overlay.reveal_tooltip": "Show in Finder",
+  "overlay.open": "Open",
+  "overlay.open_tooltip": "Open in the default player",
   "overlay.toast_copied": "Copied",
   "overlay.toast_saved": "Saved",
 
@@ -157,6 +166,7 @@
   "history.empty": "No captures yet. Use the tray icon or capture shortcuts.",
   "history.copy": "Copy",
   "history.restore": "Restore",
+  "history.open": "Open",
 
   "scrollcap.hint": "Drag to select the area to scroll-capture — Esc to cancel",
   "scrollcap.scroll_up": "Scroll up",
@@ -169,8 +179,18 @@
   "scrollcap.stop": "Stop",
   "scrollcap.frames.one": "{n} frame",
   "scrollcap.frames.other": "{n} frames",
+  "recorder.title": "Record Screen",
+  "recorder.hint": "Records the display under the cursor — Esc to cancel",
+  "recorder.microphone": "Microphone",
+  "recorder.record": "Record",
+  "recorder.cancel": "Cancel",
+  "recorder.starting": "Starting…",
+  "recorder.stop": "Stop",
+  "recorder.unsupported_title": "Screen Recording Unavailable",
+  "recorder.unsupported_body": "Screen recording needs macOS 15 or later.",
 
   "timer.hint": "Click to cancel",
 
-  "dialogs.png_filter": "PNG image"
+  "dialogs.png_filter": "PNG image",
+  "dialogs.mp4_filter": "MP4 video"
 }

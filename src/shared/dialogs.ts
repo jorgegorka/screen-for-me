@@ -1,11 +1,16 @@
 import { save } from "@tauri-apps/plugin-dialog";
 
 import { t } from "./i18n";
+import type { CaptureKind } from "./ipc";
 
-/** Open a "save as PNG" dialog; resolves to the chosen path or null on cancel. */
+export function saveCaptureAs(defaultPath: string, kind: CaptureKind): Promise<string | null> {
+  const filter =
+    kind === "video"
+      ? { name: t("dialogs.mp4_filter"), extensions: ["mp4"] }
+      : { name: t("dialogs.png_filter"), extensions: ["png"] };
+  return save({ defaultPath, filters: [filter] });
+}
+
 export function savePngAs(defaultPath: string): Promise<string | null> {
-  return save({
-    defaultPath,
-    filters: [{ name: t("dialogs.png_filter"), extensions: ["png"] }],
-  });
+  return saveCaptureAs(defaultPath, "image");
 }

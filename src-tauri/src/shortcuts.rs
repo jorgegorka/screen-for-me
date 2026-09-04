@@ -2,7 +2,7 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 use crate::capture::CaptureMode;
-use crate::commands::{trigger_capture, AppState};
+use crate::commands::{toggle_recording, trigger_capture, AppState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -10,12 +10,14 @@ pub enum ShortcutAction {
     Area,
     Window,
     Fullscreen,
+    Record,
 }
 
-pub const ACTIONS: [ShortcutAction; 3] = [
+pub const ACTIONS: [ShortcutAction; 4] = [
     ShortcutAction::Area,
     ShortcutAction::Window,
     ShortcutAction::Fullscreen,
+    ShortcutAction::Record,
 ];
 
 impl ShortcutAction {
@@ -24,14 +26,16 @@ impl ShortcutAction {
             ShortcutAction::Area => "CmdOrCtrl+Shift+7",
             ShortcutAction::Window => "CmdOrCtrl+Shift+8",
             ShortcutAction::Fullscreen => "CmdOrCtrl+Shift+9",
+            ShortcutAction::Record => "CmdOrCtrl+Shift+0",
         }
     }
 
-    pub fn mode(self) -> CaptureMode {
+    pub fn mode(self) -> Option<CaptureMode> {
         match self {
-            ShortcutAction::Area => CaptureMode::Area,
-            ShortcutAction::Window => CaptureMode::Window,
-            ShortcutAction::Fullscreen => CaptureMode::Fullscreen,
+            ShortcutAction::Area => Some(CaptureMode::Area),
+            ShortcutAction::Window => Some(CaptureMode::Window),
+            ShortcutAction::Fullscreen => Some(CaptureMode::Fullscreen),
+            ShortcutAction::Record => None,
         }
     }
 }
@@ -54,7 +58,10 @@ fn register(app: &AppHandle, action: ShortcutAction, accel: &str) -> Result<(), 
     app.global_shortcut()
         .on_shortcut(shortcut, move |app, _shortcut, event| {
             if event.state() == ShortcutState::Pressed {
-                trigger_capture(app, action.mode());
+                match action.mode() {
+                    Some(mode) => trigger_capture(app, mode),
+                    None => toggle_recording(app),
+                }
             }
         })
         .map_err(|e| e.to_string())

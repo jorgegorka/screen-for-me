@@ -48,6 +48,7 @@ function readForm(): Settings {
     shortcut_area: current?.shortcut_area ?? DEFAULT_ACCELS.area,
     shortcut_window: current?.shortcut_window ?? DEFAULT_ACCELS.window,
     shortcut_fullscreen: current?.shortcut_fullscreen ?? DEFAULT_ACCELS.fullscreen,
+    shortcut_record: current?.shortcut_record ?? DEFAULT_ACCELS.record,
   };
 }
 
@@ -189,6 +190,7 @@ function initSystemShortcutsHelp() {
 }
 
 function initShortcuts() {
+  el<HTMLElement>("shortcut-record-row").hidden = PLATFORM !== "mac";
   document.addEventListener("mousedown", (event) => {
     if (!recording) return;
     const field = el<HTMLButtonElement>(`shortcut-${recording}`);

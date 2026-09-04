@@ -15,11 +15,10 @@ function formatTime(ms: number): string {
 
 function actionButton(key: string, action: () => Promise<unknown>): HTMLButtonElement {
   const button = document.createElement("button");
-  // data-i18n so a live language switch re-labels these via applyTranslations.
+
   button.setAttribute("data-i18n", key);
   button.textContent = t(key);
-  // Hide (history is HIDE_ON_CLOSE) only after the action succeeds, so a
-  // failed copy/restore leaves the window open for another attempt.
+
   button.onclick = () => void action().then(() => getCurrentWindow().hide());
   return button;
 }
@@ -28,12 +27,21 @@ function card(entry: CaptureEntry): HTMLElement {
   const node = document.createElement("div");
   node.className = "card";
 
+  const video = entry.kind === "video";
   const thumb = document.createElement("div");
   thumb.className = "thumb";
-  const img = document.createElement("img");
-  img.src = `${convertFileSrc(entry.path)}?t=${entry.created_ms}`;
-  img.alt = entry.id;
-  thumb.appendChild(img);
+  const preview = video ? entry.poster : entry.path;
+  if (preview) {
+    const img = document.createElement("img");
+    img.src = `${convertFileSrc(preview)}?t=${entry.created_ms}`;
+    img.alt = entry.id;
+    thumb.appendChild(img);
+  }
+  if (video) {
+    const badge = document.createElement("span");
+    badge.className = "play-badge";
+    thumb.appendChild(badge);
+  }
 
   const meta = document.createElement("div");
   meta.className = "meta";
@@ -42,7 +50,9 @@ function card(entry: CaptureEntry): HTMLElement {
   const actions = document.createElement("div");
   actions.className = "actions";
   actions.append(
-    actionButton("history.copy", () => invoke("copy_capture", { id: entry.id })),
+    video
+      ? actionButton("history.open", () => invoke("open_capture", { id: entry.id }))
+      : actionButton("history.copy", () => invoke("copy_capture", { id: entry.id })),
     actionButton("history.restore", () => invoke("restore_capture", { id: entry.id })),
   );
 

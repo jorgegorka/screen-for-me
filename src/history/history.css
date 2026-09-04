@@ -41,6 +41,7 @@ main {
 }
 
 .thumb {
+  position: relative;
   aspect-ratio: 16 / 10;
   /* Flex item min-height:auto would let a portrait image's intrinsic height
      override the aspect-ratio box, stretching the whole card. */
@@ -55,6 +56,26 @@ main {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+.play-badge {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.play-badge::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 10px;
+  border-style: solid;
+  border-width: 8px 0 8px 12px;
+  border-color: transparent transparent transparent #fff;
 }
 
 .meta {

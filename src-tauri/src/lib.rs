@@ -12,7 +12,7 @@ use tauri::Manager;
 
 use commands::AppState;
 use history::History;
-use settings::{EditorPrefsStore, SettingsStore};
+use settings::{EditorPrefsStore, RecorderPrefsStore, SettingsStore};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -51,6 +51,7 @@ pub fn run() {
                 History::new(data_dir.join("captures"))?,
                 SettingsStore::load(data_dir.join("settings.json")),
                 EditorPrefsStore::load(data_dir.join("editor_prefs.json")),
+                RecorderPrefsStore::load(data_dir.join("recorder_prefs.json")),
             ));
 
             let language = app.state::<AppState>().settings.get().language;
@@ -113,6 +114,11 @@ pub fn run() {
             commands::timed_capture_fire,
             commands::run_scrolling_capture,
             commands::stop_scrolling_capture,
+            commands::start_recording,
+            commands::stop_recording,
+            commands::recorder_prefs,
+            commands::is_recording,
+            commands::open_capture,
         ])
         .on_window_event(|window, event| {
             if windows::HIDE_ON_CLOSE.contains(&window.label()) {

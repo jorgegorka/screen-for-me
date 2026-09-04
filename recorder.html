@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="window.recorder">Record Screen</title>
+    <link rel="stylesheet" href="/src/recorder/recorder.css" />
+    <script type="module" src="/src/recorder/main.ts" defer></script>
+  </head>
+  <body>
+    <div id="panel" class="panel">
+      <div class="title" data-i18n="recorder.title">Record Screen</div>
+      <div id="hint" class="hint" data-i18n="recorder.hint">Records the display under the cursor — Esc to cancel</div>
+      <div class="controls">
+        <button id="mic" class="toggle" aria-pressed="false">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <rect x="5.5" y="1.5" width="5" height="8" rx="2.5" fill="currentColor" />
+            <path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5M5.5 14.5h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          <span data-i18n="recorder.microphone">Microphone</span>
+        </button>
+        <button id="cancel" data-i18n="recorder.cancel">Cancel</button>
+        <button id="record" class="primary" data-i18n="recorder.record">Record</button>
+      </div>
+    </div>
+    <div id="pill" class="pill">
+      <span class="dot" aria-hidden="true"></span>
+      <span id="elapsed">0:00</span>
+      <button id="stop" class="primary" data-i18n="recorder.stop">Stop</button>
+    </div>
+  </body>
+</html>

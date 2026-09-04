@@ -6,11 +6,14 @@
   "window.scrollcap": "Cattura con scorrimento",
   "window.overlay": "Cattura",
   "window.welcome": "Screen for me — Benvenuto",
+  "window.recorder": "Registra schermo",
 
   "tray.capture_area": "Cattura area",
   "tray.capture_window": "Cattura finestra",
   "tray.capture_fullscreen": "Cattura schermo intero",
   "tray.capture_scrolling": "Cattura con scorrimento",
+  "tray.record_screen": "Registra schermo",
+  "tray.stop_recording": "Interrompi registrazione",
   "tray.self_timer": "Autoscatto",
   "tray.timer_3": "3 secondi",
   "tray.timer_5": "5 secondi",
@@ -38,6 +41,8 @@
 
   "perm.accessibility_title": "Richiesta autorizzazione Accessibilità",
   "perm.accessibility_body": "La cattura con scorrimento richiede l'accesso ad Accessibilità per scorrere la pagina al posto tuo.\n\nAttiva \"Screen for me\" in Impostazioni di Sistema → Privacy e sicurezza → Accessibilità, poi riprova.",
+  "perm.screen_recording_title": "Richiesta autorizzazione Registrazione schermo",
+  "perm.screen_recording_body": "La registrazione dello schermo richiede l'accesso a Registrazione schermo.\n\nAttiva \"Screen for me\" in Impostazioni di Sistema → Privacy e sicurezza → Registrazione schermo e audio di sistema, poi riprova.",
 
   "settings.title": "Impostazioni",
   "settings.general": "Generali:",
@@ -74,6 +79,7 @@
   "settings.shortcut_area": "Cattura area:",
   "settings.shortcut_window": "Cattura finestra:",
   "settings.shortcut_fullscreen": "Cattura schermo intero:",
+  "settings.shortcut_record": "Registra schermo:",
   "settings.shortcut_press": "Premi l'abbreviazione…",
   "settings.shortcut_reset": "Ripristina il valore predefinito",
   "settings.shortcut_error_invalid": "Questo tasto non può essere usato in un'abbreviazione.",
@@ -101,6 +107,7 @@
 
   "overlay.dismiss": "Ignora",
   "overlay.latest_capture": "Ultima cattura",
+  "overlay.latest_recording": "Ultima registrazione",
   "overlay.copy": "Copia",
   "overlay.copy_tooltip": "Copia negli appunti",
   "overlay.save": "Salva",
@@ -108,6 +115,8 @@
   "overlay.annotate": "Annota",
   "overlay.reveal": "Finder",
   "overlay.reveal_tooltip": "Mostra nel Finder",
+  "overlay.open": "Apri",
+  "overlay.open_tooltip": "Apri nel lettore predefinito",
   "overlay.toast_copied": "Copiato",
   "overlay.toast_saved": "Salvato",
 
@@ -157,6 +166,7 @@
   "history.empty": "Ancora nessuna cattura. Usa l'icona nella barra dei menu o le scorciatoie di cattura.",
   "history.copy": "Copia",
   "history.restore": "Ripristina",
+  "history.open": "Apri",
 
   "scrollcap.hint": "Trascina per selezionare l'area da catturare con scorrimento — Esc per annullare",
   "scrollcap.scroll_up": "Scorri verso l'alto",
@@ -169,8 +179,18 @@
   "scrollcap.stop": "Interrompi",
   "scrollcap.frames.one": "{n} fotogramma",
   "scrollcap.frames.other": "{n} fotogrammi",
+  "recorder.title": "Registra schermo",
+  "recorder.hint": "Registra lo schermo sotto il cursore — Esc per annullare",
+  "recorder.microphone": "Microfono",
+  "recorder.record": "Registra",
+  "recorder.cancel": "Annulla",
+  "recorder.starting": "Avvio…",
+  "recorder.stop": "Interrompi",
+  "recorder.unsupported_title": "Registrazione dello schermo non disponibile",
+  "recorder.unsupported_body": "La registrazione dello schermo richiede macOS 15 o successivo.",
 
   "timer.hint": "Fai clic per annullare",
 
-  "dialogs.png_filter": "Immagine PNG"
+  "dialogs.png_filter": "Immagine PNG",
+  "dialogs.mp4_filter": "Video MP4"
 }

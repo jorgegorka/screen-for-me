@@ -44,6 +44,21 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let item = |id: &str, key: &str| MenuItem::with_id(app, id, t(key), true, None::<&str>);
     #[cfg(target_os = "macos")]
     let scrolling = item("capture_scrolling", "tray.capture_scrolling")?;
+    #[cfg(target_os = "macos")]
+    let record = {
+        let running = app
+            .state::<AppState>()
+            .record_running
+            .load(std::sync::atomic::Ordering::SeqCst);
+        let key = if running { "tray.stop_recording" } else { "tray.record_screen" };
+        MenuItem::with_id(
+            app,
+            "record_screen",
+            t(key),
+            true,
+            Some(settings.shortcut(ShortcutAction::Record)),
+        )?
+    };
     let timer_3 = item("timer_3", "tray.timer_3")?;
     let timer_5 = item("timer_5", "tray.timer_5")?;
     let timer_10 = item("timer_10", "tray.timer_10")?;
@@ -63,6 +78,8 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         vec![&area, &window, &fullscreen, &sep1];
     #[cfg(target_os = "macos")]
     items.push(&scrolling);
+    #[cfg(target_os = "macos")]
+    items.push(&record);
     items.push(&self_timer);
     items.extend_from_slice(&[
         &sep2, &history, &sep3, &welcome, &updates, &sep4, &settings_item, &quit,
@@ -89,6 +106,7 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
             "capture_area" => trigger_capture(app, CaptureMode::Area),
             "capture_window" => trigger_capture(app, CaptureMode::Window),
             "capture_fullscreen" => trigger_capture(app, CaptureMode::Fullscreen),
+            "record_screen" => crate::commands::toggle_recording(app),
             "capture_scrolling" => {
                 if let Err(err) = windows::open_scrollcap(app) {
                     eprintln!("failed to open scrolling capture: {err}");
@@ -111,7 +129,7 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
             }
             "updates" => windows::check_for_updates(app, false),
             "settings" => windows::open_settings(app),
-            "quit" => app.exit(0),
+            "quit" => crate::commands::quit(app),
             _ => {}
         })
         .build(app)?;

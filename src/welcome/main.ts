@@ -9,6 +9,7 @@ import {
   accelOf,
   formatAccelerator,
   isMacosScreenshotAccelFor,
+  MACOS_SCREENSHOT_ACTIONS,
   ACTIONS,
 } from "../shared/accelerator";
 
@@ -51,7 +52,9 @@ async function refreshMacosStatus() {
   const settings = current;
   const assigned =
     settings !== null &&
-    ACTIONS.every((action) => isMacosScreenshotAccelFor(accelOf(settings, action), action));
+    MACOS_SCREENSHOT_ACTIONS.every((action) =>
+      isMacosScreenshotAccelFor(accelOf(settings, action), action),
+    );
   showStatus(assigned ? "success" : "hidden");
 }
 

@@ -6,11 +6,14 @@
   "window.scrollcap": "Capture avec défilement",
   "window.overlay": "Capture",
   "window.welcome": "Screen for me — Bienvenue",
+  "window.recorder": "Enregistrer l'écran",
 
   "tray.capture_area": "Capturer une zone",
   "tray.capture_window": "Capturer une fenêtre",
   "tray.capture_fullscreen": "Capturer l'écran entier",
   "tray.capture_scrolling": "Capture avec défilement",
+  "tray.record_screen": "Enregistrer l'écran",
+  "tray.stop_recording": "Arrêter l'enregistrement",
   "tray.self_timer": "Retardateur",
   "tray.timer_3": "3 secondes",
   "tray.timer_5": "5 secondes",
@@ -38,6 +41,8 @@
 
   "perm.accessibility_title": "Autorisation d'accessibilité requise",
   "perm.accessibility_body": "La capture avec défilement a besoin de l'accès Accessibilité pour faire défiler la page à votre place.\n\nActivez « Screen for me » dans Réglages Système → Confidentialité et sécurité → Accessibilité, puis réessayez.",
+  "perm.screen_recording_title": "Autorisation d'enregistrement de l'écran requise",
+  "perm.screen_recording_body": "L'enregistrement d'écran a besoin de l'accès Enregistrement de l'écran.\n\nActivez « Screen for me » dans Réglages Système → Confidentialité et sécurité → Enregistrement de l'écran et de l'audio du système, puis réessayez.",
 
   "settings.title": "Réglages",
   "settings.general": "Général :",
@@ -74,6 +79,7 @@
   "settings.shortcut_area": "Capturer une zone :",
   "settings.shortcut_window": "Capturer une fenêtre :",
   "settings.shortcut_fullscreen": "Capturer l'écran entier :",
+  "settings.shortcut_record": "Enregistrer l'écran :",
   "settings.shortcut_press": "Appuyez sur le raccourci…",
   "settings.shortcut_reset": "Rétablir la valeur par défaut",
   "settings.shortcut_error_invalid": "Cette touche ne peut pas être utilisée dans un raccourci.",
@@ -101,6 +107,7 @@
 
   "overlay.dismiss": "Ignorer",
   "overlay.latest_capture": "Dernière capture",
+  "overlay.latest_recording": "Dernier enregistrement",
   "overlay.copy": "Copier",
   "overlay.copy_tooltip": "Copier dans le presse-papiers",
   "overlay.save": "Enregistrer",
@@ -108,6 +115,8 @@
   "overlay.annotate": "Annoter",
   "overlay.reveal": "Finder",
   "overlay.reveal_tooltip": "Afficher dans le Finder",
+  "overlay.open": "Ouvrir",
+  "overlay.open_tooltip": "Ouvrir dans le lecteur par défaut",
   "overlay.toast_copied": "Copié",
   "overlay.toast_saved": "Enregistré",
 
@@ -157,6 +166,7 @@
   "history.empty": "Aucune capture pour l'instant. Utilisez l'icône de la barre des menus ou les raccourcis de capture.",
   "history.copy": "Copier",
   "history.restore": "Restaurer",
+  "history.open": "Ouvrir",
 
   "scrollcap.hint": "Faites glisser pour sélectionner la zone à capturer avec défilement — Échap pour annuler",
   "scrollcap.scroll_up": "Faire défiler vers le haut",
@@ -169,8 +179,18 @@
   "scrollcap.stop": "Arrêter",
   "scrollcap.frames.one": "{n} image",
   "scrollcap.frames.other": "{n} images",
+  "recorder.title": "Enregistrer l'écran",
+  "recorder.hint": "Enregistre l'écran sous le curseur — Échap pour annuler",
+  "recorder.microphone": "Microphone",
+  "recorder.record": "Enregistrer",
+  "recorder.cancel": "Annuler",
+  "recorder.starting": "Démarrage…",
+  "recorder.stop": "Arrêter",
+  "recorder.unsupported_title": "Enregistrement d'écran indisponible",
+  "recorder.unsupported_body": "L'enregistrement d'écran nécessite macOS 15 ou une version ultérieure.",
 
   "timer.hint": "Cliquez pour annuler",
 
-  "dialogs.png_filter": "Image PNG"
+  "dialogs.png_filter": "Image PNG",
+  "dialogs.mp4_filter": "Vidéo MP4"
 }

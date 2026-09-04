@@ -16,7 +16,7 @@ Note: the app UI is the primary surface and this file's register reflects it, bu
 
 ## Product Purpose
 
-A fast, polished screenshot utility for macOS and Linux: area/window/fullscreen capture from a menu-bar icon or global shortcuts, a quick-access overlay after every capture (copy, save, drag-out), and a built-in annotation editor with native-resolution export. Success is public release traction — a polished 1.0 that people download, star, and recommend.
+A fast, polished screenshot utility for macOS and Linux: area/window/fullscreen capture and full-display screen recording with optional microphone narration, all from a menu-bar icon or global shortcuts, a quick-access overlay after every capture (copy, save, drag-out, open), and a built-in annotation editor with native-resolution export. Success is public release traction — a polished 1.0 that people download, star, and recommend.
 
 ## Positioning
 

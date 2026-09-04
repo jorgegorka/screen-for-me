@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Screen for me records your microphone only while you record the screen with the microphone option enabled.</string>
+  <key>NSScreenCaptureUsageDescription</key>
+  <string>Screen for me captures and records your screen when you ask it to.</string>
+</dict>
+</plist>

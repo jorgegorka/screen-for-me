@@ -7,6 +7,8 @@ const entry = (id: string): CaptureEntry => ({
   id,
   path: `/captures/${id}`,
   created_ms: 0,
+  kind: "image",
+  poster: null,
 });
 
 describe("pushTop", () => {

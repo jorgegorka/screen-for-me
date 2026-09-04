@@ -10,9 +10,9 @@ pub mod stitch;
 pub mod scroll_input;
 #[cfg(target_os = "macos")]
 pub mod scrolling;
+#[cfg(target_os = "macos")]
+pub mod recording;
 
-/// Scroll direction for scrolling capture. Lives here (not in the macOS-only
-/// `stitch` module) so the IPC command can deserialize it on every platform.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ScrollDirection {
@@ -32,9 +32,8 @@ pub enum CaptureMode {
 
 #[derive(Debug)]
 pub enum CaptureOutcome {
-    /// A capture was written to the given path.
     Captured(PathBuf),
-    /// The user dismissed the selection UI (Escape); not an error.
+
     Cancelled,
 }
 
@@ -61,7 +60,6 @@ pub enum CaptureError {
     EmptyCapture,
 }
 
-/// Capture the screen with the OS-native tool, writing a PNG to `dest`.
 pub fn capture(mode: CaptureMode, dest: &Path) -> Result<CaptureOutcome, CaptureError> {
     #[cfg(target_os = "macos")]
     return macos::capture(mode, dest);
@@ -74,10 +72,6 @@ pub fn capture(mode: CaptureMode, dest: &Path) -> Result<CaptureOutcome, Capture
     }
 }
 
-/// Run `/usr/sbin/screencapture` with `args` plus the destination path,
-/// shaping a non-zero exit into `CaptureError::Tool` (stderr when present).
-/// Output validation stays with the callers — interactive and silent modes
-/// disagree on what a missing file means.
 #[cfg(target_os = "macos")]
 pub(crate) fn run_screencapture(args: &[&str], dest: &Path) -> Result<(), CaptureError> {
     let output = std::process::Command::new("/usr/sbin/screencapture")
@@ -95,8 +89,6 @@ pub(crate) fn run_screencapture(args: &[&str], dest: &Path) -> Result<(), Captur
     Ok(())
 }
 
-/// A cancelled interactive selection leaves no file; a permission-starved
-/// capture can leave a tiny/blank one. Anything below this is not a screenshot.
 const MIN_PLAUSIBLE_PNG_BYTES: u64 = 1024;
 
 pub(crate) fn validate_output(dest: &Path) -> Result<CaptureOutcome, CaptureError> {

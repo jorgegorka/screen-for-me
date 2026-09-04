@@ -6,11 +6,14 @@
   "window.scrollcap": "Captura con desplazamiento",
   "window.overlay": "Captura",
   "window.welcome": "Screen for me — Bienvenida",
+  "window.recorder": "Grabar pantalla",
 
   "tray.capture_area": "Capturar área",
   "tray.capture_window": "Capturar ventana",
   "tray.capture_fullscreen": "Capturar pantalla completa",
   "tray.capture_scrolling": "Captura con desplazamiento",
+  "tray.record_screen": "Grabar pantalla",
+  "tray.stop_recording": "Detener grabación",
   "tray.self_timer": "Temporizador",
   "tray.timer_3": "3 segundos",
   "tray.timer_5": "5 segundos",
@@ -38,6 +41,8 @@
 
   "perm.accessibility_title": "Se necesita el permiso de Accesibilidad",
   "perm.accessibility_body": "La captura con desplazamiento necesita acceso de Accesibilidad para desplazar la página por ti.\n\nActiva \"Screen for me\" en Ajustes del Sistema → Privacidad y seguridad → Accesibilidad y vuelve a intentarlo.",
+  "perm.screen_recording_title": "Se necesita el permiso de Grabación de pantalla",
+  "perm.screen_recording_body": "La grabación de pantalla necesita acceso de Grabación de pantalla.\n\nActiva \"Screen for me\" en Ajustes del Sistema → Privacidad y seguridad → Grabación de pantalla y audio del sistema y vuelve a intentarlo.",
 
   "settings.title": "Ajustes",
   "settings.general": "General:",
@@ -74,6 +79,7 @@
   "settings.shortcut_area": "Capturar área:",
   "settings.shortcut_window": "Capturar ventana:",
   "settings.shortcut_fullscreen": "Capturar pantalla completa:",
+  "settings.shortcut_record": "Grabar pantalla:",
   "settings.shortcut_press": "Pulsa el atajo…",
   "settings.shortcut_reset": "Restablecer el valor predeterminado",
   "settings.shortcut_error_invalid": "Esa tecla no puede usarse en un atajo.",
@@ -101,6 +107,7 @@
 
   "overlay.dismiss": "Descartar",
   "overlay.latest_capture": "Última captura",
+  "overlay.latest_recording": "Última grabación",
   "overlay.copy": "Copiar",
   "overlay.copy_tooltip": "Copiar al portapapeles",
   "overlay.save": "Guardar",
@@ -108,6 +115,8 @@
   "overlay.annotate": "Anotar",
   "overlay.reveal": "Finder",
   "overlay.reveal_tooltip": "Mostrar en el Finder",
+  "overlay.open": "Abrir",
+  "overlay.open_tooltip": "Abrir en el reproductor predeterminado",
   "overlay.toast_copied": "Copiado",
   "overlay.toast_saved": "Guardado",
 
@@ -157,6 +166,7 @@
   "history.empty": "Todavía no hay capturas. Usa el icono de la barra de menús o los atajos de captura.",
   "history.copy": "Copiar",
   "history.restore": "Restaurar",
+  "history.open": "Abrir",
 
   "scrollcap.hint": "Arrastra para seleccionar la zona de la captura con desplazamiento — Esc para cancelar",
   "scrollcap.scroll_up": "Desplazar hacia arriba",
@@ -169,8 +179,18 @@
   "scrollcap.stop": "Detener",
   "scrollcap.frames.one": "{n} fotograma",
   "scrollcap.frames.other": "{n} fotogramas",
+  "recorder.title": "Grabar pantalla",
+  "recorder.hint": "Graba la pantalla donde está el cursor — Esc para cancelar",
+  "recorder.microphone": "Micrófono",
+  "recorder.record": "Grabar",
+  "recorder.cancel": "Cancelar",
+  "recorder.starting": "Iniciando…",
+  "recorder.stop": "Detener",
+  "recorder.unsupported_title": "Grabación de pantalla no disponible",
+  "recorder.unsupported_body": "La grabación de pantalla necesita macOS 15 o posterior.",
 
   "timer.hint": "Haz clic para cancelar",
 
-  "dialogs.png_filter": "Imagen PNG"
+  "dialogs.png_filter": "Imagen PNG",
+  "dialogs.mp4_filter": "Vídeo MP4"
 }

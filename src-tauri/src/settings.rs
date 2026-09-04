@@ -18,7 +18,6 @@ pub enum AutoCloseAction {
     SaveAndClose,
 }
 
-/// UI languages selectable in Settings; anything else is reset to "system".
 pub const LANGUAGES: &[&str] = &["system", "en-GB", "es", "fr", "de", "it"];
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -26,21 +25,21 @@ pub const LANGUAGES: &[&str] = &["system", "en-GB", "es", "fr", "de", "it"];
 pub struct Settings {
     pub position: OverlayPosition,
     pub move_to_active_screen: bool,
-    /// Overlay size multiplier over the base panel size.
+
     pub overlay_size: f64,
     pub auto_close_enabled: bool,
     pub auto_close_action: AutoCloseAction,
     pub auto_close_seconds: u32,
     pub close_after_drag: bool,
-    /// Put every new capture on the system clipboard, ready to Cmd+V.
+
     pub copy_to_clipboard: bool,
-    /// "system" (follow the OS locale) or one of the supported tags.
+
     pub language: String,
-    /// Global-shortcut accelerator strings, one per capture action; parseable
-    /// by both the global-shortcut plugin and the tray menu (shortcuts.rs).
+
     pub shortcut_area: String,
     pub shortcut_window: String,
     pub shortcut_fullscreen: String,
+    pub shortcut_record: String,
 }
 
 impl Default for Settings {
@@ -58,21 +57,19 @@ impl Default for Settings {
             shortcut_area: ShortcutAction::Area.default_accel().into(),
             shortcut_window: ShortcutAction::Window.default_accel().into(),
             shortcut_fullscreen: ShortcutAction::Fullscreen.default_accel().into(),
+            shortcut_record: ShortcutAction::Record.default_accel().into(),
         }
     }
 }
 
 impl Settings {
-    /// Reject out-of-range values coming over IPC or from a hand-edited file.
     pub fn sanitized(mut self) -> Self {
         self.overlay_size = self.overlay_size.clamp(0.75, 2.0);
         self.auto_close_seconds = self.auto_close_seconds.clamp(3, 600);
         if !LANGUAGES.contains(&self.language.as_str()) {
             self.language = "system".into();
         }
-        // Shortcuts: invalid entries reset to their defaults, and a combo
-        // colliding with an earlier action loses to it (area → window →
-        // fullscreen order keeps the outcome deterministic).
+
         let mut seen = Vec::new();
         for action in shortcuts::ACTIONS {
             let parsed = shortcuts::validate(self.shortcut(action)).ok();
@@ -93,6 +90,7 @@ impl Settings {
             ShortcutAction::Area => &self.shortcut_area,
             ShortcutAction::Window => &self.shortcut_window,
             ShortcutAction::Fullscreen => &self.shortcut_fullscreen,
+            ShortcutAction::Record => &self.shortcut_record,
         }
     }
 
@@ -101,11 +99,11 @@ impl Settings {
             ShortcutAction::Area => &mut self.shortcut_area,
             ShortcutAction::Window => &mut self.shortcut_window,
             ShortcutAction::Fullscreen => &mut self.shortcut_fullscreen,
+            ShortcutAction::Record => &mut self.shortcut_record,
         }
     }
 }
 
-/// Last-used annotation tool/color/stroke, restored when the editor opens.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct EditorPrefs {
@@ -124,9 +122,12 @@ impl Default for EditorPrefs {
     }
 }
 
-/// JSON-file-backed store: a missing or corrupt file yields `T::default()`,
-/// and `sanitize` normalizes values on load and set (identity when a type has
-/// no invariants to enforce).
+#[derive(Debug, Clone, Copy, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct RecorderPrefs {
+    pub microphone: bool,
+}
+
 pub struct JsonStore<T> {
     path: PathBuf,
     sanitize: fn(T) -> T,
@@ -164,6 +165,7 @@ where
 
 pub type SettingsStore = JsonStore<Settings>;
 pub type EditorPrefsStore = JsonStore<EditorPrefs>;
+pub type RecorderPrefsStore = JsonStore<RecorderPrefs>;
 
 impl SettingsStore {
     pub fn load(path: PathBuf) -> Self {
@@ -172,6 +174,12 @@ impl SettingsStore {
 }
 
 impl EditorPrefsStore {
+    pub fn load(path: PathBuf) -> Self {
+        Self::load_with(path, |prefs| prefs)
+    }
+}
+
+impl RecorderPrefsStore {
     pub fn load(path: PathBuf) -> Self {
         Self::load_with(path, |prefs| prefs)
     }
@@ -243,7 +251,7 @@ mod tests {
     fn sanitize_resets_invalid_shortcuts() {
         let s = Settings {
             shortcut_area: "garbage".into(),
-            shortcut_window: "Shift+8".into(), // no non-Shift modifier
+            shortcut_window: "Shift+8".into(),
             ..Default::default()
         }
         .sanitized();
@@ -265,8 +273,6 @@ mod tests {
 
     #[test]
     fn sanitize_preserves_macos_screenshot_shortcuts() {
-        // Cmd+Shift+3/4/5 are assignable (the user may have freed them in
-        // System Settings); ownership is checked at assign time, not here.
         let s = Settings {
             shortcut_area: "Cmd+Shift+3".into(),
             ..Default::default()
@@ -297,6 +303,30 @@ mod tests {
         assert!(s.move_to_active_screen, "missing fields take defaults");
         assert!(s.copy_to_clipboard, "settings files predating the field get ON");
         let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn recorder_prefs_default_to_no_microphone_and_roundtrip() {
+        let path = temp_path("recorder-prefs");
+        let _ = std::fs::remove_file(&path);
+        let store = RecorderPrefsStore::load(path.clone());
+        assert!(!store.get().microphone);
+        store.set(RecorderPrefs { microphone: true }).unwrap();
+        assert!(RecorderPrefsStore::load(path.clone()).get().microphone);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn record_shortcut_has_a_default_and_yields_to_earlier_actions() {
+        assert_eq!(Settings::default().shortcut_record, "CmdOrCtrl+Shift+0");
+        let s = Settings {
+            shortcut_area: "Alt+Shift+R".into(),
+            shortcut_record: "Alt+Shift+R".into(),
+            ..Default::default()
+        }
+        .sanitized();
+        assert_eq!(s.shortcut_area, "Alt+Shift+R");
+        assert_eq!(s.shortcut_record, ShortcutAction::Record.default_accel());
     }
 
     #[test]

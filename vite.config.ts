@@ -15,6 +15,7 @@ export default defineConfig(async () => ({
         timer: "timer.html",
         scrollcap: "scrollcap.html",
         welcome: "welcome.html",
+        recorder: "recorder.html",
       },
     },
   },

@@ -6,11 +6,14 @@
   "window.scrollcap": "Scrollende Aufnahme",
   "window.overlay": "Aufnahme",
   "window.welcome": "Screen for me — Willkommen",
+  "window.recorder": "Bildschirm aufnehmen",
 
   "tray.capture_area": "Bereich aufnehmen",
   "tray.capture_window": "Fenster aufnehmen",
   "tray.capture_fullscreen": "Vollbild aufnehmen",
   "tray.capture_scrolling": "Scrollende Aufnahme",
+  "tray.record_screen": "Bildschirm aufnehmen",
+  "tray.stop_recording": "Aufnahme stoppen",
   "tray.self_timer": "Selbstauslöser",
   "tray.timer_3": "3 Sekunden",
   "tray.timer_5": "5 Sekunden",
@@ -38,6 +41,8 @@
 
   "perm.accessibility_title": "Bedienungshilfen-Berechtigung erforderlich",
   "perm.accessibility_body": "Die scrollende Aufnahme benötigt Zugriff auf die Bedienungshilfen, um die Seite für Sie zu scrollen.\n\nAktivieren Sie „Screen for me“ unter Systemeinstellungen → Datenschutz & Sicherheit → Bedienungshilfen und versuchen Sie es erneut.",
+  "perm.screen_recording_title": "Berechtigung für Bildschirmaufnahme erforderlich",
+  "perm.screen_recording_body": "Die Bildschirmaufnahme benötigt Zugriff auf die Bildschirmaufnahme.\n\nAktivieren Sie „Screen for me“ unter Systemeinstellungen → Datenschutz & Sicherheit → Bildschirm- & Systemaudioaufnahme und versuchen Sie es erneut.",
 
   "settings.title": "Einstellungen",
   "settings.general": "Allgemein:",
@@ -74,6 +79,7 @@
   "settings.shortcut_area": "Bereich aufnehmen:",
   "settings.shortcut_window": "Fenster aufnehmen:",
   "settings.shortcut_fullscreen": "Vollbild aufnehmen:",
+  "settings.shortcut_record": "Bildschirm aufnehmen:",
   "settings.shortcut_press": "Kurzbefehl drücken…",
   "settings.shortcut_reset": "Auf Standard zurücksetzen",
   "settings.shortcut_error_invalid": "Diese Taste kann nicht in einem Kurzbefehl verwendet werden.",
@@ -101,6 +107,7 @@
 
   "overlay.dismiss": "Verwerfen",
   "overlay.latest_capture": "Neueste Aufnahme",
+  "overlay.latest_recording": "Letzte Aufnahme",
   "overlay.copy": "Kopieren",
   "overlay.copy_tooltip": "In die Zwischenablage kopieren",
   "overlay.save": "Sichern",
@@ -108,6 +115,8 @@
   "overlay.annotate": "Kommentieren",
   "overlay.reveal": "Finder",
   "overlay.reveal_tooltip": "Im Finder zeigen",
+  "overlay.open": "Öffnen",
+  "overlay.open_tooltip": "Im Standardplayer öffnen",
   "overlay.toast_copied": "Kopiert",
   "overlay.toast_saved": "Gesichert",
 
@@ -157,6 +166,7 @@
   "history.empty": "Noch keine Aufnahmen. Verwenden Sie das Menüleisten-Symbol oder die Aufnahme-Kurzbefehle.",
   "history.copy": "Kopieren",
   "history.restore": "Wiederherstellen",
+  "history.open": "Öffnen",
 
   "scrollcap.hint": "Ziehen Sie, um den Bereich für die scrollende Aufnahme auszuwählen — Esc zum Abbrechen",
   "scrollcap.scroll_up": "Nach oben scrollen",
@@ -169,8 +179,18 @@
   "scrollcap.stop": "Stoppen",
   "scrollcap.frames.one": "{n} Bild",
   "scrollcap.frames.other": "{n} Bilder",
+  "recorder.title": "Bildschirm aufnehmen",
+  "recorder.hint": "Nimmt den Bildschirm unter dem Cursor auf — Esc zum Abbrechen",
+  "recorder.microphone": "Mikrofon",
+  "recorder.record": "Aufnehmen",
+  "recorder.cancel": "Abbrechen",
+  "recorder.starting": "Wird gestartet…",
+  "recorder.stop": "Stoppen",
+  "recorder.unsupported_title": "Bildschirmaufnahme nicht verfügbar",
+  "recorder.unsupported_body": "Die Bildschirmaufnahme benötigt macOS 15 oder neuer.",
 
   "timer.hint": "Zum Abbrechen klicken",
 
-  "dialogs.png_filter": "PNG-Bild"
+  "dialogs.png_filter": "PNG-Bild",
+  "dialogs.mp4_filter": "MP4-Video"
 }

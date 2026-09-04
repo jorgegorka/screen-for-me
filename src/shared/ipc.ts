@@ -1,11 +1,13 @@
-/** Mirrors the Rust struct in src-tauri/src/history.rs. */
+export type CaptureKind = "image" | "video";
+
 export interface CaptureEntry {
   path: string;
   id: string;
   created_ms: number;
+  kind: CaptureKind;
+  poster: string | null;
 }
 
-/** Mirrors the Rust settings struct; persisted app settings. */
 export interface Settings {
   position: "left" | "center" | "right";
   move_to_active_screen: boolean;
@@ -19,4 +21,9 @@ export interface Settings {
   shortcut_area: string;
   shortcut_window: string;
   shortcut_fullscreen: string;
+  shortcut_record: string;
+}
+
+export interface RecorderPrefs {
+  microphone: boolean;
 }

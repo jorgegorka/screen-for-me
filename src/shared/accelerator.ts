@@ -15,6 +15,7 @@ export const DEFAULT_ACCELS = {
   area: "CmdOrCtrl+Shift+7",
   window: "CmdOrCtrl+Shift+8",
   fullscreen: "CmdOrCtrl+Shift+9",
+  record: "CmdOrCtrl+Shift+0",
 } as const;
 
 export type ShortcutAction = keyof typeof DEFAULT_ACCELS;
@@ -121,11 +122,13 @@ export type MacosScreenshotDigit = "3" | "4" | "5";
 
 const MACOS_SCREENSHOT_DIGITS: readonly MacosScreenshotDigit[] = ["3", "4", "5"];
 
-export const MACOS_SCREENSHOT_KEYS: Record<ShortcutAction, MacosScreenshotDigit> = {
+export const MACOS_SCREENSHOT_KEYS: Partial<Record<ShortcutAction, MacosScreenshotDigit>> = {
   fullscreen: "3",
   area: "4",
   window: "5",
 };
+
+export const MACOS_SCREENSHOT_ACTIONS = Object.keys(MACOS_SCREENSHOT_KEYS) as ShortcutAction[];
 
 function isCmdShiftDigit(accel: string, digits: readonly MacosScreenshotDigit[]): boolean {
   const { mods, key } = parseAccelerator(accel, "mac");
@@ -143,7 +146,8 @@ export function macosScreenshotKeyOf(accel: string): MacosScreenshotDigit | null
 }
 
 export function isMacosScreenshotAccelFor(accel: string, action: ShortcutAction): boolean {
-  return isCmdShiftDigit(accel, [MACOS_SCREENSHOT_KEYS[action]]);
+  const digit = MACOS_SCREENSHOT_KEYS[action];
+  return digit !== undefined && isCmdShiftDigit(accel, [digit]);
 }
 
 const MODIFIER_ORDER: readonly Modifier[] = ["ctrl", "alt", "shift", "meta"];

@@ -120,6 +120,26 @@ pub fn open_scrollcap(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
+pub fn open_recorder(app: &AppHandle) -> tauri::Result<()> {
+    const WIDTH: f64 = 320.0;
+    const HEIGHT: f64 = 164.0;
+    if let Some(existing) = app.get_webview_window("recorder") {
+        let _ = existing.destroy();
+    }
+    let mut builder = transient_window(app, "recorder", "recorder.html", "window.recorder")
+        .focused(true)
+        .inner_size(WIDTH, HEIGHT);
+    if let Some(monitor) = crate::commands::active_monitor(app) {
+        let (pos, size) = crate::commands::monitor_logical_bounds(&monitor);
+        builder = builder.position(
+            pos.x + (size.width - WIDTH) / 2.0,
+            pos.y + (size.height - HEIGHT) / 2.0,
+        );
+    }
+    builder.build()?;
+    Ok(())
+}
+
 pub fn check_for_updates(app: &AppHandle, silent: bool) {
     use tauri_plugin_updater::UpdaterExt;
     let app = app.clone();

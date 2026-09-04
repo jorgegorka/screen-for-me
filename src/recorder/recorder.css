@@ -1,0 +1,152 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  font: 13px -apple-system, system-ui, sans-serif;
+  color: #fff;
+}
+
+body {
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.panel {
+  position: relative;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(24, 24, 26, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+.title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.hint {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+button {
+  font: inherit;
+  color: #eee;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button:focus-visible {
+  outline: 2px solid #9172e7;
+  outline-offset: 2px;
+}
+
+.toggle {
+  margin-right: auto;
+}
+
+.toggle.active {
+  background: #7c5ce6;
+  border-color: #7c5ce6;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(145, 114, 231, 0.5);
+}
+
+button.primary {
+  background: #7c5ce6;
+  border-color: #7c5ce6;
+  color: #fff;
+}
+
+button.primary:hover {
+  background: #9172e7;
+}
+
+.pill {
+  display: none;
+}
+
+body.running {
+  padding: 0;
+}
+
+body.running .panel {
+  display: none;
+}
+
+body.running .pill {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px 6px 14px;
+  border-radius: 12px;
+  background: rgba(24, 24, 26, 0.92);
+}
+
+body.running .pill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 1px;
+  background: linear-gradient(90deg, #8794ff, #9172e7 35%, #d05aa6 65%, #ee3138);
+  -webkit-mask:
+    linear-gradient(#000, #000) content-box,
+    linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000, #000) content-box,
+    linear-gradient(#000, #000);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ee3138;
+  flex: none;
+}
+
+#elapsed {
+  flex: 1;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
