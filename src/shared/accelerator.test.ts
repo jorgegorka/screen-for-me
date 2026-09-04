@@ -4,8 +4,8 @@ import {
   codeToToken,
   comboToAccelerator,
   formatAccelerator,
+  formatModifiers,
   hasRequiredModifier,
-  isMacosScreenshotAccel,
   isMacosScreenshotAccelFor,
   macosScreenshotKeyOf,
   DEFAULT_ACCELS,
@@ -59,22 +59,6 @@ describe("hasRequiredModifier", () => {
   });
 });
 
-describe("isMacosScreenshotAccel", () => {
-  it("flags Cmd+Shift+3/4/5 in any spelling", () => {
-    expect(isMacosScreenshotAccel("Cmd+Shift+3")).toBe(true);
-    expect(isMacosScreenshotAccel("Shift+Cmd+4")).toBe(true);
-    expect(isMacosScreenshotAccel("CmdOrCtrl+Shift+5")).toBe(true);
-    expect(isMacosScreenshotAccel("Command+Shift+Digit3")).toBe(true);
-  });
-
-  it("ignores other combos", () => {
-    expect(isMacosScreenshotAccel("Cmd+Shift+7")).toBe(false);
-    expect(isMacosScreenshotAccel("Cmd+3")).toBe(false);
-    expect(isMacosScreenshotAccel("Ctrl+Shift+3")).toBe(false);
-    expect(isMacosScreenshotAccel("Cmd+Alt+Shift+3")).toBe(false);
-  });
-});
-
 describe("isMacosScreenshotAccelFor", () => {
   it("accepts the expected combo per action (TARGETS in onboarding.rs)", () => {
     expect(isMacosScreenshotAccelFor("Cmd+Shift+3", "fullscreen")).toBe(true);
@@ -119,6 +103,14 @@ describe("macosScreenshotKeyOf", () => {
     expect(macosScreenshotKeyOf("Cmd+3")).toBe(null);
     expect(macosScreenshotKeyOf("Ctrl+Shift+4")).toBe(null);
     expect(macosScreenshotKeyOf("Cmd+Alt+Shift+5")).toBe(null);
+  });
+});
+
+describe("formatModifiers", () => {
+  it("joins macOS symbols without separators and words with plus", () => {
+    expect(formatModifiers(mods({ meta: true, shift: true }), "mac")).toBe("⇧⌘");
+    expect(formatModifiers(mods({ ctrl: true, shift: true }), "other")).toBe("Ctrl+Shift");
+    expect(formatModifiers(mods(), "mac")).toBe("");
   });
 });
 

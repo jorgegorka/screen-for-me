@@ -21,7 +21,6 @@ export interface ShapeSpec {
 
 const COMMON = ["x", "y", "rotation", "scaleX", "scaleY", "opacity"];
 
-/** Whitelist of attrs that survive undo snapshots, per shape type. */
 const ATTRS: Record<ShapeType, string[]> = {
   arrow: [...COMMON, "points", "fill", "strokeWidth"],
   rect: [...COMMON, "width", "height", "stroke", "strokeWidth", "cornerRadius"],
@@ -57,11 +56,6 @@ export interface CounterConfig {
   opacity?: number;
 }
 
-/**
- * Numbered badge: a group of circle + contrasting number, with its semantic state
- * (radius/fill/number) baked into attrs on the group so the flat serializer
- * can round-trip it (same trick as pixelate's `src`).
- */
 export function buildCounter(config: CounterConfig): Konva.Group {
   const { radius, fill, number, ...rest } = config;
   const group = new Konva.Group({ ...rest, name: "counter" });
@@ -88,11 +82,6 @@ export function buildCounter(config: CounterConfig): Konva.Group {
   return group;
 }
 
-/**
- * Solid tapered arrow (thin tail, wide head). A custom Shape so the taper can
- * be drawn as one filled polygon; Konva.Arrow only supports constant-width
- * shafts. Geometry lives in arrow.ts; `points` holds the two endpoints.
- */
 export function buildArrow(attrs: Konva.ShapeConfig): Konva.Shape {
   const shape = new Konva.Shape({
     ...attrs,
@@ -119,10 +108,7 @@ export function buildArrow(attrs: Konva.ShapeConfig): Konva.Shape {
   return shape;
 }
 
-function specToNode(
-  spec: ShapeSpec,
-  onImageReady: () => void,
-): Konva.Shape | Konva.Group {
+function specToNode(spec: ShapeSpec): Konva.Shape | Konva.Group {
   const attrs = { ...spec.attrs, name: spec.type };
   switch (spec.type) {
     case "arrow":
@@ -139,21 +125,26 @@ function specToNode(
       return new Konva.Text(attrs as Konva.TextConfig);
     case "counter":
       return buildCounter(spec.attrs as unknown as CounterConfig);
-    case "pixelate": {
-      const node = new Konva.Image({
+    case "pixelate":
+      return new Konva.Image({
         ...(attrs as Konva.ImageConfig),
-        image: undefined,
+        image: pixelateImages.get(spec.attrs.src as string),
         listening: false,
       });
-      const img = new window.Image();
-      img.onload = () => {
-        node.image(img);
-        onImageReady();
-      };
-      img.src = spec.attrs.src as string;
-      return node;
-    }
   }
+}
+
+const pixelateImages = new Map<string, HTMLCanvasElement>();
+let nextPixelateId = 0;
+
+export function registerPixelateImage(canvas: HTMLCanvasElement): string {
+  const key = `pixelate-${nextPixelateId++}`;
+  pixelateImages.set(key, canvas);
+  return key;
+}
+
+export function clearPixelateImages(): void {
+  pixelateImages.clear();
 }
 
 export function serializeLayer(layer: Konva.Layer): string {
@@ -164,14 +155,10 @@ export function serializeLayer(layer: Konva.Layer): string {
   return JSON.stringify(specs);
 }
 
-export function rebuildLayer(
-  layer: Konva.Layer,
-  snapshot: string,
-  onImageReady: () => void,
-): void {
+export function rebuildLayer(layer: Konva.Layer, snapshot: string): void {
   layer.destroyChildren();
   const specs = JSON.parse(snapshot) as ShapeSpec[];
   for (const spec of specs) {
-    layer.add(specToNode(spec, onImageReady));
+    layer.add(specToNode(spec));
   }
 }

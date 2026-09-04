@@ -1,16 +1,12 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Keep the newest N captures on disk; older ones are pruned after each capture.
 const MAX_CAPTURES: usize = 50;
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct CaptureEntry {
-    /// Absolute path to the PNG on disk.
     pub path: PathBuf,
-    /// File name (stable id for IPC).
     pub id: String,
-    /// Unix milliseconds, derived from the file name.
     pub created_ms: u64,
 }
 
@@ -29,7 +25,6 @@ impl History {
         &self.dir
     }
 
-    /// Reserve a destination path for a new capture.
     pub fn new_capture_path(&self) -> PathBuf {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -38,7 +33,6 @@ impl History {
         self.dir.join(format!("capture-{now}.png"))
     }
 
-    /// All captures, newest first.
     pub fn list(&self) -> Vec<CaptureEntry> {
         let mut entries: Vec<CaptureEntry> = fs::read_dir(&self.dir)
             .into_iter()
@@ -51,12 +45,10 @@ impl History {
     }
 
     pub fn resolve(&self, id: &str) -> Option<CaptureEntry> {
-        // ids are bare file names we generated; reject anything path-like
         if id.contains('/') || id.contains("..") {
             return None;
         }
-        let path = self.dir.join(id);
-        path.exists().then(|| entry_from_path(path)).flatten()
+        entry_from_path(self.dir.join(id))
     }
 
     pub fn prune(&self) {
@@ -74,9 +66,6 @@ fn entry_from_path(path: PathBuf) -> Option<CaptureEntry> {
         .strip_suffix(".png")?
         .parse()
         .ok()?;
-    // Skip empty files: a crashed or cancelled capture can leave a 0-byte
-    // stub, which must never surface as a capture (broken thumbnail / blank
-    // editor).
     if std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0) == 0 {
         return None;
     }

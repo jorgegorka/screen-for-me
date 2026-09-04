@@ -1,11 +1,9 @@
 use tauri::{AppHandle, Manager};
-use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 use crate::capture::CaptureMode;
 use crate::commands::{trigger_capture, AppState};
 
-/// Capture actions bound to user-configurable global shortcuts. The serde
-/// names double as the frontend's action ids — never localise them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ShortcutAction {
@@ -21,10 +19,6 @@ pub const ACTIONS: [ShortcutAction; 3] = [
 ];
 
 impl ShortcutAction {
-    /// Defaults use 7/8/9 so they work out of the box while macOS's own
-    /// screenshot tools hold Cmd+Shift+3/4/5 (users can rebind to those once
-    /// they free them in System Settings — see onboarding.rs). Mirrored in
-    /// DEFAULT_ACCELS in src/shared/accelerator.ts.
     pub fn default_accel(self) -> &'static str {
         match self {
             ShortcutAction::Area => "CmdOrCtrl+Shift+7",
@@ -42,11 +36,6 @@ impl ShortcutAction {
     }
 }
 
-/// Parse and police an accelerator string; the returned shortcut lets callers
-/// compare combos across actions (equality is on resolved modifiers + key, so
-/// "Cmd+Shift+7" and "CmdOrCtrl+Shift+7" collide on macOS). The same string
-/// grammar is accepted by the global-shortcut registration and the tray's
-/// menu-item accelerator labels.
 pub fn validate(accel: &str) -> Result<Shortcut, String> {
     let shortcut: Shortcut = accel
         .parse()
@@ -60,15 +49,6 @@ pub fn validate(accel: &str) -> Result<Shortcut, String> {
     Ok(shortcut)
 }
 
-/// Whether a combo is one of macOS's own screenshot shortcuts (Cmd+Shift+3/4/5).
-/// Registering these succeeds even while the system still handles them (the
-/// keypress is swallowed before it reaches the app), so callers use this to
-/// decide when to check system ownership and warn — never to reject.
-pub fn is_macos_screenshot_combo(shortcut: &Shortcut) -> bool {
-    shortcut.mods == Modifiers::SUPER | Modifiers::SHIFT
-        && [Code::Digit3, Code::Digit4, Code::Digit5].contains(&shortcut.key)
-}
-
 fn register(app: &AppHandle, action: ShortcutAction, accel: &str) -> Result<(), String> {
     let shortcut = validate(accel)?;
     app.global_shortcut()
@@ -80,8 +60,6 @@ fn register(app: &AppHandle, action: ShortcutAction, accel: &str) -> Result<(), 
         .map_err(|e| e.to_string())
 }
 
-/// Register the persisted shortcuts. A single failed registration (e.g. a
-/// combo held by another app) is logged and skipped so launch never aborts.
 pub fn setup(app: &AppHandle) {
     let settings = app.state::<AppState>().settings.get();
     for action in ACTIONS {
@@ -92,8 +70,6 @@ pub fn setup(app: &AppHandle) {
     }
 }
 
-/// Swap an action's registration to a new combo. On failure the old combo is
-/// restored and the (localised) error is returned for the Settings UI.
 pub fn rebind(
     app: &AppHandle,
     action: ShortcutAction,
@@ -101,49 +77,42 @@ pub fn rebind(
     new_accel: &str,
 ) -> Result<(), String> {
     let new_shortcut = validate(new_accel)?;
-    if let Ok(old_shortcut) = old_accel.parse::<Shortcut>() {
-        if old_shortcut == new_shortcut {
-            return Ok(());
-        }
-        let _ = app.global_shortcut().unregister(old_shortcut);
+    if old_accel.parse::<Shortcut>().ok() == Some(new_shortcut) {
+        return Ok(());
     }
-    if let Err(err) = register(app, action, new_accel) {
-        eprintln!("failed to register {new_accel} for {action:?}: {err}");
-        if let Err(err) = register(app, action, old_accel) {
-            eprintln!("failed to restore {old_accel} for {action:?}: {err}");
-        }
-        return Err(crate::i18n::t("settings.shortcut_error_taken"));
-    }
-    Ok(())
+    rebind_all(
+        app,
+        &[(action, old_accel.to_string(), new_accel.to_string())],
+        "settings.shortcut_error_taken",
+    )
 }
 
-/// Swap every listed action to a new combo in one go (`(action, old, new)`).
-/// All old combos are unregistered first so the new set can freely reshuffle
-/// keys between actions. Atomic: on any failed registration the new combos
-/// are dropped, every old combo is re-registered, and Err is returned.
+fn unregister(app: &AppHandle, accel: &str) {
+    if let Ok(shortcut) = accel.parse::<Shortcut>() {
+        let _ = app.global_shortcut().unregister(shortcut);
+    }
+}
+
 pub fn rebind_all(
     app: &AppHandle,
     changes: &[(ShortcutAction, String, String)],
+    error_key: &str,
 ) -> Result<(), String> {
     for (_, old, _) in changes {
-        if let Ok(shortcut) = old.parse::<Shortcut>() {
-            let _ = app.global_shortcut().unregister(shortcut);
-        }
+        unregister(app, old);
     }
     for (i, (action, _, new)) in changes.iter().enumerate() {
         if let Err(err) = register(app, *action, new) {
             eprintln!("failed to register {new} for {action:?}: {err}");
             for (_, _, done_new) in &changes[..i] {
-                if let Ok(shortcut) = done_new.parse::<Shortcut>() {
-                    let _ = app.global_shortcut().unregister(shortcut);
-                }
+                unregister(app, done_new);
             }
             for (action, old, _) in changes {
                 if let Err(err) = register(app, *action, old) {
                     eprintln!("failed to restore {old} for {action:?}: {err}");
                 }
             }
-            return Err(crate::i18n::t("welcome.assign_failed"));
+            return Err(crate::i18n::t(error_key));
         }
     }
     Ok(())
@@ -184,13 +153,8 @@ mod tests {
     #[test]
     fn macos_screenshot_combos_validate() {
         for accel in ["Cmd+Shift+3", "Cmd+Shift+4", "Cmd+Shift+5"] {
-            let shortcut = validate(accel).expect("screenshot combos are assignable");
-            assert!(is_macos_screenshot_combo(&shortcut), "{accel}");
+            validate(accel).expect("screenshot combos are assignable");
         }
-        let extra_mod = validate("Cmd+Alt+Shift+3").unwrap();
-        assert!(!is_macos_screenshot_combo(&extra_mod));
-        let no_shift = validate("Cmd+3").unwrap();
-        assert!(!is_macos_screenshot_combo(&no_shift));
     }
 
     #[test]

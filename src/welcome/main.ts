@@ -2,18 +2,15 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
 import iconUrl from "../../src-tauri/icons/128x128@2x.png";
-import { el } from "../shared/dom";
+import { el, PLATFORM } from "../shared/dom";
 import { initI18n, t } from "../shared/i18n";
 import type { Settings } from "../shared/ipc";
 import {
+  accelOf,
   formatAccelerator,
   isMacosScreenshotAccelFor,
-  type Platform,
-  type ShortcutAction,
+  ACTIONS,
 } from "../shared/accelerator";
-
-const PLATFORM: Platform = /mac/i.test(navigator.platform) ? "mac" : "other";
-const ACTIONS: ShortcutAction[] = ["area", "window", "fullscreen"];
 
 let current: Settings | null = null;
 
@@ -21,7 +18,7 @@ function renderShortcuts() {
   if (!current) return;
   for (const action of ACTIONS) {
     el<HTMLElement>(`accel-${action}`).textContent = formatAccelerator(
-      current[`shortcut_${action}` as const] as string,
+      accelOf(current, action),
       PLATFORM,
     );
   }
@@ -45,24 +42,16 @@ function showStatus(status: MacosStatus) {
   }
 }
 
-/** Reflect the live system state: warn while macOS still owns ⌘⇧3/4/5, show
- * the success line once they're freed AND assigned here. Re-run on focus so
- * returning from System Settings updates the card. */
 async function refreshMacosStatus() {
-  // The card assigns/frees all three combos at once, so "any key still
-  // system-owned" is the right aggregate here.
   const owned = await invoke<string[]>("macos_screenshot_hotkeys_owned");
   if (owned.length > 0) {
     showStatus("owns");
     return;
   }
-  // Check each action against its expected combo — the success line names
-  // the exact mapping, so a permuted assignment must not count as done.
+  const settings = current;
   const assigned =
-    current !== null &&
-    ACTIONS.every((action) =>
-      isMacosScreenshotAccelFor(current![`shortcut_${action}` as const] as string, action),
-    );
+    settings !== null &&
+    ACTIONS.every((action) => isMacosScreenshotAccelFor(accelOf(settings, action), action));
   showStatus(assigned ? "success" : "hidden");
 }
 
@@ -97,8 +86,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   current = await invoke<Settings>("get_settings");
   renderShortcuts();
   initMacosCard();
-  // Shortcuts can change while this window is open (Settings tab, the assign
-  // button); initI18n already re-translates, this keeps the combos fresh.
   void listen<Settings>("settings:changed", (event) => {
     current = event.payload;
     renderShortcuts();

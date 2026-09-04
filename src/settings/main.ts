@@ -4,29 +4,26 @@ import { listen } from "@tauri-apps/api/event";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 
 import iconUrl from "../../src-tauri/icons/128x128@2x.png";
-import { el } from "../shared/dom";
+import { el, PLATFORM } from "../shared/dom";
 import { initI18n, t } from "../shared/i18n";
 import type { Settings } from "../shared/ipc";
 import {
+  accelOf,
+  anyModifier,
   comboToAccelerator,
   formatAccelerator,
+  formatModifiers,
   hasRequiredModifier,
   macosScreenshotKeyOf,
+  modsOf,
+  ACTIONS,
   DEFAULT_ACCELS,
   type ComboModifiers,
-  type Platform,
   type ShortcutAction,
 } from "../shared/accelerator";
 
-/** Slider stop index ↔ overlay size multiplier. */
 const SIZE_STEPS = [0.75, 1.0, 1.25, 1.5, 2.0];
 
-const PLATFORM: Platform = /mac/i.test(navigator.platform) ? "mac" : "other";
-const ACTIONS: ShortcutAction[] = ["area", "window", "fullscreen"];
-
-/** Last settings received from the backend; `readForm` echoes fields (like
- * the shortcuts) that the General form doesn't own so `set_settings` can't
- * clobber them. */
 let current: Settings | null = null;
 
 function sizeToStep(size: number): number {
@@ -77,7 +74,6 @@ function syncAutoCloseState() {
   }
 }
 
-/** Launch-on-start reflects the real OS login-item state, not settings.json. */
 async function initAutostart() {
   const box = el<HTMLInputElement>("launch-on-start");
   try {
@@ -126,9 +122,6 @@ function initTabs() {
   });
 }
 
-const accelOf = (s: Settings, action: ShortcutAction) =>
-  s[`shortcut_${action}` as const] as string;
-
 function renderShortcuts() {
   if (!current) return;
   for (const action of ACTIONS) {
@@ -142,7 +135,6 @@ function renderShortcuts() {
 
 let recording: ShortcutAction | null = null;
 
-/** End the active recording (if any) and restore that field's label. */
 function stopRecording() {
   if (!recording) return;
   const field = el<HTMLButtonElement>(`shortcut-${recording}`);
@@ -167,9 +159,6 @@ async function applyShortcut(action: ShortcutAction, accelerator: string) {
   try {
     fillForm(await invoke<Settings>("set_shortcut", { action, accelerator }));
     clearShortcutErrors();
-    // Registering ⌘⇧3/4/5 succeeds even while macOS still handles them (the
-    // keypress never reaches the app), so warn inline — but only when the
-    // system still owns *this* combo's key, not any of the three.
     const key = PLATFORM === "mac" ? macosScreenshotKeyOf(accelerator) : null;
     if (key && (await invoke<string[]>("macos_screenshot_hotkeys_owned")).includes(key)) {
       showShortcutError(action, t("settings.shortcut_warning_system"));
@@ -180,8 +169,6 @@ async function applyShortcut(action: ShortcutAction, accelerator: string) {
   }
 }
 
-/** Section-level hint: some bound combo is a macOS screenshot shortcut whose
- * *specific* key the system still owns, so it can't fire here yet. */
 async function refreshSystemOwnsHint() {
   if (PLATFORM !== "mac" || !current) return;
   const boundKeys = ACTIONS.map((action) => macosScreenshotKeyOf(accelOf(current!, action)));
@@ -202,10 +189,6 @@ function initSystemShortcutsHelp() {
 }
 
 function initShortcuts() {
-  // WKWebView doesn't reliably focus <button>s on click, so a blur listener
-  // alone never fires and a field could stay in "Press shortcut…" forever:
-  // any press outside the active field ends the recording (mousedown runs
-  // before another field's click handler starts its own).
   document.addEventListener("mousedown", (event) => {
     if (!recording) return;
     const field = el<HTMLButtonElement>(`shortcut-${recording}`);
@@ -222,7 +205,6 @@ function initShortcuts() {
       clearShortcutErrors();
       field.classList.add("recording");
       field.textContent = t("settings.shortcut_press");
-      // Deterministic keyboard capture + a real blur when focus moves on.
       field.focus();
     });
 
@@ -234,19 +216,13 @@ function initShortcuts() {
       if (recording !== action) return;
       event.preventDefault();
       event.stopPropagation();
-      if (event.key === "Escape" || (event.key === "Backspace" && !hasAnyModifier(event))) {
+      const mods = modsOf(event);
+      if (event.key === "Escape" || (event.key === "Backspace" && !anyModifier(mods))) {
         stopRecording();
         return;
       }
-      const mods: ComboModifiers = {
-        ctrl: event.ctrlKey,
-        alt: event.altKey,
-        shift: event.shiftKey,
-        meta: event.metaKey,
-      };
       const accelerator = comboToAccelerator(mods, event.code);
       if (!accelerator) {
-        // A lone modifier press: show a live preview of what's held so far.
         if (isModifierCode(event.code)) previewModifiers(field, mods);
         return;
       }
@@ -261,12 +237,7 @@ function initShortcuts() {
 
     field.addEventListener("keyup", (event) => {
       if (recording !== action || !isModifierCode(event.code)) return;
-      previewModifiers(field, {
-        ctrl: event.ctrlKey,
-        alt: event.altKey,
-        shift: event.shiftKey,
-        meta: event.metaKey,
-      });
+      previewModifiers(field, modsOf(event));
     });
 
     el<HTMLButtonElement>(`shortcut-${action}-reset`).addEventListener("click", () => {
@@ -276,20 +247,16 @@ function initShortcuts() {
   }
 }
 
-const hasAnyModifier = (e: KeyboardEvent) => e.ctrlKey || e.altKey || e.shiftKey || e.metaKey;
-
 const isModifierCode = (code: string) =>
   /^(Control|Alt|Shift|Meta)(Left|Right)$/.test(code);
 
-/** Live preview of held modifiers while recording (no main key yet): format a
- * placeholder combo, then trim the placeholder key off the label. */
 function previewModifiers(field: HTMLButtonElement, mods: ComboModifiers) {
-  if (!(mods.ctrl || mods.alt || mods.shift || mods.meta)) {
+  const label = formatModifiers(mods, PLATFORM);
+  if (!label) {
     field.textContent = t("settings.shortcut_press");
     return;
   }
-  const label = formatAccelerator(comboToAccelerator(mods, "Digit1")!, PLATFORM);
-  field.textContent = PLATFORM === "mac" ? label.slice(0, -1) : label.replace(/\+?1$/, "+");
+  field.textContent = PLATFORM === "mac" ? label : `${label}+`;
 }
 
 async function initAbout() {
@@ -311,12 +278,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   void initAutostart();
   void initAbout();
   fillForm(await invoke<Settings>("get_settings"));
-  // Settings can change outside this form (the Welcome window's assign
-  // button rebinds shortcuts) and this webview lives for the whole app run,
-  // so keep `current` fresh or `readForm` echoes stale shortcuts back through
-  // `set_settings`. Only the fields the General form doesn't own are synced —
-  // a full re-fill could reset controls mid-interaction (this window's own
-  // saves also fire the event).
   void listen<Settings>("settings:changed", (event) => {
     current = event.payload;
     renderShortcuts();

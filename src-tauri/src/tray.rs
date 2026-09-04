@@ -8,12 +8,7 @@ use crate::i18n::t;
 use crate::shortcuts::ShortcutAction;
 use crate::windows;
 
-/// Build the tray menu with labels in the current language. Item ids are
-/// stable keys consumed by `on_menu_event` and are never localised.
 fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
-    // On Linux the xdg-desktop-portal owns the selection UI: both interactive
-    // modes open the same system dialog, and whether a window can be picked is
-    // up to the desktop's portal backend. The ellipsis signals the dialog.
     #[allow(unused_mut)]
     let mut area_label = t("tray.capture_area");
     #[allow(unused_mut)]
@@ -24,8 +19,6 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         window_label.push('…');
     }
 
-    // Accelerator labels mirror the user-configured global shortcuts;
-    // `set_shortcut` refreshes the tray so they stay in sync.
     let settings = app.state::<AppState>().settings.get();
     let area = MenuItem::with_id(
         app,
@@ -48,22 +41,17 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         true,
         Some(settings.shortcut(ShortcutAction::Fullscreen)),
     )?;
+    let item = |id: &str, key: &str| MenuItem::with_id(app, id, t(key), true, None::<&str>);
     #[cfg(target_os = "macos")]
-    let scrolling = MenuItem::with_id(
-        app,
-        "capture_scrolling",
-        t("tray.capture_scrolling"),
-        true,
-        None::<&str>,
-    )?;
-    let timer_3 = MenuItem::with_id(app, "timer_3", t("tray.timer_3"), true, None::<&str>)?;
-    let timer_5 = MenuItem::with_id(app, "timer_5", t("tray.timer_5"), true, None::<&str>)?;
-    let timer_10 = MenuItem::with_id(app, "timer_10", t("tray.timer_10"), true, None::<&str>)?;
+    let scrolling = item("capture_scrolling", "tray.capture_scrolling")?;
+    let timer_3 = item("timer_3", "tray.timer_3")?;
+    let timer_5 = item("timer_5", "tray.timer_5")?;
+    let timer_10 = item("timer_10", "tray.timer_10")?;
     let self_timer =
         Submenu::with_items(app, t("tray.self_timer"), true, &[&timer_3, &timer_5, &timer_10])?;
-    let history = MenuItem::with_id(app, "history", t("tray.history"), true, None::<&str>)?;
-    let updates = MenuItem::with_id(app, "updates", t("tray.updates"), true, None::<&str>)?;
-    let welcome = MenuItem::with_id(app, "welcome", t("tray.welcome"), true, None::<&str>)?;
+    let history = item("history", "tray.history")?;
+    let updates = item("updates", "tray.updates")?;
+    let welcome = item("welcome", "tray.welcome")?;
     let settings_item = MenuItem::with_id(app, "settings", t("tray.settings"), true, Some("CmdOrCtrl+,"))?;
     let quit = MenuItem::with_id(app, "quit", t("tray.quit"), true, Some("CmdOrCtrl+Q"))?;
 
@@ -82,8 +70,6 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     Menu::with_items(app, &items)
 }
 
-/// Swap the tray menu for one in the current language (after a language
-/// change). Must run on the main thread on macOS.
 pub fn refresh(app: &AppHandle) -> tauri::Result<()> {
     if let Some(tray) = app.tray_by_id("main") {
         tray.set_menu(Some(build_menu(app)?))?;
@@ -108,9 +94,11 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
                     eprintln!("failed to open scrolling capture: {err}");
                 }
             }
-            "timer_3" => crate::commands::start_timed_capture(app, 3),
-            "timer_5" => crate::commands::start_timed_capture(app, 5),
-            "timer_10" => crate::commands::start_timed_capture(app, 10),
+            id if id.starts_with("timer_") => {
+                if let Ok(seconds) = id["timer_".len()..].parse() {
+                    crate::commands::start_timed_capture(app, seconds);
+                }
+            }
             "history" => {
                 if let Err(err) = windows::open_history(app.clone()) {
                     eprintln!("failed to open history: {err}");

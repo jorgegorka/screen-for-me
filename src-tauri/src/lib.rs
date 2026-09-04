@@ -28,13 +28,9 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            // Menu-bar app: no Dock icon on macOS.
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
-            // Give NSAlert dialogs (updater, permissions) the app icon even in
-            // dev,
-            // where the bare binary has no bundle icon to fall back on.
             #[cfg(target_os = "macos")]
             {
                 use objc2::AnyThread;
@@ -43,7 +39,6 @@ pub fn run() {
                 let mtm = MainThreadMarker::new().expect("setup runs on the main thread");
                 let data = NSData::with_bytes(include_bytes!("../icons/128x128@2x.png"));
                 if let Some(image) = NSImage::initWithData(NSImage::alloc(), &data) {
-                    // Safety: valid NSImage, called on the main thread (mtm).
                     unsafe {
                         NSApplication::sharedApplication(mtm)
                             .setApplicationIconImage(Some(&image));
@@ -52,30 +47,18 @@ pub fn run() {
             }
 
             let data_dir = app.path().app_data_dir()?;
-            app.manage(AppState {
-                history: History::new(data_dir.join("captures"))?,
-                settings: SettingsStore::load(data_dir.join("settings.json")),
-                editor_prefs: EditorPrefsStore::load(data_dir.join("editor_prefs.json")),
-                editor_target: std::sync::Mutex::new(None),
-                timer_seconds: std::sync::Mutex::new(5),
-                last_capture_mode: std::sync::Mutex::new(crate::capture::CaptureMode::Fullscreen),
-                scroll_stop: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
-                scroll_running: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
-                overlay_follow_epoch: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
-                overlay_drag_active: std::sync::atomic::AtomicBool::new(false),
-                overlay_panels: std::sync::atomic::AtomicUsize::new(1),
-            });
+            app.manage(AppState::new(
+                History::new(data_dir.join("captures"))?,
+                SettingsStore::load(data_dir.join("settings.json")),
+                EditorPrefsStore::load(data_dir.join("editor_prefs.json")),
+            ));
 
-            // Resolve the UI language before anything user-visible is built.
             let language = app.state::<AppState>().settings.get().language;
             i18n::set_language(i18n::resolve(&language));
 
             tray::setup(app.handle())?;
             shortcuts::setup(app.handle());
 
-            // First launch: show the Welcome window once. The marker is
-            // written immediately (not on close) so the window stays one-shot
-            // even if the app crashes while it's open.
             let welcome_marker = data_dir.join("welcome_seen");
             if !welcome_marker.exists() {
                 let _ = std::fs::write(&welcome_marker, b"");
@@ -84,16 +67,10 @@ pub fn run() {
                 }
             }
 
-            // Config-declared windows carry the English titles from
-            // tauri.conf.json; retitle the visible one for the active language.
             if let Some(main) = app.get_webview_window("main") {
                 let _ = main.set_title(&i18n::t("window.settings"));
             }
 
-            // Auto-check for updates: shortly after launch, then daily (a
-            // menu-bar app runs for weeks). Silent — only an actual update
-            // shows UI. Release builds only: dev builds run version 1.x too
-            // and would nag against the published releases.
             #[cfg(not(debug_assertions))]
             {
                 let handle = app.handle().clone();
@@ -137,11 +114,6 @@ pub fn run() {
             commands::run_scrolling_capture,
             commands::stop_scrolling_capture,
         ])
-        // The main window doubles as the Settings window: closing it hides it
-        // so the tray can re-show it without recreating.
-        // The main (Settings) and editor windows hide instead of being
-        // destroyed, so the tray/overlay can re-show them and the editor's
-        // webview stays warm between annotations.
         .on_window_event(|window, event| {
             if windows::HIDE_ON_CLOSE.contains(&window.label()) {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {

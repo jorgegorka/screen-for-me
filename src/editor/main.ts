@@ -20,14 +20,38 @@ import {
 import { counterTextColor, nextCounterNumber } from "./counter";
 import { UndoStack } from "./history";
 import { pixelateRegion } from "./pixelate";
-import { buildArrow, buildCounter, rebuildLayer, serializeLayer, type ShapeType } from "./shapes";
+import {
+  buildArrow,
+  buildCounter,
+  clearPixelateImages,
+  rebuildLayer,
+  registerPixelateImage,
+  serializeLayer,
+  type ShapeType,
+} from "./shapes";
 
 type Tool = ShapeType | "select" | "crop";
 
 const COLORS = ["#ff3b30", "#ffcc00", "#34c759", "#4f8ef7", "#af52de", "#ffffff", "#000000"];
 
-// ---------------------------------------------------------------------------
-// State
+const TOOL_KEYS: Record<string, Tool> = {
+  v: "select",
+  a: "arrow",
+  r: "rect",
+  e: "ellipse",
+  l: "line",
+  p: "pen",
+  h: "highlight",
+  t: "text",
+  n: "counter",
+  b: "pixelate",
+  c: "crop",
+};
+const TOOLS = Object.values(TOOL_KEYS);
+
+const ZOOM_STEP = 1.25;
+
+const MARQUEE_STROKE = { crop: "#9172e7", pixelate: "#ff9500" } as const;
 
 let captureId = "";
 let sourceImage: HTMLImageElement;
@@ -47,30 +71,29 @@ let uiLayer: Konva.Layer;
 let transformer: Konva.Transformer;
 let undoStack: UndoStack<string>;
 
-/** Node being drawn by the current pointer drag, if any. */
 let draft: Konva.Shape | null = null;
 let draftStart = { x: 0, y: 0 };
 let marquee: Konva.Rect | null = null;
 
-// ---------------------------------------------------------------------------
-// Stage setup
+let scroll: HTMLDivElement;
+let holder: HTMLDivElement;
 
 function viewportSize(): Size {
-  const scroll = el<HTMLDivElement>("canvas-scroll");
   return { width: scroll.clientWidth - 32, height: scroll.clientHeight - 32 };
 }
 
+function currentView(): Rect {
+  return crop ?? { x: 0, y: 0, ...imageSize };
+}
+
 function buildStage() {
+  scroll = el<HTMLDivElement>("canvas-scroll");
+  holder = el<HTMLDivElement>("stage-holder");
   stage = new Konva.Stage({
     container: "stage-holder",
     width: 10,
     height: 10,
   });
-  // Virtual scrolling: #stage-holder is a spacer with the full zoomed size,
-  // while the canvas itself (Konva's content div) never exceeds the visible
-  // viewport and sticks to it as the user scrolls. A canvas sized to the whole
-  // zoomed image would exceed WebKit's canvas limits on large captures (e.g.
-  // scrolling captures) and kill the webview.
   stage.content.style.position = "sticky";
   stage.content.style.top = "0px";
   stage.content.style.left = "0px";
@@ -95,9 +118,7 @@ function buildStage() {
 }
 
 function applyView() {
-  const view = crop ?? { x: 0, y: 0, ...imageSize };
-  const scroll = el<HTMLDivElement>("canvas-scroll");
-  const holder = el<HTMLDivElement>("stage-holder");
+  const view = currentView();
   const width = view.width * scale;
   const height = view.height * scale;
   holder.style.width = `${width}px`;
@@ -112,10 +133,8 @@ function applyView() {
   el<HTMLButtonElement>("zoom-level").textContent = `${Math.round(scale * 100)}%`;
 }
 
-/** Align the viewport-pinned canvas with the scrolled/zoomed view. */
 function syncStagePosition() {
-  const view = crop ?? { x: 0, y: 0, ...imageSize };
-  const scroll = el<HTMLDivElement>("canvas-scroll");
+  const view = currentView();
   stage.position({
     x: -view.x * scale - scroll.scrollLeft,
     y: -view.y * scale - scroll.scrollTop,
@@ -123,21 +142,12 @@ function syncStagePosition() {
   stage.batchDraw();
 }
 
-// ---------------------------------------------------------------------------
-// Zoom
-
-/**
- * Set the view scale, keeping the image point under `focal` (client
- * coordinates; defaults to the viewport centre) stationary on screen.
- */
 function setZoom(next: number, focal?: { x: number; y: number }) {
   const target = clampScale(next);
   if (target === scale) return;
-  const scroll = el<HTMLDivElement>("canvas-scroll");
-  const holder = el<HTMLDivElement>("stage-holder");
   const box = scroll.getBoundingClientRect();
   const point = focal ?? { x: box.left + scroll.clientWidth / 2, y: box.top + scroll.clientHeight / 2 };
-  const view = crop ?? { x: 0, y: 0, ...imageSize };
+  const view = currentView();
   const before = holder.getBoundingClientRect();
   const image = {
     x: (point.x - before.left) / scale + view.x,
@@ -155,20 +165,16 @@ function zoomBy(factor: number) {
   setZoom(scale * factor);
 }
 
-/** Fit the current view: smart fit first, toggling to the whole image on repeat. */
 function zoomFit() {
-  const view = crop ?? { x: 0, y: 0, ...imageSize };
-  scale = nextFitScale(scale, view, viewportSize());
+  scale = nextFitScale(scale, currentView(), viewportSize());
   applyView();
 }
 
 function bindViewportEvents() {
-  const scroll = el<HTMLDivElement>("canvas-scroll");
   scroll.addEventListener("scroll", syncStagePosition);
   window.addEventListener("resize", () => {
     if (imageSize.width > 0) applyView();
   });
-  // Pinch on Chromium-style engines and ⌘/Ctrl+scroll everywhere.
   scroll.addEventListener(
     "wheel",
     (event) => {
@@ -178,7 +184,6 @@ function bindViewportEvents() {
     },
     { passive: false },
   );
-  // Trackpad pinch on WebKit arrives as proprietary gesture events.
   let gestureBase = 1;
   scroll.addEventListener("gesturestart", (event) => {
     event.preventDefault();
@@ -191,7 +196,6 @@ function bindViewportEvents() {
   });
 }
 
-/** Pointer position in image coordinates. */
 function pointerPos() {
   const p = stage.getPointerPosition()!;
   return {
@@ -204,8 +208,6 @@ async function loadCapture(entry: CaptureEntry) {
   captureId = entry.id;
   crop = null;
   cancelCrop();
-  // Load from raw bytes as a same-origin blob URL — an asset:// image taints
-  // the canvas and breaks toDataURL() export.
   const buffer = await invoke<ArrayBuffer>("read_capture_bytes", { id: entry.id });
   const url = URL.createObjectURL(new Blob([buffer], { type: "image/png" }));
   sourceImage = new window.Image();
@@ -221,17 +223,13 @@ async function loadCapture(entry: CaptureEntry) {
   );
   annLayer.destroyChildren();
   transformer.nodes([]);
+  clearPixelateImages();
   undoStack = new UndoStack(serializeLayer(annLayer));
   syncUndoButtons();
   applyView();
-  // A width-fitted tall capture starts taller than the viewport: read from the top.
-  const scroll = el<HTMLDivElement>("canvas-scroll");
   scroll.scrollTop = 0;
   scroll.scrollLeft = 0;
 }
-
-// ---------------------------------------------------------------------------
-// Undo / redo
 
 function commit() {
   undoStack.commit(serializeLayer(annLayer));
@@ -243,27 +241,18 @@ function syncUndoButtons() {
   el<HTMLButtonElement>("redo").disabled = !undoStack.canRedo;
 }
 
-function restore(snapshot: string) {
-  transformer.nodes([]);
-  rebuildLayer(annLayer, snapshot, () => annLayer.batchDraw());
-  syncDraggable();
-  annLayer.batchDraw();
-}
-
-function undo() {
-  const snapshot = undoStack.undo();
-  if (snapshot !== null) restore(snapshot);
+function step(snapshot: string | null) {
+  if (snapshot !== null) {
+    transformer.nodes([]);
+    rebuildLayer(annLayer, snapshot);
+    syncDraggable();
+    annLayer.batchDraw();
+  }
   syncUndoButtons();
 }
 
-function redo() {
-  const snapshot = undoStack.redo();
-  if (snapshot !== null) restore(snapshot);
-  syncUndoButtons();
-}
-
-// ---------------------------------------------------------------------------
-// Tools
+const undo = () => step(undoStack.undo());
+const redo = () => step(undoStack.redo());
 
 function setTool(next: Tool) {
   tool = next;
@@ -288,7 +277,7 @@ function highlightWidth() {
 }
 
 function startDraft(pos: { x: number; y: number }): Konva.Shape | null {
-  const base = { stroke: color, strokeWidth, name: "" };
+  const base = { stroke: color, strokeWidth };
   switch (tool) {
     case "arrow":
       return buildArrow({
@@ -353,18 +342,7 @@ function onPointerDown() {
   const pos = pointerPos();
   draftStart = pos;
   if (tool === "crop" || tool === "pixelate") {
-    marquee?.destroy();
-    marquee = new Konva.Rect({
-      x: pos.x,
-      y: pos.y,
-      width: 1,
-      height: 1,
-      stroke: tool === "crop" ? "#9172e7" : "#ff9500",
-      strokeWidth: 2 / scale,
-      dash: [6 / scale, 4 / scale],
-      listening: false,
-    });
-    uiLayer.add(marquee);
+    showMarquee({ x: pos.x, y: pos.y, width: 1, height: 1 }, MARQUEE_STROKE[tool]);
     return;
   }
   draft = startDraft(pos);
@@ -385,8 +363,6 @@ function onPointerMove() {
   if (!draft) return;
   switch (draft.name()) {
     case "arrow":
-      // buildArrow returns a generic Konva.Shape — no .points() method
-      // (Konva only registers it on Line.prototype); update the attr directly.
       draft.setAttr("points", [draftStart.x, draftStart.y, pos.x, pos.y]);
       break;
     case "line":
@@ -444,11 +420,6 @@ function onPointerUp() {
   commit();
 }
 
-/**
- * Abandon the shape being drawn by the current pointer drag, if any.
- * The pointer may still be down, but with no draft left the remaining
- * move/up events are no-ops, so nothing is added or committed.
- */
 function cancelDraft(): boolean {
   if (!draft) return false;
   draft.destroy();
@@ -470,26 +441,28 @@ function addPixelation(region: Rect) {
     ...region,
     listening: false,
   });
-  node.setAttr("src", canvas.toDataURL("image/png"));
+  node.setAttr("src", registerPixelateImage(canvas));
   annLayer.add(node);
   annLayer.batchDraw();
   commit();
 }
 
-// ---------------------------------------------------------------------------
-// Crop
-
-function proposeCrop(rect: Rect) {
-  pendingCrop = rect;
+function showMarquee(rect: Rect, stroke: string) {
+  marquee?.destroy();
   marquee = new Konva.Rect({
     ...rect,
-    stroke: "#9172e7",
+    stroke,
     strokeWidth: 2 / scale,
     dash: [6 / scale, 4 / scale],
     listening: false,
   });
   uiLayer.add(marquee);
   uiLayer.batchDraw();
+}
+
+function proposeCrop(rect: Rect) {
+  pendingCrop = rect;
+  showMarquee(rect, MARQUEE_STROKE.crop);
   el<HTMLDivElement>("crop-confirm").classList.remove("hidden");
 }
 
@@ -510,9 +483,6 @@ function applyCrop() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Selection & text
-
 function onStageClick(e: Konva.KonvaEventObject<MouseEvent>) {
   if (tool === "text") {
     addText(pointerPos());
@@ -529,7 +499,6 @@ function onStageClick(e: Konva.KonvaEventObject<MouseEvent>) {
     uiLayer.batchDraw();
     return;
   }
-  // Counter badges are groups; clicks land on the inner circle.
   const node = target.findAncestor(".counter") ?? target;
   if (node.getLayer() === annLayer && node.name() !== "pixelate") {
     transformer.nodes([node]);
@@ -543,7 +512,6 @@ function onStageDblClick(e: Konva.KonvaEventObject<MouseEvent>) {
   }
 }
 
-/** Stamp a numbered badge; the tool stays active for sequential stamping. */
 function addCounter(pos: { x: number; y: number }) {
   const existing = annLayer
     .getChildren((node) => node.name() === "counter")
@@ -576,17 +544,12 @@ function addText(pos: { x: number; y: number }) {
   editText(node);
 }
 
-/** Standard Konva recipe: float a textarea over the text node. */
 function editText(node: Konva.Text) {
   node.hide();
   transformer.nodes([]);
   annLayer.batchDraw();
 
-  // The canvas (Konva content div) is viewport-pinned; its rect, not the
-  // scrolling holder's, anchors screen-space overlays.
   const stageBox = stage.content.getBoundingClientRect();
-  // getAbsolutePosition(stage) is in image coordinates (excludes the stage's
-  // fit-scale/pan transform) — map it to screen space before styling.
   const abs = node.getAbsolutePosition(stage);
   const screen = imageToScreen(abs, stage.position(), scale);
   const area = document.createElement("textarea");
@@ -631,26 +594,12 @@ function deleteSelection() {
   commit();
 }
 
-// ---------------------------------------------------------------------------
-// Export
-
 const PNG_PREFIX = "data:image/png;base64,";
 
-/**
- * Render the annotated image to base64 PNG at native resolution. WebKit returns
- * an empty string (or throws) when the export canvas is too large — a full-res
- * multi-display/Retina screenshot can exceed its limits — so retry at
- * progressively lower resolution rather than emit empty data (which would
- * otherwise overwrite the capture with nothing).
- */
 function renderPng(): string {
   transformer.nodes([]);
   marquee?.hide();
-  // The on-screen stage is viewport-pinned and only renders the visible slice,
-  // so temporarily give it the whole view for export — at a scale that keeps
-  // the intermediate layer canvases within WebKit's size limits. toDataURL
-  // re-renders vectors at `pixelRatio`, so the export itself stays native-res.
-  const view = crop ?? { x: 0, y: 0, ...imageSize };
+  const view = currentView();
   const dpr = window.devicePixelRatio || 1;
   const MAX_LAYER_DIM = 8192;
   const exportScale = Math.min(
@@ -675,7 +624,6 @@ function renderPng(): string {
           mimeType: "image/png",
         });
       } catch {
-        // oversized/tainted canvas — fall through and try a smaller one
       }
       if (dataUrl.startsWith(PNG_PREFIX) && dataUrl.length > PNG_PREFIX.length + 32) {
         return dataUrl.slice(PNG_PREFIX.length);
@@ -693,17 +641,12 @@ async function exportPng(action: Record<string, unknown>) {
   await invoke("export_png", { data: renderPng(), action });
 }
 
-// ---------------------------------------------------------------------------
-// Wiring
-
-/** Persist the current tool/color/stroke so the next editor session restores them. */
 function savePrefs() {
   void invoke("set_editor_prefs", {
     prefs: { tool, color, stroke_width: strokeWidth },
   }).catch(() => {});
 }
 
-/** Set the active color; optionally apply it to the current selection. */
 function selectColor(value: string, applyToSelection: boolean) {
   color = value;
   const colors = el<HTMLDivElement>("colors");
@@ -758,8 +701,8 @@ function buildToolbar() {
 
   el<HTMLButtonElement>("undo").onclick = undo;
   el<HTMLButtonElement>("redo").onclick = redo;
-  el<HTMLButtonElement>("zoom-in").onclick = () => zoomBy(1.25);
-  el<HTMLButtonElement>("zoom-out").onclick = () => zoomBy(1 / 1.25);
+  el<HTMLButtonElement>("zoom-in").onclick = () => zoomBy(ZOOM_STEP);
+  el<HTMLButtonElement>("zoom-out").onclick = () => zoomBy(1 / ZOOM_STEP);
   el<HTMLButtonElement>("zoom-level").onclick = () => setZoom(1);
   el<HTMLButtonElement>("zoom-fit").onclick = zoomFit;
   el<HTMLButtonElement>("crop-apply").onclick = applyCrop;
@@ -783,7 +726,6 @@ function buildToolbar() {
     });
 }
 
-/** Run an editor action, surfacing any failure instead of silently dropping it. */
 async function guard(action: () => Promise<void>) {
   try {
     await action();
@@ -810,12 +752,12 @@ function bindKeyboard() {
     }
     if (primary && (event.key === "=" || event.key === "+")) {
       event.preventDefault();
-      zoomBy(1.25);
+      zoomBy(ZOOM_STEP);
       return;
     }
     if (primary && event.key === "-") {
       event.preventDefault();
-      zoomBy(1 / 1.25);
+      zoomBy(1 / ZOOM_STEP);
       return;
     }
     if (primary && event.key === "0") {
@@ -828,28 +770,13 @@ function bindKeyboard() {
       return;
     }
     if (event.key === "Escape") {
-      // A shape being drawn right now is discarded first; the selection and a
-      // pending crop are left alone so one Escape undoes one thing.
       if (cancelDraft()) return;
       cancelCrop();
       transformer.nodes([]);
       uiLayer.batchDraw();
       return;
     }
-    const shortcuts: Record<string, Tool> = {
-      v: "select",
-      a: "arrow",
-      r: "rect",
-      e: "ellipse",
-      l: "line",
-      p: "pen",
-      h: "highlight",
-      t: "text",
-      n: "counter",
-      b: "pixelate",
-      c: "crop",
-    };
-    const next = shortcuts[event.key.toLowerCase()];
+    const next = TOOL_KEYS[event.key.toLowerCase()];
     if (next && !primary) {
       setTool(next);
       savePrefs();
@@ -857,12 +784,7 @@ function bindKeyboard() {
   });
 }
 
-/** Restore the last-used tool/color/stroke from persisted preferences. */
 async function applyPrefs() {
-  const valid: Tool[] = [
-    "select", "arrow", "rect", "ellipse", "line",
-    "pen", "highlight", "text", "counter", "pixelate", "crop",
-  ];
   try {
     const prefs = await invoke<{ tool: string; color: string; stroke_width: number }>(
       "get_editor_prefs",
@@ -870,7 +792,7 @@ async function applyPrefs() {
     selectColor(prefs.color, false);
     strokeWidth = prefs.stroke_width;
     el<HTMLInputElement>("stroke-width").value = String(prefs.stroke_width);
-    setTool((valid.includes(prefs.tool as Tool) ? prefs.tool : "select") as Tool);
+    setTool(TOOLS.includes(prefs.tool as Tool) ? (prefs.tool as Tool) : "select");
   } catch {
     setTool("select");
   }
@@ -884,11 +806,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   bindViewportEvents();
   await applyPrefs();
 
-  // Reload requests while the window is already open (reuse path).
   await listen<CaptureEntry>("editor:load", (event) => void loadCapture(event.payload));
 
-  // On (re)load, always pull the current target from the backend rather than
-  // relying on an event that may have fired before this listener existed.
   try {
     await loadCapture(await invoke<CaptureEntry>("editor_target"));
   } catch (err) {
