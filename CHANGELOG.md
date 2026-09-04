@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-04
+
+### Added
+
+- Screen recording (macOS 15 or later): record a whole display to an .mp4
+  (H.264, 30 fps, native resolution, cursor shown) with an optional
+  microphone so you can narrate. `Cmd+Shift+0` or the new "Record Screen"
+  tray item opens a small HUD with a Microphone toggle and Record; while
+  recording, the HUD shrinks to a pill with the elapsed time and a Stop
+  button. Stop from the pill, with Escape, with the shortcut again, or from
+  the tray. The recording is made from the display under the cursor and the
+  app's own windows are left out of it. The microphone choice is remembered
+  between recordings. Older macOS versions get an explanatory dialog;
+  screenshots keep working everywhere.
+- Recordings land in the quick-access overlay like a screenshot, with a
+  poster-frame thumbnail and a play badge, and offer drag-out, Save (.mp4),
+  Open and Show in Finder. Copy and Annotate are only offered for images.
+- Capture history shows recordings alongside screenshots and keeps at most
+  10 videos (50 captures in total). Videos left half-written by a crash or
+  a forced quit are cleaned up on the next launch and never listed.
+- The "Record screen" shortcut can be changed in Settings and is shown on
+  the Welcome screen (macOS only).
+
+### Changed
+
+- Fullscreen capture now grabs the display under the cursor instead of the
+  main display.
+- Quitting the app while a recording is running stops the recording and
+  finishes writing the file first.
+
+### Fixed
+
+- A Stop pressed while a recording was still starting is now honoured once
+  the recording begins, instead of being ignored.
+
 ## [1.3.4] - 2026-08-17
 
 ### Added
