@@ -24,16 +24,16 @@ T = [
         "fr": "<title>Screen for me — la boucle capture-partage la plus rapide pour macOS et Linux</title>",
         "de": "<title>Screen for me — der schnellste Weg vom Screenshot zum Teilen für macOS &amp; Linux</title>",
         "it": "<title>Screen for me — il ciclo cattura-condivisione più rapido per macOS e Linux</title>"}),
-    ('content="Screen for me is a free, open-source screenshot app for macOS and Linux. Capture, annotate, and drag your screenshot straight into any app — in seconds."', {
-        "es": 'content="Screen for me es una aplicación de capturas de pantalla gratuita y de código abierto para macOS y Linux. Captura, anota y arrastra tu captura directamente a cualquier aplicación, en segundos."',
-        "fr": 'content="Screen for me est une application de capture d\'écran gratuite et open source pour macOS et Linux. Capturez, annotez et glissez votre capture directement dans n\'importe quelle application, en quelques secondes."',
-        "de": 'content="Screen for me ist eine kostenlose Open-Source-Screenshot-App für macOS und Linux. Aufnehmen, beschriften und den Screenshot direkt in jede App ziehen — in Sekunden."',
-        "it": 'content="Screen for me è un\'app di screenshot gratuita e open source per macOS e Linux. Cattura, annota e trascina lo screenshot direttamente in qualsiasi app, in pochi secondi."'}),
-    ('content="A free, open-source screenshot app for macOS and Linux. The fastest capture-to-share loop."', {
-        "es": 'content="Una aplicación de capturas de pantalla gratuita y de código abierto para macOS y Linux. El ciclo de captura a compartir más rápido."',
-        "fr": 'content="Une application de capture d\'écran gratuite et open source pour macOS et Linux. La boucle capture-partage la plus rapide."',
-        "de": 'content="Eine kostenlose Open-Source-Screenshot-App für macOS und Linux. Der schnellste Weg vom Screenshot zum Teilen."',
-        "it": 'content="Un\'app di screenshot gratuita e open source per macOS e Linux. Il ciclo cattura-condivisione più rapido."'}),
+    ('content="Screen for me is a free, open-source screenshot and screen recording app for macOS and Linux. Capture, annotate, record with narration, and drag the result straight into any app — in seconds."', {
+        "es": 'content="Screen for me es una aplicación gratuita y de código abierto de capturas y grabación de pantalla para macOS y Linux. Captura, anota, graba con narración y arrastra el resultado directamente a cualquier aplicación, en segundos."',
+        "fr": 'content="Screen for me est une application gratuite et open source de capture et d\'enregistrement d\'écran pour macOS et Linux. Capturez, annotez, enregistrez avec commentaire et glissez le résultat directement dans n\'importe quelle application, en quelques secondes."',
+        "de": 'content="Screen for me ist eine kostenlose Open-Source-App für Screenshots und Bildschirmaufnahmen für macOS und Linux. Aufnehmen, beschriften, mit Kommentar aufzeichnen und das Ergebnis direkt in jede App ziehen — in Sekunden."',
+        "it": 'content="Screen for me è un\'app gratuita e open source per screenshot e registrazione dello schermo per macOS e Linux. Cattura, annota, registra con commento vocale e trascina il risultato direttamente in qualsiasi app, in pochi secondi."'}),
+    ('content="A free, open-source screenshot and screen recording app for macOS and Linux. The fastest capture-to-share loop."', {
+        "es": 'content="Una aplicación gratuita y de código abierto de capturas y grabación de pantalla para macOS y Linux. El ciclo de captura a compartir más rápido."',
+        "fr": 'content="Une application gratuite et open source de capture et d\'enregistrement d\'écran pour macOS et Linux. La boucle capture-partage la plus rapide."',
+        "de": 'content="Eine kostenlose Open-Source-App für Screenshots und Bildschirmaufnahmen für macOS und Linux. Der schnellste Weg vom Screenshot zum Teilen."',
+        "it": 'content="Un\'app gratuita e open source per screenshot e registrazione dello schermo per macOS e Linux. Il ciclo cattura-condivisione più rapido."'}),
     ('<meta property="og:title" content="Screen for me — the fastest capture-to-share loop">', {
         "es": '<meta property="og:title" content="Screen for me — el ciclo de captura a compartir más rápido">',
         "fr": '<meta property="og:title" content="Screen for me — la boucle capture-partage la plus rapide">',
@@ -49,11 +49,11 @@ T = [
         "fr": '<meta property="og:image:alt" content="Capturez. Annotez. Glissez-la où vous voulez.">',
         "de": '<meta property="og:image:alt" content="Aufnehmen. Beschriften. Überallhin ziehen.">',
         "it": '<meta property="og:image:alt" content="Cattura. Annota. Trascinala ovunque.">'}),
-    ('"description": "A free, open-source screenshot app for macOS and Linux — capture, annotate, and drag your screenshot into any app in seconds.",', {
-        "es": '"description": "Una aplicación de capturas de pantalla gratuita y de código abierto para macOS y Linux: captura, anota y arrastra tu captura a cualquier aplicación en segundos.",',
-        "fr": '"description": "Une application de capture d\'écran gratuite et open source pour macOS et Linux : capturez, annotez et glissez votre capture dans n\'importe quelle application en quelques secondes.",',
-        "de": '"description": "Eine kostenlose Open-Source-Screenshot-App für macOS und Linux — aufnehmen, beschriften und den Screenshot in Sekunden in jede App ziehen.",',
-        "it": '"description": "Un\'app di screenshot gratuita e open source per macOS e Linux: cattura, annota e trascina lo screenshot in qualsiasi app in pochi secondi.",'}),
+    ('"description": "A free, open-source screenshot and screen recording app for macOS and Linux — capture, annotate, record with narration, and drag the result into any app in seconds.",', {
+        "es": '"description": "Una aplicación gratuita y de código abierto de capturas y grabación de pantalla para macOS y Linux: captura, anota, graba con narración y arrastra el resultado a cualquier aplicación en segundos.",',
+        "fr": '"description": "Une application gratuite et open source de capture et d\'enregistrement d\'écran pour macOS et Linux : capturez, annotez, enregistrez avec commentaire et glissez le résultat dans n\'importe quelle application en quelques secondes.",',
+        "de": '"description": "Eine kostenlose Open-Source-App für Screenshots und Bildschirmaufnahmen für macOS und Linux — aufnehmen, beschriften, mit Kommentar aufzeichnen und das Ergebnis in Sekunden in jede App ziehen.",',
+        "it": '"description": "Un\'app gratuita e open source per screenshot e registrazione dello schermo per macOS e Linux: cattura, annota, registra con commento vocale e trascina il risultato in qualsiasi app in pochi secondi.",'}),
     ('<nav class="top-nav" aria-label="Site">', {
         "es": '<nav class="top-nav" aria-label="Sitio">',
         "fr": '<nav class="top-nav" aria-label="Site">',
@@ -260,6 +260,33 @@ T = [
         "fr": 'aria-label="Une longue page défilant derrière la pastille d\'enregistrement pendant que Screen for me l\'assemble en une seule image"',
         "de": 'aria-label="Eine lange Seite scrollt hinter der Aufnahme-Pille, während Screen for me sie zu einem Bild zusammenfügt"',
         "it": 'aria-label="Una pagina lunga che scorre dietro la pillola di registrazione mentre Screen for me la unisce in un\'unica immagine"'}),
+    ("<h2>When a screenshot isn’t enough, record it</h2>", {
+        "es": "<h2>Cuando una captura no basta, grábalo</h2>",
+        "fr": "<h2>Quand une capture ne suffit pas, enregistrez</h2>",
+        "de": "<h2>Wenn ein Screenshot nicht reicht: nimm es auf</h2>",
+        "it": "<h2>Quando uno screenshot non basta, registra</h2>"}),
+    ("""<p>Press <span class="fkbd"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>0</kbd></span> and Screen for me records the display under
+           your cursor to an .mp4 — flip the microphone on and talk over it. Stop, and the video lands in the
+           same overlay as your screenshots: drag it into a chat, save it, or open it in your player.</p>""", {
+        "es": '<p>Pulsa <span class="fkbd"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>0</kbd></span> y Screen for me graba la pantalla que hay bajo el cursor en un .mp4; activa el micrófono y nárralo. Al parar, el vídeo aparece en el mismo panel que tus capturas: arrástralo a un chat, guárdalo o ábrelo en tu reproductor.</p>',
+        "fr": '<p>Appuyez sur <span class="fkbd"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>0</kbd></span> et Screen for me enregistre l\'écran sous le curseur en .mp4 ; activez le micro et commentez en direct. À l\'arrêt, la vidéo arrive dans le même panneau que vos captures : glissez-la dans une discussion, enregistrez-la ou ouvrez-la dans votre lecteur.</p>',
+        "de": '<p>Drücke <span class="fkbd"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>0</kbd></span> und Screen for me nimmt den Bildschirm unter dem Cursor als .mp4 auf — Mikrofon an, und du sprichst dazu. Nach dem Stopp landet das Video im selben Overlay wie deine Screenshots: in einen Chat ziehen, speichern oder im Player öffnen.</p>',
+        "it": '<p>Premi <span class="fkbd"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>0</kbd></span> e Screen for me registra lo schermo sotto il cursore in un .mp4; attiva il microfono e commenta dal vivo. Allo stop, il video arriva nello stesso pannello degli screenshot: trascinalo in una chat, salvalo o aprilo nel tuo lettore.</p>'}),
+    ('<p class="feature-note">Native resolution, 30 fps, cursor included. Screen recording needs macOS 15 or later.</p>', {
+        "es": '<p class="feature-note">Resolución nativa, 30 fps, con el cursor. La grabación de pantalla necesita macOS 15 o posterior.</p>',
+        "fr": '<p class="feature-note">Résolution native, 30 i/s, curseur inclus. L\'enregistrement d\'écran nécessite macOS 15 ou ultérieur.</p>',
+        "de": '<p class="feature-note">Native Auflösung, 30 fps, Cursor inklusive. Bildschirmaufnahme braucht macOS 15 oder neuer.</p>',
+        "it": '<p class="feature-note">Risoluzione nativa, 30 fps, cursore incluso. La registrazione dello schermo richiede macOS 15 o successivo.</p>'}),
+    ('data-media-alt="Screen recording in progress: the recording pill with the elapsed time and a Stop button over the desktop"', {
+        "es": 'data-media-alt="Grabación de pantalla en curso: el indicador de grabación con el tiempo transcurrido y un botón Stop sobre el escritorio"',
+        "fr": 'data-media-alt="Enregistrement d\'écran en cours : la pastille d\'enregistrement avec le temps écoulé et un bouton Stop au-dessus du bureau"',
+        "de": 'data-media-alt="Laufende Bildschirmaufnahme: die Aufnahme-Pille mit der verstrichenen Zeit und einem Stop-Button über dem Schreibtisch"',
+        "it": 'data-media-alt="Registrazione dello schermo in corso: la pillola di registrazione con il tempo trascorso e un pulsante Stop sopra la scrivania"'}),
+    ('aria-label="The Record Screen panel with its microphone toggle turning into the recording pill with a running timer"', {
+        "es": 'aria-label="El panel de grabación con su interruptor de micrófono convirtiéndose en el indicador de grabación con un cronómetro en marcha"',
+        "fr": 'aria-label="Le panneau d\'enregistrement avec son bouton micro qui se transforme en pastille d\'enregistrement avec un chronomètre en marche"',
+        "de": 'aria-label="Das Aufnahme-Panel mit Mikrofon-Schalter, das zur Aufnahme-Pille mit laufender Uhr wird"',
+        "it": 'aria-label="Il pannello di registrazione con l\'interruttore del microfono che diventa la pillola di registrazione con il timer in corso"'}),
     ('<section class="etc" aria-label="More details">', {
         "es": '<section class="etc" aria-label="Más detalles">',
         "fr": '<section class="etc" aria-label="Plus de détails">',

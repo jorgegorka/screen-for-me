@@ -956,6 +956,77 @@ kbd {
 
 @keyframes blink { 50% { opacity: 0.25; } }
 
+/* screen-recording visual: the pre-record HUD gives way to the recording pill */
+.vis-record .vis-window { left: 18%; top: 26%; width: 64%; height: 60%; }
+
+.rec-hud {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 236px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--glass);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  font-size: 11.5px;
+  color: var(--text);
+  z-index: var(--z-hud);
+}
+.rec-hud-title { font-size: 12.5px; font-weight: 600; color: var(--text-strong); }
+.rec-hud-hint { color: rgba(255, 255, 255, 0.7); line-height: 1.4; }
+.rec-hud-controls { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+
+.rec-hud-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+}
+.rec-hud-mic {
+  margin-right: auto;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 10px var(--glow);
+}
+.rec-hud-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.play .rec-hud { animation: hud-out 450ms var(--ease-out) 1400ms both; }
+
+@keyframes hud-out {
+  from { opacity: 1; transform: translate(-50%, -50%); }
+  to   { opacity: 0; transform: translate(-50%, -50%) scale(0.94); }
+}
+
+.rec-pill-video {
+  top: 9%;
+  bottom: auto;
+  left: 0;
+  right: 0;
+  width: max-content;
+  margin: 0 auto;
+  gap: 10px;
+  padding: 5px 6px 5px 13px;
+  border-radius: 12px;
+  font-size: 13px;
+  opacity: 0;
+}
+.rec-pill-video .rec-dot { width: 10px; height: 10px; }
+.rec-pill-video .rec-hud-btn { padding: 4px 9px; }
+.play .rec-pill-video { animation: rise 500ms var(--ease-out) 1750ms forwards; }
+.play .rec-pill-video .rec-dot { animation: blink 1.2s ease-in-out 1750ms 3; }
+
 /* ---------- etc strip ---------- */
 
 .etc {
@@ -1109,6 +1180,8 @@ kbd {
   .wire-path { animation: none; stroke-dashoffset: 0; }
   .arrow-path, .arrow-head { stroke-dashoffset: 0; }
   .play .vis-marquee, .play .hud-large, .play .arrow-path, .play .arrow-head,
-  .play .scroll-page-inner, .play .rec-dot { animation: none; }
+  .play .scroll-page-inner, .play .rec-dot, .play .rec-hud, .play .rec-pill-video { animation: none; }
   .play .scroll-page-inner { transform: translateY(-19%); }
+  .rec-hud { display: none; }
+  .rec-pill-video { opacity: 1; }
 }

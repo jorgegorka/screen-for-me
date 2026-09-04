@@ -32,6 +32,7 @@ swaps the recreation for your real asset on load. No HTML edits needed.
 | `assets/feature-overlay.png`     | Quick-access overlay visual                     |
 | `assets/feature-editor.png`      | Annotation editor visual                        |
 | `assets/feature-scrollcap.png`   | Scrolling-capture visual                        |
+| `assets/feature-recording.png`   | Screen-recording visual (HUD → recording pill)  |
 
 Tips:
 

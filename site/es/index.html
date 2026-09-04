@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Screen for me — el ciclo de captura a compartir más rápido para macOS y Linux</title>
-  <meta name="description" content="Screen for me es una aplicación de capturas de pantalla gratuita y de código abierto para macOS y Linux. Captura, anota y arrastra tu captura directamente a cualquier aplicación, en segundos.">
+  <meta name="description" content="Screen for me es una aplicación gratuita y de código abierto de capturas y grabación de pantalla para macOS y Linux. Captura, anota, graba con narración y arrastra el resultado directamente a cualquier aplicación, en segundos.">
   <meta property="og:title" content="Screen for me — el ciclo de captura a compartir más rápido">
-  <meta property="og:description" content="Una aplicación de capturas de pantalla gratuita y de código abierto para macOS y Linux. El ciclo de captura a compartir más rápido.">
+  <meta property="og:description" content="Una aplicación gratuita y de código abierto de capturas y grabación de pantalla para macOS y Linux. El ciclo de captura a compartir más rápido.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://screenforme.app/es/">
   <meta property="og:site_name" content="Screen for me">
@@ -32,7 +32,7 @@
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": "Screen for me",
-    "description": "Una aplicación de capturas de pantalla gratuita y de código abierto para macOS y Linux: captura, anota y arrastra tu captura a cualquier aplicación en segundos.",
+    "description": "Una aplicación gratuita y de código abierto de capturas y grabación de pantalla para macOS y Linux: captura, anota, graba con narración y arrastra el resultado a cualquier aplicación en segundos.",
     "inLanguage": "es",
     "url": "https://screenforme.app/",
     "image": "https://screenforme.app/assets/og.png",
@@ -305,6 +305,41 @@
             </div>
           </div>
           <div class="rec-pill"><i class="rec-dot"></i> Capturing… <b>4 of 9</b></div>
+        </div>
+      </figure>
+    </article>
+
+    <article class="feature">
+      <div class="feature-copy">
+        <h2>Cuando una captura no basta, grábalo</h2>
+        <p>Pulsa <span class="fkbd"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>0</kbd></span> y Screen for me graba la pantalla que hay bajo el cursor en un .mp4; activa el micrófono y nárralo. Al parar, el vídeo aparece en el mismo panel que tus capturas: arrástralo a un chat, guárdalo o ábrelo en tu reproductor.</p>
+        <p class="feature-note">Resolución nativa, 30 fps, con el cursor. La grabación de pantalla necesita macOS 15 o posterior.</p>
+      </div>
+      <figure class="feature-visual" data-media="assets/feature-recording.png" data-media-alt="Grabación de pantalla en curso: el indicador de grabación con el tiempo transcurrido y un botón Stop sobre el escritorio">
+        <div class="vis vis-record" role="img" aria-label="El panel de grabación con su interruptor de micrófono convirtiéndose en el indicador de grabación con un cronómetro en marcha">
+          <div class="vis-desk vis-desk-b"></div>
+          <div class="vis-window mock-window" aria-hidden="true">
+            <div class="mock-titlebar"><i></i><i></i><i></i></div>
+            <div class="mock-body">
+              <div class="mock-line w-75"></div>
+              <div class="mock-line w-55"></div>
+              <div class="mock-line w-88"></div>
+              <div class="mock-line w-60"></div>
+            </div>
+          </div>
+          <div class="rec-hud" aria-hidden="true">
+            <b class="rec-hud-title">Record Screen</b>
+            <span class="rec-hud-hint">Records the display under the cursor</span>
+            <div class="rec-hud-controls">
+              <span class="rec-hud-btn rec-hud-mic">
+                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="1.5" width="5" height="8" rx="2.5"/><path d="M3 7.5a5 5 0 0 0 10 0M8 12.5v2M5.5 14.5h5"/></svg>
+                Microphone
+              </span>
+              <span class="rec-hud-btn">Cancel</span>
+              <span class="rec-hud-btn rec-hud-primary">Record</span>
+            </div>
+          </div>
+          <div class="rec-pill rec-pill-video" aria-hidden="true"><i class="rec-dot"></i><b>00:07</b><span class="rec-hud-btn">Stop</span></div>
         </div>
       </figure>
     </article>

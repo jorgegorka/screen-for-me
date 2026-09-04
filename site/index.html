@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Screen for me — the fastest capture-to-share loop for macOS &amp; Linux</title>
-  <meta name="description" content="Screen for me is a free, open-source screenshot app for macOS and Linux. Capture, annotate, and drag your screenshot straight into any app — in seconds.">
+  <meta name="description" content="Screen for me is a free, open-source screenshot and screen recording app for macOS and Linux. Capture, annotate, record with narration, and drag the result straight into any app — in seconds.">
   <meta property="og:title" content="Screen for me — the fastest capture-to-share loop">
-  <meta property="og:description" content="A free, open-source screenshot app for macOS and Linux. The fastest capture-to-share loop.">
+  <meta property="og:description" content="A free, open-source screenshot and screen recording app for macOS and Linux. The fastest capture-to-share loop.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://screenforme.app/">
   <meta property="og:site_name" content="Screen for me">
@@ -32,7 +32,7 @@
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": "Screen for me",
-    "description": "A free, open-source screenshot app for macOS and Linux — capture, annotate, and drag your screenshot into any app in seconds.",
+    "description": "A free, open-source screenshot and screen recording app for macOS and Linux — capture, annotate, record with narration, and drag the result into any app in seconds.",
     "inLanguage": "en",
     "url": "https://screenforme.app/",
     "image": "https://screenforme.app/assets/og.png",
@@ -312,6 +312,43 @@
             </div>
           </div>
           <div class="rec-pill"><i class="rec-dot"></i> Capturing… <b>4 of 9</b></div>
+        </div>
+      </figure>
+    </article>
+
+    <article class="feature">
+      <div class="feature-copy">
+        <h2>When a screenshot isn’t enough, record it</h2>
+        <p>Press <span class="fkbd"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>0</kbd></span> and Screen for me records the display under
+           your cursor to an .mp4 — flip the microphone on and talk over it. Stop, and the video lands in the
+           same overlay as your screenshots: drag it into a chat, save it, or open it in your player.</p>
+        <p class="feature-note">Native resolution, 30 fps, cursor included. Screen recording needs macOS 15 or later.</p>
+      </div>
+      <figure class="feature-visual" data-media="assets/feature-recording.png" data-media-alt="Screen recording in progress: the recording pill with the elapsed time and a Stop button over the desktop">
+        <div class="vis vis-record" role="img" aria-label="The Record Screen panel with its microphone toggle turning into the recording pill with a running timer">
+          <div class="vis-desk vis-desk-b"></div>
+          <div class="vis-window mock-window" aria-hidden="true">
+            <div class="mock-titlebar"><i></i><i></i><i></i></div>
+            <div class="mock-body">
+              <div class="mock-line w-75"></div>
+              <div class="mock-line w-55"></div>
+              <div class="mock-line w-88"></div>
+              <div class="mock-line w-60"></div>
+            </div>
+          </div>
+          <div class="rec-hud" aria-hidden="true">
+            <b class="rec-hud-title">Record Screen</b>
+            <span class="rec-hud-hint">Records the display under the cursor</span>
+            <div class="rec-hud-controls">
+              <span class="rec-hud-btn rec-hud-mic">
+                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="1.5" width="5" height="8" rx="2.5"/><path d="M3 7.5a5 5 0 0 0 10 0M8 12.5v2M5.5 14.5h5"/></svg>
+                Microphone
+              </span>
+              <span class="rec-hud-btn">Cancel</span>
+              <span class="rec-hud-btn rec-hud-primary">Record</span>
+            </div>
+          </div>
+          <div class="rec-pill rec-pill-video" aria-hidden="true"><i class="rec-dot"></i><b>00:07</b><span class="rec-hud-btn">Stop</span></div>
         </div>
       </figure>
     </article>
