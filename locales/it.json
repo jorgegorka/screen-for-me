@@ -186,8 +186,11 @@
   "recorder.cancel": "Annulla",
   "recorder.starting": "Avvio…",
   "recorder.stop": "Interrompi",
+  "recorder.stopping": "Arresto…",
   "recorder.unsupported_title": "Registrazione dello schermo non disponibile",
   "recorder.unsupported_body": "La registrazione dello schermo richiede macOS 15 o successivo.",
+  "recorder.failed_title": "Registrazione non riuscita",
+  "recorder.failed_body": "Impossibile completare la registrazione dello schermo:\n{detail}",
 
   "timer.hint": "Fai clic per annullare",
 

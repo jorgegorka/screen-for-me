@@ -71,7 +71,7 @@ impl Settings {
         }
 
         let mut seen = Vec::new();
-        for action in shortcuts::ACTIONS {
+        for &action in shortcuts::ACTIONS {
             let parsed = shortcuts::validate(self.shortcut(action)).ok();
             let parsed = match parsed {
                 Some(p) if !seen.contains(&p) => p,
@@ -317,8 +317,13 @@ mod tests {
     }
 
     #[test]
-    fn record_shortcut_has_a_default_and_yields_to_earlier_actions() {
+    fn record_shortcut_has_a_default() {
         assert_eq!(Settings::default().shortcut_record, "CmdOrCtrl+Shift+0");
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn record_shortcut_yields_to_earlier_actions() {
         let s = Settings {
             shortcut_area: "Alt+Shift+R".into(),
             shortcut_record: "Alt+Shift+R".into(),

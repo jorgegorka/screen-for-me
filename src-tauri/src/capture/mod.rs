@@ -5,6 +5,8 @@ mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "macos")]
+pub mod display;
+#[cfg(target_os = "macos")]
 pub mod stitch;
 #[cfg(target_os = "macos")]
 pub mod scroll_input;

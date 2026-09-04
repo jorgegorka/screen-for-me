@@ -76,6 +76,10 @@ h3 {
   font-weight: 500;
 }
 
+.shortcut-row[hidden] {
+  display: none;
+}
+
 kbd {
   font-family: inherit;
   font-size: 12px;

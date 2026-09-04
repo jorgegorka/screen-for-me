@@ -186,8 +186,11 @@
   "recorder.cancel": "Annuler",
   "recorder.starting": "Démarrage…",
   "recorder.stop": "Arrêter",
+  "recorder.stopping": "Arrêt…",
   "recorder.unsupported_title": "Enregistrement d'écran indisponible",
   "recorder.unsupported_body": "L'enregistrement d'écran nécessite macOS 15 ou une version ultérieure.",
+  "recorder.failed_title": "Échec de l'enregistrement",
+  "recorder.failed_body": "L'enregistrement d'écran n'a pas pu être terminé :\n{detail}",
 
   "timer.hint": "Cliquez pour annuler",
 

@@ -1,7 +1,9 @@
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
+#[cfg(target_os = "macos")]
+use std::time::Instant;
 
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -119,11 +121,7 @@ const OVERLAY_BASE_HEIGHT: f64 = 264.0;
 
 #[cfg(target_os = "macos")]
 fn cursor_point(_app: &AppHandle) -> Option<(f64, f64)> {
-    use core_graphics::event::CGEvent;
-    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
-    let source = CGEventSource::new(CGEventSourceStateID::CombinedSessionState).ok()?;
-    let point = CGEvent::new(source).ok()?.location();
-    Some((point.x, point.y))
+    capture::display::cursor_location()
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -386,10 +384,13 @@ pub fn set_shortcut(
     action: crate::shortcuts::ShortcutAction,
     accelerator: String,
 ) -> Result<Settings, String> {
+    if !action.supported() {
+        return Err(crate::i18n::t("settings.shortcut_error_invalid"));
+    }
     let accelerator = accelerator.trim().to_string();
     let parsed = crate::shortcuts::validate(&accelerator)?;
     let mut settings = state.settings.get();
-    for other in crate::shortcuts::ACTIONS {
+    for &other in crate::shortcuts::ACTIONS {
         if other != action && crate::shortcuts::validate(settings.shortcut(other)) == Ok(parsed) {
             return Err(crate::i18n::t("settings.shortcut_error_duplicate"));
         }
@@ -704,9 +705,13 @@ impl Drop for RunningGuard {
 }
 
 pub(crate) fn show_warning(app: &AppHandle, title_key: &str, body_key: &str) {
+    show_warning_body(app, title_key, crate::i18n::t(body_key));
+}
+
+pub(crate) fn show_warning_body(app: &AppHandle, title_key: &str, body: String) {
     use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
     app.dialog()
-        .message(crate::i18n::t(body_key))
+        .message(body)
         .title(crate::i18n::t(title_key))
         .kind(MessageDialogKind::Warning)
         .show(|_| {});
@@ -742,7 +747,7 @@ pub fn toggle_recording(app: &AppHandle) {
     {
         let state = app.state::<AppState>();
         if state.record_running.load(Ordering::SeqCst) {
-            request_stop(&state);
+            request_stop(app, &state);
             return;
         }
         if !crate::capture::recording::supported() {
@@ -758,29 +763,32 @@ pub fn toggle_recording(app: &AppHandle) {
 }
 
 #[cfg(target_os = "macos")]
-fn request_stop(state: &AppState) {
+fn request_stop(app: &AppHandle, state: &AppState) {
     if !state.record_running.load(Ordering::SeqCst) {
         return;
     }
     match state.recorder.lock().unwrap().as_ref() {
-        Some(recorder) => recorder.request_stop(),
+        Some(recorder) => {
+            recorder.request_stop();
+            let _ = app.emit_to("recorder", "record:stopping", ());
+        }
         None => state.record_stop_requested.store(true, Ordering::SeqCst),
     }
 }
 
 #[tauri::command]
-pub fn stop_recording(state: State<AppState>) -> Result<(), String> {
+pub fn stop_recording(app: AppHandle, state: State<AppState>) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
         if !state.record_running.load(Ordering::SeqCst) {
             return Err("no recording in progress".into());
         }
-        request_stop(&state);
+        request_stop(&app, &state);
         Ok(())
     }
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = state;
+        let _ = (app, state);
         Err("screen recording is only available on macOS".into())
     }
 }
@@ -789,12 +797,14 @@ pub fn quit(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     {
         let state = app.state::<AppState>();
-        if state.record_running.load(Ordering::SeqCst) {
-            request_stop(&state);
+        let finalisable =
+            state.record_running.load(Ordering::SeqCst) && state.recorder.lock().unwrap().is_some();
+        if finalisable {
+            request_stop(app, &state);
             let app = app.clone();
             std::thread::spawn(move || {
                 let running = app.state::<AppState>().record_running.clone();
-                let deadline = Instant::now() + Duration::from_secs(12);
+                let deadline = Instant::now() + crate::capture::recording::STOP_DEADLINE;
                 while running.load(Ordering::SeqCst) && Instant::now() < deadline {
                     std::thread::sleep(Duration::from_millis(100));
                 }
@@ -827,7 +837,7 @@ async fn start_recording_macos(app: AppHandle, microphone: bool) -> Result<(), S
     let window = app
         .get_webview_window("recorder")
         .ok_or("recorder window is not open")?;
-    let (running, dest, cursor) = {
+    let (running, dest, final_dest, cursor) = {
         let state = app.state::<AppState>();
         if state
             .record_running
@@ -838,9 +848,11 @@ async fn start_recording_macos(app: AppHandle, microphone: bool) -> Result<(), S
         }
         state.record_stop_requested.store(false, Ordering::SeqCst);
         let _ = state.recorder_prefs.set(RecorderPrefs { microphone });
+        let (dest, final_dest) = state.history.new_recording_paths();
         (
             state.record_running.clone(),
-            state.history.new_capture_path("mp4"),
+            dest,
+            final_dest,
             cursor_point(&app),
         )
     };
@@ -868,34 +880,54 @@ async fn start_recording_macos(app: AppHandle, microphone: bool) -> Result<(), S
         }
     };
 
-    {
+    let stopping = {
         let state = app.state::<AppState>();
         *state.recorder.lock().unwrap() = Some(recorder.clone());
-        if state.record_stop_requested.swap(false, Ordering::SeqCst) {
+        let stopping = state.record_stop_requested.swap(false, Ordering::SeqCst);
+        if stopping {
             recorder.request_stop();
         }
-    }
+        stopping
+    };
     let (pill_x, pill_y) = recording::pill_position(&recorder.display(), PILL_W);
     let _ = window.set_size(tauri::LogicalSize::new(PILL_W, PILL_H));
     let _ = window.set_position(tauri::LogicalPosition::new(pill_x, pill_y));
     let _ = app.emit_to("recorder", "record:running", ());
+    if stopping {
+        let _ = app.emit_to("recorder", "record:stopping", ());
+    }
     refresh_tray(&app);
 
     tauri::async_runtime::spawn_blocking(move || {
         let _guard = guard;
         let result = recorder.wait_finished();
         *app.state::<AppState>().recorder.lock().unwrap() = None;
-        match result {
-            Ok(path) => {
-                recording::write_poster(&path);
-                publish_capture(&app, &path);
-            }
-            Err(err) => eprintln!("screen recording failed: {err}"),
-        }
+        let failure = match result {
+            Ok(path) => match std::fs::rename(&path, &final_dest) {
+                Ok(()) => {
+                    recording::write_poster(&final_dest);
+                    publish_capture(&app, &final_dest);
+                    None
+                }
+                Err(err) => {
+                    let _ = std::fs::remove_file(&path);
+                    Some(err.to_string())
+                }
+            },
+            Err(err) => Some(err.to_string()),
+        };
         if let Some(window) = app.get_webview_window("recorder") {
             let _ = window.destroy();
         }
         refresh_tray(&app);
+        if let Some(detail) = failure {
+            eprintln!("screen recording failed: {detail}");
+            show_warning_body(
+                &app,
+                "recorder.failed_title",
+                crate::i18n::t_with("recorder.failed_body", &[("detail", &detail)]),
+            );
+        }
     });
     Ok(())
 }

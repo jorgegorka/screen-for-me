@@ -186,8 +186,11 @@
   "recorder.cancel": "Cancelar",
   "recorder.starting": "Iniciando…",
   "recorder.stop": "Detener",
+  "recorder.stopping": "Deteniendo…",
   "recorder.unsupported_title": "Grabación de pantalla no disponible",
   "recorder.unsupported_body": "La grabación de pantalla necesita macOS 15 o posterior.",
+  "recorder.failed_title": "Error de grabación",
+  "recorder.failed_body": "No se pudo completar la grabación de pantalla:\n{detail}",
 
   "timer.hint": "Haz clic para cancelar",
 

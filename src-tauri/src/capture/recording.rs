@@ -15,13 +15,21 @@ use objc2_screen_capture_kit::{
     SCStreamDelegate,
 };
 
-pub const MIN_PLAUSIBLE_MP4_BYTES: u64 = 16 * 1024;
+use super::display::{pick_display, DisplayBounds};
+use crate::history::MIN_PLAUSIBLE_MP4_BYTES;
+
 const FRAMES_PER_SECOND: i32 = 30;
 const CONTENT_TIMEOUT: Duration = Duration::from_secs(30);
 const START_TIMEOUT: Duration = Duration::from_secs(10);
 const STOP_TIMEOUT: Duration = Duration::from_secs(10);
+const START_CLEANUP_TIMEOUT: Duration = Duration::from_secs(2);
 const FINISH_GRACE: Duration = Duration::from_secs(5);
+const PUBLISH_GRACE: Duration = Duration::from_secs(5);
 const USER_DECLINED_CODE: isize = -3817;
+
+pub const STOP_DEADLINE: Duration = Duration::from_secs(
+    STOP_TIMEOUT.as_secs() + FINISH_GRACE.as_secs() + PUBLISH_GRACE.as_secs(),
+);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum RecordError {
@@ -36,26 +44,6 @@ impl std::fmt::Display for RecordError {
             Self::Failed(msg) => f.write_str(msg),
         }
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct DisplayBounds {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
-}
-
-impl DisplayBounds {
-    fn contains(&self, (px, py): (f64, f64)) -> bool {
-        px >= self.x && px < self.x + self.width && py >= self.y && py < self.y + self.height
-    }
-}
-
-pub fn pick_display(displays: &[DisplayBounds], cursor: Option<(f64, f64)>) -> Option<usize> {
-    cursor
-        .and_then(|point| displays.iter().position(|d| d.contains(point)))
-        .or(if displays.is_empty() { None } else { Some(0) })
 }
 
 pub fn pill_position(display: &DisplayBounds, pill_width: f64) -> (f64, f64) {
@@ -84,6 +72,7 @@ pub fn supported() -> bool {
 #[derive(Debug)]
 pub enum RecorderEvent {
     Started,
+    StopRequested,
     Finished,
     Failed(String),
     StreamStopped(String),
@@ -185,6 +174,16 @@ fn shareable_content() -> Result<Retained<SCShareableContent>, RecordError> {
         .map_err(|_| RecordError::Failed("could not read screen content in time".into()))?
 }
 
+fn stop_and_discard(stream: &SCStream, dest: &Path) {
+    let (tx, rx) = mpsc::channel::<()>();
+    let block = RcBlock::new(move |_err: *mut NSError| {
+        let _ = tx.send(());
+    });
+    unsafe { stream.stopCaptureWithCompletionHandler(Some(&block)) };
+    let _ = rx.recv_timeout(START_CLEANUP_TIMEOUT);
+    let _ = std::fs::remove_file(dest);
+}
+
 fn bounds_of(display: &SCDisplay) -> DisplayBounds {
     let frame = unsafe { display.frame() };
     DisplayBounds {
@@ -250,8 +249,10 @@ pub fn start(dest: &Path, microphone: bool, cursor: Option<(f64, f64)>) -> Resul
             Some(ProtocolObject::from_ref(&*delegate)),
         )
     };
-    unsafe { stream.addRecordingOutput_error(&output) }
-        .map_err(|e| RecordError::Failed(e.localizedDescription().to_string()))?;
+    if let Err(e) = unsafe { stream.addRecordingOutput_error(&output) } {
+        let _ = std::fs::remove_file(dest);
+        return Err(RecordError::Failed(e.localizedDescription().to_string()));
+    }
 
     let (start_tx, start_rx) = mpsc::channel::<Result<(), RecordError>>();
     let start_block = RcBlock::new(move |err: *mut NSError| {
@@ -259,9 +260,13 @@ pub fn start(dest: &Path, microphone: bool, cursor: Option<(f64, f64)>) -> Resul
         let _ = start_tx.send(result);
     });
     unsafe { stream.startCaptureWithCompletionHandler(Some(&start_block)) };
-    start_rx
+    let started = start_rx
         .recv_timeout(START_TIMEOUT)
-        .map_err(|_| RecordError::Failed("recording did not start in time".into()))??;
+        .unwrap_or_else(|_| Err(RecordError::Failed("recording did not start in time".into())));
+    if let Err(err) = started {
+        stop_and_discard(&stream, dest);
+        return Err(err);
+    }
 
     Ok(Recorder {
         stream,
@@ -284,6 +289,7 @@ impl Recorder {
         if self.stop_requested.swap(true, Ordering::SeqCst) {
             return;
         }
+        let _ = self.tx.send(RecorderEvent::StopRequested);
         let tx = self.tx.clone();
         let block = RcBlock::new(move |err: *mut NSError| {
             let _ = tx.send(RecorderEvent::StopCompleted(error_text(err).map_or(Ok(()), Err)));
@@ -292,46 +298,87 @@ impl Recorder {
     }
 
     pub fn wait_finished(&self) -> Result<PathBuf, RecordError> {
-        let mut stop_deadline: Option<Instant> = None;
-        loop {
-            let event = match stop_deadline {
-                None => self.events.recv().map_err(|_| RecordError::Failed("recorder went away".into()))?,
-                Some(deadline) => {
-                    let remaining = deadline.saturating_duration_since(Instant::now());
-                    match self.events.recv_timeout(remaining) {
-                        Ok(event) => event,
-                        Err(RecvTimeoutError::Timeout) => break,
-                        Err(RecvTimeoutError::Disconnected) => {
-                            return Err(RecordError::Failed("recorder went away".into()))
-                        }
+        drain_events(
+            &self.events,
+            &self.dest,
+            Timeouts { stop: STOP_TIMEOUT, finish_grace: FINISH_GRACE },
+        )?;
+        validate_recording(&self.dest)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Timeouts {
+    stop: Duration,
+    finish_grace: Duration,
+}
+
+fn drain_events(
+    events: &Receiver<RecorderEvent>,
+    dest: &Path,
+    timeouts: Timeouts,
+) -> Result<(), RecordError> {
+    let mut deadline: Option<Instant> = None;
+    let mut finished = false;
+    let mut stopped = false;
+    loop {
+        let event = match deadline {
+            None => events
+                .recv()
+                .map_err(|_| RecordError::Failed("recorder went away".into()))?,
+            Some(at) => match events.recv_timeout(at.saturating_duration_since(Instant::now())) {
+                Ok(event) => event,
+                Err(RecvTimeoutError::Timeout) => {
+                    if !stopped {
+                        eprintln!("screen recording did not confirm the stop in time");
                     }
+                    return Ok(());
                 }
-            };
-            match event {
-                RecorderEvent::Started => {
-                    if self.stop_requested.load(Ordering::SeqCst) && stop_deadline.is_none() {
-                        stop_deadline = Some(Instant::now() + STOP_TIMEOUT);
-                    }
+                Err(RecvTimeoutError::Disconnected) => {
+                    return Err(RecordError::Failed("recorder went away".into()))
                 }
-                RecorderEvent::Finished => break,
-                RecorderEvent::Failed(msg) => {
-                    let _ = std::fs::remove_file(&self.dest);
-                    return Err(RecordError::Failed(msg));
-                }
-                RecorderEvent::StopCompleted(Err(msg)) => {
-                    let _ = std::fs::remove_file(&self.dest);
-                    return Err(RecordError::Failed(msg));
-                }
-                RecorderEvent::StopCompleted(Ok(())) => {
-                    stop_deadline = Some(Instant::now() + FINISH_GRACE);
-                }
-                RecorderEvent::StreamStopped(reason) => {
-                    eprintln!("screen recording stream stopped: {reason}");
-                    stop_deadline = Some(Instant::now() + FINISH_GRACE);
+            },
+        };
+        match event {
+            RecorderEvent::Started => {}
+            RecorderEvent::StopRequested => {
+                if deadline.is_none() {
+                    deadline = Some(Instant::now() + timeouts.stop);
                 }
             }
+            RecorderEvent::Finished => {
+                finished = true;
+                if stopped {
+                    return Ok(());
+                }
+                if deadline.is_none() {
+                    deadline = Some(Instant::now() + timeouts.stop);
+                }
+            }
+            RecorderEvent::Failed(msg) => {
+                let _ = std::fs::remove_file(dest);
+                return Err(RecordError::Failed(msg));
+            }
+            RecorderEvent::StopCompleted(Err(msg)) => {
+                let _ = std::fs::remove_file(dest);
+                return Err(RecordError::Failed(msg));
+            }
+            RecorderEvent::StopCompleted(Ok(())) => {
+                stopped = true;
+                if finished {
+                    return Ok(());
+                }
+                deadline = Some(Instant::now() + timeouts.finish_grace);
+            }
+            RecorderEvent::StreamStopped(reason) => {
+                eprintln!("screen recording stream stopped: {reason}");
+                stopped = true;
+                if finished {
+                    return Ok(());
+                }
+                deadline = Some(Instant::now() + timeouts.finish_grace);
+            }
         }
-        validate_recording(&self.dest)
     }
 }
 
@@ -361,24 +408,84 @@ mod tests {
     }
 
     #[test]
-    fn pick_display_prefers_the_one_under_the_cursor() {
-        let displays = [display(0.0, 0.0, 1728.0, 1117.0), display(1728.0, -200.0, 2560.0, 1440.0)];
-        assert_eq!(pick_display(&displays, Some((2000.0, 100.0))), Some(1));
-        assert_eq!(pick_display(&displays, Some((10.0, 10.0))), Some(0));
-    }
-
-    #[test]
-    fn pick_display_falls_back_to_the_first() {
-        let displays = [display(0.0, 0.0, 1728.0, 1117.0), display(1728.0, 0.0, 2560.0, 1440.0)];
-        assert_eq!(pick_display(&displays, Some((-50.0, 5000.0))), Some(0));
-        assert_eq!(pick_display(&displays, None), Some(0));
-        assert_eq!(pick_display(&[], Some((1.0, 1.0))), None);
-    }
-
-    #[test]
     fn pill_is_top_centred_on_the_display() {
         let (x, y) = pill_position(&display(1728.0, -200.0, 2560.0, 1440.0), 200.0);
         assert_eq!((x, y), (1728.0 + 1180.0, -160.0));
+    }
+
+    fn ms(stop: u64, grace: u64) -> Timeouts {
+        Timeouts { stop: Duration::from_millis(stop), finish_grace: Duration::from_millis(grace) }
+    }
+
+    fn temp_dest(name: &str) -> PathBuf {
+        let path = std::env::temp_dir()
+            .join(format!("sfm-drain-{}-{name}.mp4", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        path
+    }
+
+    #[test]
+    fn finished_alone_does_not_end_the_wait() {
+        let (tx, rx) = mpsc::channel::<RecorderEvent>();
+        let dest = temp_dest("finished-first");
+        tx.send(RecorderEvent::Finished).unwrap();
+        let late = tx.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(150));
+            let _ = late.send(RecorderEvent::StopCompleted(Ok(())));
+        });
+        let started = Instant::now();
+        assert_eq!(drain_events(&rx, &dest, ms(5_000, 5_000)), Ok(()));
+        assert!(started.elapsed() >= Duration::from_millis(150));
+    }
+
+    #[test]
+    fn finished_without_a_stop_gives_up_after_the_stop_timeout() {
+        let (tx, rx) = mpsc::channel::<RecorderEvent>();
+        let dest = temp_dest("finished-no-stop");
+        tx.send(RecorderEvent::Finished).unwrap();
+        let started = Instant::now();
+        assert_eq!(drain_events(&rx, &dest, ms(200, 5_000)), Ok(()));
+        assert!(started.elapsed() >= Duration::from_millis(200));
+        assert!(started.elapsed() < Duration::from_millis(2_000));
+        drop(tx);
+    }
+
+    #[test]
+    fn finished_after_stop_completed_ends_before_the_grace() {
+        let (tx, rx) = mpsc::channel::<RecorderEvent>();
+        let dest = temp_dest("finished-after");
+        tx.send(RecorderEvent::StopRequested).unwrap();
+        tx.send(RecorderEvent::StopCompleted(Ok(()))).unwrap();
+        tx.send(RecorderEvent::Finished).unwrap();
+        let started = Instant::now();
+        assert_eq!(drain_events(&rx, &dest, ms(5_000, 4_000)), Ok(()));
+        assert!(started.elapsed() < Duration::from_millis(500));
+    }
+
+    #[test]
+    fn stop_request_without_completion_times_out() {
+        let (tx, rx) = mpsc::channel::<RecorderEvent>();
+        let dest = temp_dest("stop-timeout");
+        tx.send(RecorderEvent::StopRequested).unwrap();
+        let started = Instant::now();
+        assert_eq!(drain_events(&rx, &dest, ms(200, 5_000)), Ok(()));
+        assert!(started.elapsed() >= Duration::from_millis(200));
+        assert!(started.elapsed() < Duration::from_millis(2_000));
+        drop(tx);
+    }
+
+    #[test]
+    fn failure_removes_the_destination() {
+        let (tx, rx) = mpsc::channel::<RecorderEvent>();
+        let dest = temp_dest("failed");
+        std::fs::write(&dest, b"partial").unwrap();
+        tx.send(RecorderEvent::Failed("disk full".into())).unwrap();
+        assert_eq!(
+            drain_events(&rx, &dest, ms(5_000, 5_000)),
+            Err(RecordError::Failed("disk full".into()))
+        );
+        assert!(!dest.exists());
     }
 
     #[test]

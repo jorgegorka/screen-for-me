@@ -16,13 +16,15 @@ import {
   hasRequiredModifier,
   macosScreenshotKeyOf,
   modsOf,
-  ACTIONS,
+  actionsFor,
   DEFAULT_ACCELS,
   type ComboModifiers,
   type ShortcutAction,
 } from "../shared/accelerator";
 
 const SIZE_STEPS = [0.75, 1.0, 1.25, 1.5, 2.0];
+
+const SHORTCUT_ACTIONS = actionsFor(PLATFORM);
 
 let current: Settings | null = null;
 
@@ -125,7 +127,7 @@ function initTabs() {
 
 function renderShortcuts() {
   if (!current) return;
-  for (const action of ACTIONS) {
+  for (const action of SHORTCUT_ACTIONS) {
     if (action === recording) continue;
     el<HTMLButtonElement>(`shortcut-${action}`).textContent = formatAccelerator(
       accelOf(current, action),
@@ -151,7 +153,7 @@ function showShortcutError(action: ShortcutAction, message: string) {
 }
 
 function clearShortcutErrors() {
-  for (const action of ACTIONS) {
+  for (const action of SHORTCUT_ACTIONS) {
     el<HTMLParagraphElement>(`shortcut-${action}-error`).hidden = true;
   }
 }
@@ -172,7 +174,9 @@ async function applyShortcut(action: ShortcutAction, accelerator: string) {
 
 async function refreshSystemOwnsHint() {
   if (PLATFORM !== "mac" || !current) return;
-  const boundKeys = ACTIONS.map((action) => macosScreenshotKeyOf(accelOf(current!, action)));
+  const boundKeys = SHORTCUT_ACTIONS.map((action) =>
+    macosScreenshotKeyOf(accelOf(current!, action)),
+  );
   const anyBound = boundKeys.some((key) => key !== null);
   const owned = anyBound ? await invoke<string[]>("macos_screenshot_hotkeys_owned") : [];
   const owns = boundKeys.some((key) => key !== null && owned.includes(key));
@@ -190,14 +194,14 @@ function initSystemShortcutsHelp() {
 }
 
 function initShortcuts() {
-  el<HTMLElement>("shortcut-record-row").hidden = PLATFORM !== "mac";
+  el<HTMLElement>("shortcut-record-row").hidden = !SHORTCUT_ACTIONS.includes("record");
   document.addEventListener("mousedown", (event) => {
     if (!recording) return;
     const field = el<HTMLButtonElement>(`shortcut-${recording}`);
     if (event.target instanceof Node && !field.contains(event.target)) stopRecording();
   });
 
-  for (const action of ACTIONS) {
+  for (const action of SHORTCUT_ACTIONS) {
     const field = el<HTMLButtonElement>(`shortcut-${action}`);
 
     field.addEventListener("click", () => {

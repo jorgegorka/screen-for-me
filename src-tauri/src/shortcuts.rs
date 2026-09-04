@@ -13,12 +13,17 @@ pub enum ShortcutAction {
     Record,
 }
 
-pub const ACTIONS: [ShortcutAction; 4] = [
+#[cfg(target_os = "macos")]
+pub const ACTIONS: &[ShortcutAction] = &[
     ShortcutAction::Area,
     ShortcutAction::Window,
     ShortcutAction::Fullscreen,
     ShortcutAction::Record,
 ];
+
+#[cfg(not(target_os = "macos"))]
+pub const ACTIONS: &[ShortcutAction] =
+    &[ShortcutAction::Area, ShortcutAction::Window, ShortcutAction::Fullscreen];
 
 impl ShortcutAction {
     pub fn default_accel(self) -> &'static str {
@@ -28,6 +33,10 @@ impl ShortcutAction {
             ShortcutAction::Fullscreen => "CmdOrCtrl+Shift+9",
             ShortcutAction::Record => "CmdOrCtrl+Shift+0",
         }
+    }
+
+    pub fn supported(self) -> bool {
+        ACTIONS.contains(&self)
     }
 
     pub fn mode(self) -> Option<CaptureMode> {
@@ -69,7 +78,7 @@ fn register(app: &AppHandle, action: ShortcutAction, accel: &str) -> Result<(), 
 
 pub fn setup(app: &AppHandle) {
     let settings = app.state::<AppState>().settings.get();
-    for action in ACTIONS {
+    for &action in ACTIONS {
         let accel = settings.shortcut(action).to_string();
         if let Err(err) = register(app, action, &accel) {
             eprintln!("failed to register {accel} for {action:?}: {err}");
@@ -131,9 +140,19 @@ mod tests {
 
     #[test]
     fn defaults_are_valid() {
-        for action in ACTIONS {
+        for &action in ACTIONS {
             validate(action.default_accel()).expect("default accelerator must validate");
         }
+    }
+
+    #[test]
+    fn record_is_only_a_shortcut_action_on_macos() {
+        assert_eq!(
+            ACTIONS.contains(&ShortcutAction::Record),
+            cfg!(target_os = "macos")
+        );
+        assert_eq!(ShortcutAction::Record.supported(), cfg!(target_os = "macos"));
+        validate(ShortcutAction::Record.default_accel()).expect("record default stays valid");
     }
 
     #[test]

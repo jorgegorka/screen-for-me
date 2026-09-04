@@ -1,8 +1,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+pub const MIN_PLAUSIBLE_MP4_BYTES: u64 = 16 * 1024;
 const MAX_CAPTURES: usize = 50;
 const MAX_VIDEOS: usize = 10;
+const IN_PROGRESS_PREFIX: &str = "recording-";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -37,7 +39,9 @@ pub struct History {
 impl History {
     pub fn new(dir: PathBuf) -> std::io::Result<Self> {
         fs::create_dir_all(&dir)?;
-        Ok(Self { dir })
+        let history = Self { dir };
+        history.sweep_in_progress();
+        Ok(history)
     }
 
     #[cfg_attr(not(test), allow(dead_code))]
@@ -46,11 +50,29 @@ impl History {
     }
 
     pub fn new_capture_path(&self, ext: &str) -> PathBuf {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
-        self.dir.join(format!("capture-{now}.{ext}"))
+        self.dir.join(format!("capture-{}.{ext}", now_ms()))
+    }
+
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    pub fn new_recording_paths(&self) -> (PathBuf, PathBuf) {
+        let now = now_ms();
+        (
+            self.dir.join(format!("{IN_PROGRESS_PREFIX}{now}.mp4")),
+            self.dir.join(format!("capture-{now}.mp4")),
+        )
+    }
+
+    fn sweep_in_progress(&self) {
+        for entry in fs::read_dir(&self.dir).into_iter().flatten().flatten() {
+            let path = entry.path();
+            let leftover = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.starts_with(IN_PROGRESS_PREFIX) && n.ends_with(".mp4"));
+            if leftover {
+                let _ = fs::remove_file(&path);
+            }
+        }
     }
 
     pub fn list(&self) -> Vec<CaptureEntry> {
@@ -86,6 +108,13 @@ impl History {
     }
 }
 
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
 pub fn poster_path(video: &Path) -> PathBuf {
     let mut name = video.file_name().map(|n| n.to_os_string()).unwrap_or_default();
     name.push(".png");
@@ -104,7 +133,11 @@ fn entry_from_path(path: PathBuf) -> Option<CaptureEntry> {
     let (stem, ext) = name.strip_prefix("capture-")?.rsplit_once('.')?;
     let kind = CaptureKind::from_extension(ext)?;
     let created_ms = stem.parse().ok()?;
-    if fs::metadata(&path).map(|m| m.len()).unwrap_or(0) == 0 {
+    let min_bytes = match kind {
+        CaptureKind::Video => MIN_PLAUSIBLE_MP4_BYTES,
+        CaptureKind::Image => 1,
+    };
+    if fs::metadata(&path).map(|m| m.len()).unwrap_or(0) < min_bytes {
         return None;
     }
     let poster = match kind {
@@ -124,14 +157,22 @@ fn entry_from_path(path: PathBuf) -> Option<CaptureEntry> {
 mod tests {
     use super::*;
 
-    fn temp_history() -> History {
+    fn temp_dir() -> PathBuf {
         let dir = std::env::temp_dir().join(format!(
             "sfm-history-test-{}-{:?}",
             std::process::id(),
             std::thread::current().id()
         ));
         let _ = fs::remove_dir_all(&dir);
-        History::new(dir).unwrap()
+        dir
+    }
+
+    fn temp_history() -> History {
+        History::new(temp_dir()).unwrap()
+    }
+
+    fn write_video(path: PathBuf) {
+        fs::write(path, vec![0u8; MIN_PLAUSIBLE_MP4_BYTES as usize]).unwrap();
     }
 
     fn ids(h: &History) -> Vec<String> {
@@ -183,9 +224,9 @@ mod tests {
     fn videos_are_listed_with_kind_and_poster() {
         let h = temp_history();
         fs::write(h.dir().join("capture-1000.png"), b"a").unwrap();
-        fs::write(h.dir().join("capture-2000.mp4"), b"v").unwrap();
+        write_video(h.dir().join("capture-2000.mp4"));
         fs::write(h.dir().join("capture-2000.mp4.png"), b"p").unwrap();
-        fs::write(h.dir().join("capture-3000.mp4"), b"v").unwrap();
+        write_video(h.dir().join("capture-3000.mp4"));
         let entries = h.list();
         assert_eq!(
             ids(&h),
@@ -224,7 +265,7 @@ mod tests {
     fn prune_caps_videos_and_removes_their_posters() {
         let h = temp_history();
         for i in 0..(MAX_VIDEOS + 2) {
-            fs::write(h.dir().join(format!("capture-{}.mp4", 1000 + i)), b"v").unwrap();
+            write_video(h.dir().join(format!("capture-{}.mp4", 1000 + i)));
             fs::write(h.dir().join(format!("capture-{}.mp4.png", 1000 + i)), b"p").unwrap();
         }
         fs::write(h.dir().join("capture-100.png"), b"a").unwrap();
@@ -237,6 +278,73 @@ mod tests {
         assert!(!h.dir().join("capture-1000.mp4.png").exists());
         assert!(!h.dir().join("capture-1001.mp4").exists());
         assert!(h.dir().join("capture-1002.mp4.png").exists());
+        fs::remove_dir_all(h.dir()).unwrap();
+    }
+
+    #[test]
+    fn in_progress_recordings_are_never_listed() {
+        let h = temp_history();
+        write_video(h.dir().join("recording-1000.mp4"));
+        write_video(h.dir().join("capture-2000.mp4"));
+        assert_eq!(ids(&h), ["capture-2000.mp4"]);
+        assert!(h.resolve("recording-1000.mp4").is_none());
+        fs::remove_dir_all(h.dir()).unwrap();
+    }
+
+    #[test]
+    fn new_recording_paths_share_one_timestamp() {
+        let h = temp_history();
+        let (progress, final_path) = h.new_recording_paths();
+        assert_eq!(progress.parent(), Some(h.dir()));
+        assert_eq!(final_path.parent(), Some(h.dir()));
+        let progress_ms = progress
+            .file_name()
+            .and_then(|n| n.to_str())
+            .and_then(|n| n.strip_prefix("recording-"))
+            .and_then(|n| n.strip_suffix(".mp4"))
+            .map(str::to_string);
+        let final_ms = final_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .and_then(|n| n.strip_prefix("capture-"))
+            .and_then(|n| n.strip_suffix(".mp4"))
+            .map(str::to_string);
+        assert!(progress_ms.is_some());
+        assert_eq!(progress_ms, final_ms);
+        write_video(progress.clone());
+        assert!(h.list().is_empty());
+        fs::rename(&progress, &final_path).unwrap();
+        assert_eq!(h.list().len(), 1);
+        fs::remove_dir_all(h.dir()).unwrap();
+    }
+
+    #[test]
+    fn leftover_in_progress_recordings_are_swept_on_open() {
+        let dir = temp_dir();
+        fs::create_dir_all(&dir).unwrap();
+        write_video(dir.join("recording-1000.mp4"));
+        write_video(dir.join("recording-2000.mp4"));
+        write_video(dir.join("capture-3000.mp4"));
+        fs::write(dir.join("notes.txt"), b"x").unwrap();
+        let h = History::new(dir.clone()).unwrap();
+        assert!(!dir.join("recording-1000.mp4").exists());
+        assert!(!dir.join("recording-2000.mp4").exists());
+        assert!(dir.join("capture-3000.mp4").exists());
+        assert!(dir.join("notes.txt").exists());
+        fs::remove_dir_all(h.dir()).unwrap();
+    }
+
+    #[test]
+    fn undersized_videos_are_skipped() {
+        let h = temp_history();
+        fs::write(
+            h.dir().join("capture-1000.mp4"),
+            vec![0u8; MIN_PLAUSIBLE_MP4_BYTES as usize - 1],
+        )
+        .unwrap();
+        write_video(h.dir().join("capture-2000.mp4"));
+        assert_eq!(ids(&h), ["capture-2000.mp4"]);
+        assert!(h.resolve("capture-1000.mp4").is_none());
         fs::remove_dir_all(h.dir()).unwrap();
     }
 

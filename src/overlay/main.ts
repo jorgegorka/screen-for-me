@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
 
+import appIcon from "../../src-tauri/icons/128x128.png?inline";
 import { saveCaptureAs } from "../shared/dialogs";
 import { el } from "../shared/dom";
 import { applyTranslations, initI18n, t } from "../shared/i18n";
@@ -84,9 +85,15 @@ function buildPanel(entry: CaptureEntry): Panel {
 
   const thumb = query<HTMLImageElement>(".thumb");
   const preview = video ? entry.poster : entry.path;
-  if (preview) thumb.src = `${convertFileSrc(preview)}?t=${entry.created_ms}`;
-  else thumb.classList.add("hidden");
-  if (video) thumb.setAttribute("data-i18n-alt", "overlay.latest_recording");
+  if (preview) {
+    thumb.src = `${convertFileSrc(preview)}?t=${entry.created_ms}`;
+    if (video) thumb.setAttribute("data-i18n-alt", "overlay.latest_recording");
+  } else {
+    thumb.classList.add("placeholder");
+    thumb.removeAttribute("data-i18n-alt");
+    thumb.alt = "";
+  }
+  const dragIcon = video ? (entry.poster ?? appIcon) : entry.path;
   query<HTMLElement>(".play-badge").classList.toggle("hidden", !video);
   query<HTMLButtonElement>(".copy").classList.toggle("hidden", video);
   query<HTMLButtonElement>(".annotate").classList.toggle("hidden", video);
@@ -107,7 +114,7 @@ function buildPanel(entry: CaptureEntry): Panel {
 
       const dragEnded = () => void invoke("set_overlay_drag_active", { active: false });
       void invoke("set_overlay_drag_active", { active: true });
-      void startDrag({ item: [entry.path], icon: entry.poster ?? entry.path }, dragEnded)
+      void startDrag({ item: [entry.path], icon: dragIcon }, dragEnded)
         .then(() => {
           if (settings.close_after_drag && !keepOpen) removePanel(entry.id);
           else armAutoHide(panel);

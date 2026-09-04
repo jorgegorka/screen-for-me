@@ -95,6 +95,16 @@ button.primary:hover {
   background: #9172e7;
 }
 
+body.starting button:disabled,
+body.starting button:disabled:hover,
+body.stopping button:disabled,
+body.stopping button:disabled:hover {
+  opacity: 0.4;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
 .pill {
   display: none;
 }
@@ -147,6 +157,15 @@ body.running .pill::after {
 
 #elapsed {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+}
+
+body.stopping #elapsed {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
 }

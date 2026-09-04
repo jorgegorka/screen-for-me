@@ -186,8 +186,11 @@
   "recorder.cancel": "Abbrechen",
   "recorder.starting": "Wird gestartet…",
   "recorder.stop": "Stoppen",
+  "recorder.stopping": "Wird gestoppt…",
   "recorder.unsupported_title": "Bildschirmaufnahme nicht verfügbar",
   "recorder.unsupported_body": "Die Bildschirmaufnahme benötigt macOS 15 oder neuer.",
+  "recorder.failed_title": "Aufnahme fehlgeschlagen",
+  "recorder.failed_body": "Die Bildschirmaufnahme konnte nicht abgeschlossen werden:\n{detail}",
 
   "timer.hint": "Zum Abbrechen klicken",
 

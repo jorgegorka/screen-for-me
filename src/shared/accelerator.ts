@@ -22,6 +22,13 @@ export type ShortcutAction = keyof typeof DEFAULT_ACCELS;
 
 export const ACTIONS = Object.keys(DEFAULT_ACCELS) as ShortcutAction[];
 
+const MAC_ONLY_ACTIONS: readonly ShortcutAction[] = ["record"];
+
+export const actionsFor = (platform: Platform): ShortcutAction[] =>
+  platform === "mac"
+    ? [...ACTIONS]
+    : ACTIONS.filter((action) => !MAC_ONLY_ACTIONS.includes(action));
+
 export const accelOf = (settings: Settings, action: ShortcutAction): string =>
   settings[`shortcut_${action}`];
 

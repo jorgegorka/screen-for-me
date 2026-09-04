@@ -10,14 +10,16 @@ import {
   formatAccelerator,
   isMacosScreenshotAccelFor,
   MACOS_SCREENSHOT_ACTIONS,
-  ACTIONS,
+  actionsFor,
 } from "../shared/accelerator";
+
+const SHORTCUT_ACTIONS = actionsFor(PLATFORM);
 
 let current: Settings | null = null;
 
 function renderShortcuts() {
   if (!current) return;
-  for (const action of ACTIONS) {
+  for (const action of SHORTCUT_ACTIONS) {
     el<HTMLElement>(`accel-${action}`).textContent = formatAccelerator(
       accelOf(current, action),
       PLATFORM,
@@ -87,6 +89,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   await initI18n();
   el<HTMLImageElement>("welcome-icon").src = iconUrl;
   current = await invoke<Settings>("get_settings");
+  el<HTMLElement>("welcome-record-row").hidden = !SHORTCUT_ACTIONS.includes("record");
   renderShortcuts();
   initMacosCard();
   void listen<Settings>("settings:changed", (event) => {

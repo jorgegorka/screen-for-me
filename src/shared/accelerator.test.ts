@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  actionsFor,
   codeToToken,
   comboToAccelerator,
   formatAccelerator,
@@ -8,6 +9,7 @@ import {
   hasRequiredModifier,
   isMacosScreenshotAccelFor,
   macosScreenshotKeyOf,
+  ACTIONS,
   DEFAULT_ACCELS,
   MACOS_SCREENSHOT_KEYS,
 } from "./accelerator";
@@ -131,5 +133,20 @@ describe("formatAccelerator", () => {
     expect(formatAccelerator(DEFAULT_ACCELS.area, "mac")).toBe("⇧⌘7");
     expect(formatAccelerator(DEFAULT_ACCELS.window, "other")).toBe("Ctrl+Shift+8");
     expect(formatAccelerator(DEFAULT_ACCELS.fullscreen, "mac")).toBe("⇧⌘9");
+  });
+});
+
+describe("actionsFor", () => {
+  it("keeps every action on macOS", () => {
+    expect(actionsFor("mac")).toEqual(ACTIONS);
+    expect(actionsFor("mac")).toContain("record");
+  });
+
+  it("drops the record action off macOS", () => {
+    expect(actionsFor("other")).toEqual(["area", "window", "fullscreen"]);
+  });
+
+  it("keeps a default accelerator for the record action on every platform", () => {
+    expect(DEFAULT_ACCELS.record).toBe("CmdOrCtrl+Shift+0");
   });
 });

@@ -186,8 +186,11 @@
   "recorder.cancel": "Cancel",
   "recorder.starting": "Starting…",
   "recorder.stop": "Stop",
+  "recorder.stopping": "Stopping…",
   "recorder.unsupported_title": "Screen Recording Unavailable",
   "recorder.unsupported_body": "Screen recording needs macOS 15 or later.",
+  "recorder.failed_title": "Recording Failed",
+  "recorder.failed_body": "The screen recording could not be completed:\n{detail}",
 
   "timer.hint": "Click to cancel",
 
