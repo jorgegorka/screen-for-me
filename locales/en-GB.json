@@ -38,6 +38,9 @@
   "updates.latest": "You're on the latest version.",
   "updates.unreachable": "Couldn't reach the update server. Please try again later.\n\n({err})",
   "updates.check_failed": "Could not check for updates:\n{err}",
+  "updates.installed_title": "Update Installed",
+  "updates.installed": "Screen for me was updated to version {version}.",
+  "updates.install_mismatch": "The update to version {version} did not apply. You're still on version {running}.",
 
   "perm.accessibility_title": "Accessibility Permission Needed",
   "perm.accessibility_body": "Scrolling Capture needs Accessibility access to scroll the page for you.\n\nEnable \"Screen for me\" in System Settings → Privacy & Security → Accessibility, then try again.",

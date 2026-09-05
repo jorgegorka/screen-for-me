@@ -38,6 +38,9 @@
   "updates.latest": "Vous utilisez la dernière version.",
   "updates.unreachable": "Impossible de joindre le serveur de mise à jour. Veuillez réessayer plus tard.\n\n({err})",
   "updates.check_failed": "Impossible de rechercher des mises à jour :\n{err}",
+  "updates.installed_title": "Mise à jour installée",
+  "updates.installed": "Screen for me a été mis à jour vers la version {version}.",
+  "updates.install_mismatch": "La mise à jour vers la version {version} n'a pas été appliquée. Vous êtes toujours en version {running}.",
 
   "perm.accessibility_title": "Autorisation d'accessibilité requise",
   "perm.accessibility_body": "La capture avec défilement a besoin de l'accès Accessibilité pour faire défiler la page à votre place.\n\nActivez « Screen for me » dans Réglages Système → Confidentialité et sécurité → Accessibilité, puis réessayez.",

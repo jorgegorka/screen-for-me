@@ -38,6 +38,9 @@
   "updates.latest": "Hai già l'ultima versione.",
   "updates.unreachable": "Impossibile raggiungere il server degli aggiornamenti. Riprova più tardi.\n\n({err})",
   "updates.check_failed": "Impossibile controllare gli aggiornamenti:\n{err}",
+  "updates.installed_title": "Aggiornamento installato",
+  "updates.installed": "Screen for me è stato aggiornato alla versione {version}.",
+  "updates.install_mismatch": "L'aggiornamento alla versione {version} non è stato applicato. Sei ancora alla versione {running}.",
 
   "perm.accessibility_title": "Richiesta autorizzazione Accessibilità",
   "perm.accessibility_body": "La cattura con scorrimento richiede l'accesso ad Accessibilità per scorrere la pagina al posto tuo.\n\nAttiva \"Screen for me\" in Impostazioni di Sistema → Privacy e sicurezza → Accessibilità, poi riprova.",

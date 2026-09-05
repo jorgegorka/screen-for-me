@@ -194,7 +194,14 @@ fn prompt_and_install(app: AppHandle, update: tauri_plugin_updater::Update) {
             }
             tauri::async_runtime::spawn(async move {
                 match update.download_and_install(|_, _| {}, || {}).await {
-                    Ok(()) => relaunch_and_exit(&app),
+                    Ok(()) => {
+                        if let Ok(dir) = app.path().app_data_dir() {
+                            if let Err(err) = record_pending_update(&dir, &update.version) {
+                                eprintln!("failed to record pending update: {err}");
+                            }
+                        }
+                        relaunch_and_exit(&app)
+                    }
                     Err(err) => update_dialog(
                         &app,
                         MessageDialogKind::Warning,
@@ -203,6 +210,51 @@ fn prompt_and_install(app: AppHandle, update: tauri_plugin_updater::Update) {
                 }
             });
         });
+}
+
+const UPDATE_MARKER: &str = "pending_update";
+
+fn record_pending_update(data_dir: &std::path::Path, version: &str) -> std::io::Result<()> {
+    std::fs::write(data_dir.join(UPDATE_MARKER), version.trim())
+}
+
+fn take_pending_update(data_dir: &std::path::Path) -> Option<String> {
+    let path = data_dir.join(UPDATE_MARKER);
+    let version = std::fs::read_to_string(&path).ok()?;
+    let _ = std::fs::remove_file(&path);
+    let version = version.trim();
+    (!version.is_empty()).then(|| version.to_string())
+}
+
+fn update_notice_key(installed: &str, running: &str) -> &'static str {
+    if installed.trim() == running.trim() {
+        "updates.installed"
+    } else {
+        "updates.install_mismatch"
+    }
+}
+
+pub fn announce_pending_update(app: &AppHandle, data_dir: &std::path::Path) {
+    let Some(installed) = take_pending_update(data_dir) else {
+        return;
+    };
+    let running = app.package_info().version.to_string();
+    let key = update_notice_key(&installed, &running);
+    let kind = if key == "updates.installed" {
+        MessageDialogKind::Info
+    } else {
+        MessageDialogKind::Warning
+    };
+    let text = crate::i18n::t_with(key, &[("version", &installed), ("running", &running)]);
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(800)).await;
+        app.dialog()
+            .message(text)
+            .title(crate::i18n::t("updates.installed_title"))
+            .kind(kind)
+            .show(|_| {});
+    });
 }
 
 #[cfg(target_os = "macos")]
@@ -255,8 +307,42 @@ fn bundle_root(exe: &std::path::Path) -> Option<std::path::PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::bundle_root;
+    use super::{bundle_root, record_pending_update, take_pending_update, update_notice_key};
     use std::path::{Path, PathBuf};
+
+    fn temp_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("sfm-update-{}-{name}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn pending_update_roundtrips_and_clears() {
+        let dir = temp_dir("roundtrip");
+        assert_eq!(take_pending_update(&dir), None);
+        record_pending_update(&dir, "1.5.0").unwrap();
+        assert_eq!(take_pending_update(&dir), Some("1.5.0".to_string()));
+        assert_eq!(take_pending_update(&dir), None);
+    }
+
+    #[test]
+    fn pending_update_ignores_blank_marker() {
+        let dir = temp_dir("blank");
+        std::fs::write(dir.join(super::UPDATE_MARKER), b"  \n").unwrap();
+        assert_eq!(take_pending_update(&dir), None);
+    }
+
+    #[test]
+    fn update_notice_reports_success_on_matching_version() {
+        assert_eq!(update_notice_key("1.5.0", "1.5.0"), "updates.installed");
+        assert_eq!(update_notice_key(" 1.5.0 ", "1.5.0"), "updates.installed");
+    }
+
+    #[test]
+    fn update_notice_reports_mismatch_when_still_on_old_version() {
+        assert_eq!(update_notice_key("1.5.0", "1.4.0"), "updates.install_mismatch");
+    }
 
     #[test]
     fn bundle_root_resolves_app_bundle() {

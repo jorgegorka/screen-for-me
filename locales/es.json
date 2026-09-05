@@ -38,6 +38,9 @@
   "updates.latest": "Tienes la última versión.",
   "updates.unreachable": "No se pudo conectar con el servidor de actualizaciones. Inténtalo de nuevo más tarde.\n\n({err})",
   "updates.check_failed": "No se pudo buscar actualizaciones:\n{err}",
+  "updates.installed_title": "Actualización instalada",
+  "updates.installed": "Screen for me se ha actualizado a la versión {version}.",
+  "updates.install_mismatch": "La actualización a la versión {version} no se ha aplicado. Sigues en la versión {running}.",
 
   "perm.accessibility_title": "Se necesita el permiso de Accesibilidad",
   "perm.accessibility_body": "La captura con desplazamiento necesita acceso de Accesibilidad para desplazar la página por ti.\n\nActiva \"Screen for me\" en Ajustes del Sistema → Privacidad y seguridad → Accesibilidad y vuelve a intentarlo.",

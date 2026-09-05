@@ -72,6 +72,8 @@ pub fn run() {
                 let _ = main.set_title(&i18n::t("window.settings"));
             }
 
+            windows::announce_pending_update(app.handle(), &data_dir);
+
             #[cfg(not(debug_assertions))]
             {
                 let handle = app.handle().clone();
