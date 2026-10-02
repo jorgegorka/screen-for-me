@@ -59,6 +59,7 @@ Capture flow: shortcut/tray → `commands::trigger_capture` (spawn_blocking) →
   events needs Accessibility (separate from Screen Recording). The first run
   prompts and registers the app; in dev the grant attaches to the *terminal*.
   Without it the capture aborts with an explanatory dialog.
+- **macOS screenshot hotkeys (⌘⇧3/4/5)**: the `com.apple.symbolichotkeys` prefs and the live WindowServer state can disagree (seen on a fresh Mac: unticked in System Settings, still live until login). While live-enabled, macOS *and* our Carbon hotkey both fire and its crosshair wins. `onboarding.rs::reconcile_owned_keys` therefore checks live state and releases keys the prefs already disable (`CGSSetSymbolicHotKeyEnabled`, resolved via `dlsym`); it never releases a key still ticked in System Settings.
 
 ## Updates
 
