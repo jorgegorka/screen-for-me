@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-10-02
+
+### Added
+
+- After an update installs, the next launch confirms it with an "Update
+  Installed" message naming the new version, or warns if the update did not
+  apply and the old version is still running. (This first appears on the
+  update after this one.)
+
+### Fixed
+
+- "Use ⌘⇧3 · ⌘⇧4 · ⌘⇧5" on the Welcome screen now works straight away. On
+  some Macs (seen on a freshly set up one), macOS kept handling those
+  shortcuts after they were unticked in System Settings until the Mac was
+  restarted, so ⌘⇧4 still opened the macOS screenshot tool. Screen for me now
+  applies the System Settings choice itself, and only reports the shortcuts
+  as ready once macOS has really let go of them.
+
 ## [1.4.0] - 2026-09-04
 
 ### Added
