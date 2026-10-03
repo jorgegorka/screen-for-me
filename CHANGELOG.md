@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-10-03
+
+### Changed
+
+- Update messages now show "Screen for me" as their title, so it's clear
+  which app is offering to install an update and restart. (This first
+  appears on the update after this one.)
+
 ## [1.4.1] - 2026-10-02
 
 ### Added
