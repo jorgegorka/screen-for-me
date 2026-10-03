@@ -29,8 +29,6 @@
   "about.description": "Una app de capturas de pantalla: captura, anota y comparte.",
   "about.copyright": "Desarrollado por Mario & Jorge Alvarez",
 
-  "updates.title": "Buscar actualizaciones",
-  "updates.available_title": "Actualización disponible",
   "updates.available": "La versión {version} está disponible. ¿Quieres instalarla ahora?",
   "updates.install": "Instalar y reiniciar",
   "updates.later": "Más tarde",
@@ -38,8 +36,7 @@
   "updates.latest": "Tienes la última versión.",
   "updates.unreachable": "No se pudo conectar con el servidor de actualizaciones. Inténtalo de nuevo más tarde.\n\n({err})",
   "updates.check_failed": "No se pudo buscar actualizaciones:\n{err}",
-  "updates.installed_title": "Actualización instalada",
-  "updates.installed": "Screen for me se ha actualizado a la versión {version}.",
+  "updates.installed": "Actualizado a la versión {version}.",
   "updates.install_mismatch": "La actualización a la versión {version} no se ha aplicado. Sigues en la versión {running}.",
 
   "perm.accessibility_title": "Se necesita el permiso de Accesibilidad",

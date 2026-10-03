@@ -29,8 +29,6 @@
   "about.description": "A screenshot app: capture, annotate, and share.",
   "about.copyright": "Developed by Mario & Jorge Alvarez",
 
-  "updates.title": "Check for Updates",
-  "updates.available_title": "Update Available",
   "updates.available": "Version {version} is available. Would you like to install it now?",
   "updates.install": "Install & Restart",
   "updates.later": "Later",
@@ -38,8 +36,7 @@
   "updates.latest": "You're on the latest version.",
   "updates.unreachable": "Couldn't reach the update server. Please try again later.\n\n({err})",
   "updates.check_failed": "Could not check for updates:\n{err}",
-  "updates.installed_title": "Update Installed",
-  "updates.installed": "Screen for me was updated to version {version}.",
+  "updates.installed": "Updated to version {version}.",
   "updates.install_mismatch": "The update to version {version} did not apply. You're still on version {running}.",
 
   "perm.accessibility_title": "Accessibility Permission Needed",

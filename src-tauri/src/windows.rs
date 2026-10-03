@@ -170,7 +170,7 @@ pub fn check_for_updates(app: &AppHandle, silent: bool) {
 fn update_dialog(app: &AppHandle, kind: MessageDialogKind, text: String) {
     app.dialog()
         .message(text)
-        .title(crate::i18n::t("updates.title"))
+        .title(app.package_info().name.clone())
         .kind(kind)
         .show(|_| {});
 }
@@ -182,7 +182,7 @@ fn prompt_and_install(app: AppHandle, update: tauri_plugin_updater::Update) {
             "updates.available",
             &[("version", &update.version)],
         ))
-        .title(crate::i18n::t("updates.available_title"))
+        .title(app.package_info().name.clone())
         .kind(MessageDialogKind::Info)
         .buttons(MessageDialogButtons::OkCancelCustom(
             crate::i18n::t("updates.install"),
@@ -251,7 +251,7 @@ pub fn announce_pending_update(app: &AppHandle, data_dir: &std::path::Path) {
         tokio::time::sleep(std::time::Duration::from_millis(800)).await;
         app.dialog()
             .message(text)
-            .title(crate::i18n::t("updates.installed_title"))
+            .title(app.package_info().name.clone())
             .kind(kind)
             .show(|_| {});
     });

@@ -29,8 +29,6 @@
   "about.description": "Une app de capture d'écran : capturez, annotez et partagez.",
   "about.copyright": "Développé par Mario & Jorge Alvarez",
 
-  "updates.title": "Rechercher des mises à jour",
-  "updates.available_title": "Mise à jour disponible",
   "updates.available": "La version {version} est disponible. Voulez-vous l'installer maintenant ?",
   "updates.install": "Installer et redémarrer",
   "updates.later": "Plus tard",
@@ -38,8 +36,7 @@
   "updates.latest": "Vous utilisez la dernière version.",
   "updates.unreachable": "Impossible de joindre le serveur de mise à jour. Veuillez réessayer plus tard.\n\n({err})",
   "updates.check_failed": "Impossible de rechercher des mises à jour :\n{err}",
-  "updates.installed_title": "Mise à jour installée",
-  "updates.installed": "Screen for me a été mis à jour vers la version {version}.",
+  "updates.installed": "Mis à jour vers la version {version}.",
   "updates.install_mismatch": "La mise à jour vers la version {version} n'a pas été appliquée. Vous êtes toujours en version {running}.",
 
   "perm.accessibility_title": "Autorisation d'accessibilité requise",

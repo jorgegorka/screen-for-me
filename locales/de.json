@@ -29,8 +29,6 @@
   "about.description": "Eine Screenshot-App: aufnehmen, kommentieren und teilen.",
   "about.copyright": "Entwickelt von Mario & Jorge Alvarez",
 
-  "updates.title": "Nach Updates suchen",
-  "updates.available_title": "Update verfügbar",
   "updates.available": "Version {version} ist verfügbar. Möchten Sie sie jetzt installieren?",
   "updates.install": "Installieren und neu starten",
   "updates.later": "Später",
@@ -38,8 +36,7 @@
   "updates.latest": "Sie verwenden die neueste Version.",
   "updates.unreachable": "Der Update-Server ist nicht erreichbar. Bitte versuchen Sie es später erneut.\n\n({err})",
   "updates.check_failed": "Nach Updates konnte nicht gesucht werden:\n{err}",
-  "updates.installed_title": "Update installiert",
-  "updates.installed": "Screen for me wurde auf Version {version} aktualisiert.",
+  "updates.installed": "Auf Version {version} aktualisiert.",
   "updates.install_mismatch": "Das Update auf Version {version} wurde nicht übernommen. Sie verwenden weiterhin Version {running}.",
 
   "perm.accessibility_title": "Bedienungshilfen-Berechtigung erforderlich",
